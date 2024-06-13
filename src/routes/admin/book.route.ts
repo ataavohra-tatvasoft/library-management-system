@@ -1,0 +1,46 @@
+import express, { Router } from 'express';
+import { celebrate } from 'celebrate';
+import { adminBookController } from '../../controllers';
+import { adminBookSchema } from '../../validations';
+import { adminAuthMiddleware } from '../../middlewares';
+
+const router: Router = express.Router();
+
+router.post(
+    '/add-book',
+    celebrate(adminBookSchema.addBook),
+    adminAuthMiddleware.authMiddleware,
+    adminAuthMiddleware.isAuthTokenMiddleware,
+    adminBookController.addBook
+);
+router.put(
+    '/update-book/:bookID',
+    celebrate(adminBookSchema.updateBook),
+    adminAuthMiddleware.authMiddleware,
+    adminAuthMiddleware.isAuthTokenMiddleware,
+    adminBookController.updateBook
+);
+router.get(
+    '/book-list',
+    adminAuthMiddleware.authMiddleware,
+    adminAuthMiddleware.isAuthTokenMiddleware,
+    adminBookController.bookList
+);
+
+router.put(
+    '/soft-delete-book/:bookID',
+    celebrate(adminBookSchema.deleteBook),
+    adminAuthMiddleware.authMiddleware,
+    adminAuthMiddleware.isAuthTokenMiddleware,
+    adminBookController.softDeleteBook
+);
+
+router.delete(
+    '/hard-delete-book/:bookID',
+    celebrate(adminBookSchema.deleteBook),
+    adminAuthMiddleware.authMiddleware,
+    adminAuthMiddleware.isAuthTokenMiddleware,
+    adminBookController.hardDeleteBook
+);
+
+export default router;

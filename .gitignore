@@ -1,0 +1,8 @@
+#Package Directories
+node_modules
+
+#Build Directories
+build
+
+#Env Variables
+.env
