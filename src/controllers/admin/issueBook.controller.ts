@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { Book, User } from '../../db/models';
-import { helperFunctionsUtils, loggerUtils } from '../../utils';
+import { helperFunctionsUtils } from '../../utils';
 import { Controller } from '../../interfaces';
 import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '../../constant';
 import { BookHistory } from '../../db/models/bookHistory.model';

@@ -4,6 +4,7 @@ import helperFunctionsUtils from './helperFunctions.utils';
 import loggerUtils from './logger.utils';
 import sendMailUtils from './sendMail.utils';
 import errorHandlerUtils from './errorHandler.utils';
+import responseHandlerUtils from './errorHandler.utils';
 
 export {
     authUtils,
@@ -12,4 +13,5 @@ export {
     loggerUtils,
     sendMailUtils,
     errorHandlerUtils,
+    responseHandlerUtils,
 };

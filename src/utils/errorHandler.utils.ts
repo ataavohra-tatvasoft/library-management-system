@@ -1,8 +1,8 @@
-import { Request, Response, NextFunction } from 'express';
+import { Response } from 'express';
 import { httpErrorMessageConstant, httpStatusConstant } from '../constant';
 import loggerUtils from './logger.utils';
 
-function errorHandler(error: Error, req: Request, res: Response, next: NextFunction) {
+function errorHandler(error: Error, res: Response) {
     loggerUtils.logger.error(error);
     return res.status(httpStatusConstant.INTERNAL_SERVER_ERROR).json({
         status: false,

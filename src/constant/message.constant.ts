@@ -38,4 +38,5 @@ export const messageConstant = {
     NO_ISSUED_BOOK_FOUND: 'No issued books found!',
     INVALID_PAGE_NUMBER: 'Page number must be less than total pages',
     CANNOT_ISSUE_SAME_BOOK: 'User cannot issue the same book again!',
+    INVALID_TOKEN_TYPE: 'Invalid token type',
 };

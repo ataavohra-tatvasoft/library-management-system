@@ -1,12 +1,13 @@
+import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
-import jwt from 'jsonwebtoken';
-import { Request, Response, NextFunction } from 'express';
 import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '../../constant';
 import { Admin } from '../../db/models';
-import { authUtils, ejsCompilerUtils, sendMailUtils } from '../../utils';
+import { authUtils, ejsCompilerUtils, loggerUtils, sendMailUtils } from '../../utils';
 import { Controller } from '../../interfaces';
 import { envConfig } from '../../config';
+import responseHandlerUtils from '../../utils/responseHandler.utils';
 
 /**
  * @description Authenticates admin using email/password and returns JWT token (if valid).
@@ -15,10 +16,7 @@ const login: Controller = async (req: Request, res: Response, next: NextFunction
     try {
         const { email, password } = req.body;
 
-        const admin = await Admin.findOne({
-            email,
-            isActive: true,
-        });
+        const admin = await Admin.findOne({ email, isActive: true });
         if (!admin) {
             return res.status(httpStatusConstant.NOT_FOUND).json({
                 status: false,
@@ -33,23 +31,126 @@ const login: Controller = async (req: Request, res: Response, next: NextFunction
                 message: httpErrorMessageConstant.UNAUTHORIZED,
             });
         }
-        const validAdmindata = {
-            email: admin.email,
-        };
 
-        // Generate JWT token with extended expiration (24 hours)
-        const token = jwt.sign(validAdmindata, envConfig.jwtSecretKey as string, {
-            expiresIn: Number(24 * 60 * 60),// 24 hours in seconds
-        }); 
+        // Generate JWT access token with short expiration
+        const accessToken = jwt.sign(
+            {
+                _id: admin._id,
+                email: admin.email,
+                tokenType: 'access',
+            },
+            String(envConfig.jwtSecretKey),
+            {
+                expiresIn: String(envConfig.accessTokenExpiresIn),
+            }
+        );
 
-        await Admin.updateOne({ email: admin.email }, { isAuthToken: 'true' });
+        // Generate refresh token with longer expiration (store securely on server)
+        const refreshToken = jwt.sign(
+            {
+                _id: admin._id,
+                email: admin.email,
+                tokenType: 'refresh',
+            },
+            String(envConfig.jwtSecretKey),
+            {
+                expiresIn: String(envConfig.refreshTokenExpiresIn),
+            }
+        );
 
-        return res.status(httpStatusConstant.OK).json({
-            status: true,
-            token,
-        });
-    } catch (error) {
-        throw error;
+        await Admin.updateOne({ email: admin.email }, { refreshToken });
+
+        return await responseHandlerUtils.responseHandler(
+            res,
+            httpStatusConstant.OK,
+            {
+                accessToken,
+                refreshToken,
+            },
+            httpErrorMessageConstant.SUCCESSFUL
+        );
+    } catch (error: any) {
+        return await responseHandlerUtils.responseHandler(
+            res,
+            httpStatusConstant.INTERNAL_SERVER_ERROR,
+            null,
+            null,
+            error
+        );
+    }
+};
+
+/**
+ * @description Refreshes user access token upon valid refresh token verification.
+ */
+const refreshToken: Controller = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        // Validate authorization header and extract refresh token
+        const { token } = await authUtils.validateAuthorizationHeader(req.headers);
+        const radisClient = await authUtils.createRedisClient();
+        const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+        const key = `blocked:refresh:tokens`; // Customize key prefix (access or refresh)
+        const isBlocked = await radisClient.sIsMember(key, hashedToken);
+        if (isBlocked) {
+            return await responseHandlerUtils.responseHandler(
+                res,
+                httpStatusConstant.UNAUTHORIZED,
+                null,
+                httpErrorMessageConstant.TOKEN_BLACKLISTED
+            );
+        }
+        // Verify the JWT refresh token
+        const verifiedToken = await authUtils.verifyRefreshToken(token);
+
+        if (!(verifiedToken.tokenType == 'refresh')) {
+            return await responseHandlerUtils.responseHandler(
+                res,
+                httpStatusConstant.INVALID_TOKEN,
+                null,
+                messageConstant.INVALID_TOKEN_TYPE
+            );
+        }
+
+        // Find admin by user ID from the refresh token payload
+        const admin = await Admin.findOne({ email: verifiedToken.email });
+        if (!admin) {
+            return await responseHandlerUtils.responseHandler(
+                res,
+                httpStatusConstant.NOT_FOUND,
+                null,
+                messageConstant.ADMIN_NOT_FOUND
+            );
+        }
+
+        // Generate a new access token with short expiration
+        const newAccessToken = jwt.sign(
+            {
+                _id: admin._id,
+                email: admin.email,
+                tokenType: 'access',
+            },
+            String(envConfig.jwtSecretKey),
+            {
+                expiresIn: envConfig.accessTokenExpiresIn,
+            }
+        );
+
+        return await responseHandlerUtils.responseHandler(
+            res,
+            httpStatusConstant.OK,
+            {
+                newAccessToken,
+            },
+            httpErrorMessageConstant.SUCCESSFUL
+        );
+    } catch (error: any) {
+        return await responseHandlerUtils.responseHandler(
+            res,
+            httpStatusConstant.INTERNAL_SERVER_ERROR,
+            null,
+            null,
+            error
+        );
     }
 };
 
@@ -58,14 +159,13 @@ const login: Controller = async (req: Request, res: Response, next: NextFunction
  */
 const logout: Controller = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        // Validate authorization header and extract token
-        const { token } = await authUtils.validateAuthorizationHeader(req.headers);
-
+        const { accessToken, refreshToken } = req.body;
         // Verify the JWT token
-        const verifiedToken = await authUtils.verifyJwtToken(token);
+        await authUtils.verifyAccessToken(accessToken);
+        await authUtils.verifyRefreshToken(refreshToken);
 
-        // Update admin's token status (optional) - consider separate function
-        await Admin.updateOne({ email: verifiedToken.email }, { isAuthToken: 'false' });
+        await authUtils.blockToken(accessToken, 'access');
+        await authUtils.blockToken(refreshToken, 'refresh');
 
         return res.status(httpStatusConstant.OK).json({
             status: true,
@@ -133,7 +233,8 @@ const resetPassword: Controller = async (req: Request, res: Response, next: Next
             });
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const salt = await bcrypt.genSalt(Number(envConfig.saltRounds));
+        const hashedPassword = await bcrypt.hash(password, salt);
 
         await Admin.updateOne(
             { _id: admin._id },
@@ -205,6 +306,7 @@ const updateProfile: Controller = async (req: Request, res: Response, next: Next
 
 export default {
     login,
+    refreshToken,
     logout,
     forgotPassword,
     resetPassword,

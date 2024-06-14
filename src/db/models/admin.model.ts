@@ -41,6 +41,10 @@ const adminSchema: Schema = new Schema<IAdmin, AdminModel>({
         type: BigInt,
         allownull: true,
     },
+    refreshToken: {
+        type: String,
+        allownull: true,
+    },
     isActive: {
         type: Boolean,
         allownull: false,

@@ -1,14 +1,18 @@
+import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '../../constant';
-import { Request, Response, NextFunction } from 'express';
 import { User } from '../../db/models';
 import { Controller } from '../../interfaces';
-import { authUtils, ejsCompilerUtils, helperFunctionsUtils, sendMailUtils } from '../../utils';
+import {
+    authUtils,
+    ejsCompilerUtils,
+    helperFunctionsUtils,
+    loggerUtils,
+    sendMailUtils,
+} from '../../utils';
 import { envConfig } from '../../config';
-
-const SALT_ROUNDS: number = 10;
 
 /**
  * @description Authenticates user and generates JWT token upon successful login.
@@ -32,23 +36,105 @@ const login: Controller = async (req: Request, res: Response, next: NextFunction
                 message: httpErrorMessageConstant.UNAUTHORIZED,
             });
         }
-        const validUserdata = {
-            email: user.email,
-        };
 
-        // Generate JWT token with extended expiration (24 hours)
-        const token = jwt.sign(validUserdata, envConfig.jwtSecretKey as string, {
-            expiresIn: Number(24 * 60 * 60),
-        }); // 24 hours in seconds
+        // Generate JWT access token with short expiration
+        const accessToken = jwt.sign(
+            {
+                _id: user._id,
+                email: user.email,
+                tokenType: 'access',
+            },
+            String(envConfig.jwtSecretKey),
+            {
+                expiresIn: String(envConfig.accessTokenExpiresIn),
+            }
+        );
 
-        await User.updateOne({ email: user.email }, { isAuthToken: 'true' });
+        // Generate refresh token with longer expiration (store securely on server)
+        const refreshToken = jwt.sign(
+            {
+                _id: user._id,
+                email: user.email,
+                tokenType: 'refresh',
+            },
+            String(envConfig.jwtSecretKey),
+            {
+                expiresIn: String(envConfig.refreshTokenExpiresIn),
+            }
+        );
+
+        await User.updateOne({ email: user.email }, { refreshToken });
 
         return res.status(httpStatusConstant.OK).json({
             status: true,
-            token,
+            accessToken,
+            refreshToken,
         });
     } catch (error) {
         throw error;
+    }
+};
+
+/**
+ * @description Refreshes user access token upon valid refresh token verification.
+ */
+const refreshToken: Controller = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        // Validate authorization header and extract refresh token
+        const { token } = await authUtils.validateAuthorizationHeader(req.headers);
+        const radisClient = await authUtils.createRedisClient();
+        const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+        const key = `blocked:refresh:tokens`; // Customize key prefix (access or refresh)
+        const isBlocked = await radisClient.sIsMember(key, hashedToken);
+        if (isBlocked) {
+            return res.status(httpStatusConstant.UNAUTHORIZED).json({
+                status: false,
+                message: httpErrorMessageConstant.TOKEN_BLACKLISTED,
+            });
+        }
+
+        // Verify the JWT refresh token
+        const verifiedToken = await authUtils.verifyRefreshToken(token);
+
+        if (!(verifiedToken.tokenType == 'refresh')) {
+            return res.status(httpStatusConstant.INVALID_TOKEN).json({
+                status: false,
+                message: messageConstant.INVALID_TOKEN_TYPE,
+            });
+        }
+
+        // Find admin by user ID from the refresh token payload
+        const user = await User.findOne({ email: verifiedToken.email });
+        if (!user) {
+            return res.status(httpStatusConstant.NOT_FOUND).json({
+                status: false,
+                message: messageConstant.USER_NOT_FOUND,
+            });
+        }
+
+        // Generate a new access token with short expiration
+        const newAccessToken = jwt.sign(
+            {
+                _id: user._id,
+                email: user.email,
+                tokenType: 'access',
+            },
+            String(envConfig.jwtSecretKey),
+            {
+                expiresIn: envConfig.accessTokenExpiresIn,
+            }
+        );
+
+        return res.status(httpStatusConstant.OK).json({
+            status: true,
+            accessToken: newAccessToken,
+        });
+    } catch (error: any) {
+        loggerUtils.logger.error(error);
+        return res.status(httpStatusConstant.INTERNAL_SERVER_ERROR).json({
+            message: httpErrorMessageConstant.INTERNAL_SERVER_ERROR,
+            error: error.message,
+        });
     }
 };
 
@@ -57,13 +143,13 @@ const login: Controller = async (req: Request, res: Response, next: NextFunction
  */
 const logout: Controller = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        // Validate authorization header and extract token
-        const { token } = await authUtils.validateAuthorizationHeader(req.headers);
-
+        const { accessToken, refreshToken } = req.body;
         // Verify the JWT token
-        const verifiedToken = await authUtils.verifyJwtToken(token);
+        await authUtils.verifyAccessToken(accessToken);
+        await authUtils.verifyRefreshToken(refreshToken);
 
-        await User.updateOne({ email: verifiedToken.email }, { isAuthToken: 'false' });
+        await authUtils.blockToken(accessToken, 'access');
+        await authUtils.blockToken(refreshToken, 'refresh');
 
         return res.status(httpStatusConstant.OK).json({
             status: true,
@@ -127,7 +213,8 @@ const resetPassword: Controller = async (req: Request, res: Response, next: Next
             });
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const salt = await bcrypt.genSalt(Number(envConfig.saltRounds));
+        const hashedPassword = await bcrypt.hash(password, salt);
 
         await User.updateOne(
             { _id: user._id },
@@ -167,13 +254,15 @@ const signup: Controller = async (req: Request, res: Response, next: NextFunctio
         } = req;
 
         // eslint-disable-next-line no-undef
-        const hashed_password: String = await bcrypt.hash(password, SALT_ROUNDS);
+        const salt = await bcrypt.genSalt(Number(envConfig.saltRounds));
+        const hashedPassword = password ? await bcrypt.hash(password, salt) : undefined;
+
         const ageLimit = helperFunctionsUtils.validateAgeLimit(dateOfBirth);
 
         if (ageLimit) {
             const signupStatus = await User.create({
                 email,
-                password: hashed_password,
+                password: hashedPassword,
                 firstname,
                 lastname,
                 dateOfBirth: new Date(dateOfBirth),
@@ -254,6 +343,7 @@ const updateProfile: Controller = async (req: Request, res: Response, next: Next
 
 export default {
     login,
+    refreshToken,
     logout,
     forgotPassword,
     resetPassword,

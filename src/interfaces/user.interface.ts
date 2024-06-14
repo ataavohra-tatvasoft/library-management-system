@@ -9,13 +9,14 @@ export interface IUser {
     gender: string;
     dateOfBirth: Date;
     mobileNumber: BigInt;
-    address: String;
-    city: String;
-    state: String;
+    address: string;
+    city: string;
+    state: string;
     paidAmount: Number;
     dueCharges: Number;
-    resetToken: String;
+    resetToken: string;
     resetTokenExpiry: BigInt;
+    refreshToken: string;
     isActive: Boolean;
     books: INestedBook[];
 }

@@ -1,11 +1,10 @@
-import bcrypt from 'bcrypt';
 import { Request, Response, NextFunction } from 'express';
+import bcrypt from 'bcrypt';
 import { User } from '../../db/models';
 import { Controller } from '../../interfaces';
 import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '../../constant';
 import { helperFunctionsUtils } from '../../utils';
-
-const SALT_ROUNDS: number = 10;
+import { envConfig } from '../../config';
 
 /**
  * @description Registers a new user (validates age and hashes password).
@@ -33,7 +32,8 @@ const addUser: Controller = async (req: Request, res: Response, next: NextFuncti
             });
         }
 
-        const hashedPassword = password ? await bcrypt.hash(password, SALT_ROUNDS) : undefined;
+        const salt = await bcrypt.genSalt(Number(envConfig.saltRounds));
+        const hashedPassword = password ? await bcrypt.hash(password, salt) : undefined;
 
         const createUserStatus = await User.create({
             email,

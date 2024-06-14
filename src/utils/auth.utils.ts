@@ -1,9 +1,14 @@
 import jwt from 'jsonwebtoken';
+import { createClient } from 'redis';
+import crypto from 'crypto';
+import { ObjectId } from 'mongodb';
 import { envConfig } from '../config';
+import loggerUtils from './logger.utils';
 
 type VerifiedToken = {
-    user_id: number;
+    _id: ObjectId;
     email: string;
+    tokenType: string;
 };
 
 async function validateAuthorizationHeader(headers: any): Promise<{ token: string }> {
@@ -20,18 +25,72 @@ async function validateAuthorizationHeader(headers: any): Promise<{ token: strin
     }
 }
 
-async function verifyJwtToken(token: string): Promise<VerifiedToken> {
+async function verifyAccessToken(token: string): Promise<VerifiedToken> {
     try {
         return jwt.verify(token, envConfig.jwtSecretKey as string) as VerifiedToken;
-    } catch (error) {
+    } catch (error: any) {
         if (error instanceof jwt.JsonWebTokenError) {
-            throw new Error('Invalid Token');
+            if (error.name === 'TokenExpiredError') {
+                throw new Error('Access Token Expired');
+            } else {
+                throw new Error('Invalid Access Token');
+            }
         }
+        throw error;
+    }
+}
+
+async function verifyRefreshToken(token: string): Promise<VerifiedToken> {
+    try {
+        return jwt.verify(token, envConfig.jwtSecretKey as string) as VerifiedToken;
+    } catch (error: any) {
+        if (error instanceof jwt.JsonWebTokenError) {
+            if (error.name === 'TokenExpiredError') {
+                throw new Error('Refresh Token Expired, kindly login again.');
+            } else {
+                throw new Error('Invalid Refresh Token');
+            }
+        }
+        throw error;
+    }
+}
+async function createRedisClient() {
+    try {
+        const client = createClient({
+            password: String(envConfig.redisPassword),
+            socket: {
+                host: String(envConfig.redisHost),
+                port: Number(envConfig.redisPort),
+            },
+        });
+        await client.connect();
+        loggerUtils.logger.info('Connected to Redis successfully');
+        return client;
+    } catch (error) {
+        loggerUtils.logger.info('Error connecting to Redis:', error);
+        throw error; // Re-throw the error for handling in the calling context
+    }
+}
+async function blockToken(token: string, type: 'access' | 'refresh'): Promise<void> {
+    try {
+        const client = await createRedisClient();
+        const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+        const key = `blocked:${type}:tokens`; // Customize key prefix
+
+        await client.sAdd(key, hashedToken);
+        await client.expire(key, 24 * 60 * 60); // Set expiration
+
+        return Promise.resolve();
+    } catch (error) {
+        loggerUtils.logger.error('Error blocking token:', error);
         throw error;
     }
 }
 
 export default {
     validateAuthorizationHeader,
-    verifyJwtToken,
+    verifyAccessToken,
+    verifyRefreshToken,
+    blockToken,
+    createRedisClient,
 };

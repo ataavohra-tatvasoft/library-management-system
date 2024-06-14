@@ -10,20 +10,17 @@ router.post(
     '/add-book',
     celebrate(adminBookSchema.addBook),
     adminAuthMiddleware.authMiddleware,
-    adminAuthMiddleware.isAuthTokenMiddleware,
     adminBookController.addBook
 );
 router.put(
     '/update-book/:bookID',
     celebrate(adminBookSchema.updateBook),
     adminAuthMiddleware.authMiddleware,
-    adminAuthMiddleware.isAuthTokenMiddleware,
     adminBookController.updateBook
 );
 router.get(
     '/book-list',
     adminAuthMiddleware.authMiddleware,
-    adminAuthMiddleware.isAuthTokenMiddleware,
     adminBookController.bookList
 );
 
@@ -31,7 +28,6 @@ router.put(
     '/soft-delete-book/:bookID',
     celebrate(adminBookSchema.deleteBook),
     adminAuthMiddleware.authMiddleware,
-    adminAuthMiddleware.isAuthTokenMiddleware,
     adminBookController.softDeleteBook
 );
 
@@ -39,7 +35,6 @@ router.delete(
     '/hard-delete-book/:bookID',
     celebrate(adminBookSchema.deleteBook),
     adminAuthMiddleware.authMiddleware,
-    adminAuthMiddleware.isAuthTokenMiddleware,
     adminBookController.hardDeleteBook
 );
 

@@ -7,10 +7,10 @@ import { adminAuthMiddleware } from '../../middlewares';
 const router: Router = express.Router();
 
 router.post('/login', celebrate(adminAuthSchema.login), adminAuthController.login);
-router.put(
+router.get('/get-access-token', adminAuthController.refreshToken);
+router.post(
     '/logout',
     adminAuthMiddleware.authMiddleware,
-    adminAuthMiddleware.isAuthTokenMiddleware,
     adminAuthController.logout
 );
 router.post(
@@ -27,7 +27,6 @@ router.put(
     '/update-profile/:email',
     celebrate(adminAuthSchema.updateProfile),
     adminAuthMiddleware.authMiddleware,
-    adminAuthMiddleware.isAuthTokenMiddleware,
     adminAuthController.updateProfile
 );
 

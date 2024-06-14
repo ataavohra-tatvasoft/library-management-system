@@ -13,5 +13,10 @@ export default {
     emailPass: process.env.EMAIL_PASS,
     resetPassLink: process.env.RESET_PASS_LINK,
     jwtSecretKey: process.env.JWT_SECRET_KEY,
+    accessTokenExpiresIn: process.env.ACCESS_TOKEN_EXPIRES,
+    refreshTokenExpiresIn: process.env.REFRESH_TOKEN_EXPIRES,
     saltRounds: process.env.SALT_ROUNDS,
+    redisPassword: process.env.REDIS_PASSWORD,
+    redisHost: process.env.REDIS_HOST,
+    redisPort: process.env.REDIS_PORT,
 };
