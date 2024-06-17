@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { Book, User } from '../../db/models';
-import { helperFunctionsUtils } from '../../utils';
+import { helperFunctionsUtils, responseHandlerUtils } from '../../utils';
 import { Controller } from '../../interfaces';
 import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '../../constant';
 import { BookHistory } from '../../db/models/bookHistory.model';
@@ -14,99 +14,90 @@ const issueBookList: Controller = async (req: Request, res: Response, next: Next
 
         const pageNumber = Number(page) || 1;
         const limit = Number(pageSize) || 10;
-
         const skip = (pageNumber - 1) * limit;
 
         const issuedBooksAggregation = [
             {
                 $match: {
-                    books: { $elemMatch: { issueDate: { $ne: null } } }, // Filter users with issued books
+                    books: { $elemMatch: { issueDate: { $ne: null } } },
                 },
             },
-            {
-                $unwind: '$books', // Deconstruct books array for distinct operation
-            },
+            { $unwind: '$books' },
             {
                 $lookup: {
-                    from: 'books', // Join with Book collection
+                    from: 'books',
                     localField: 'books.bookId',
                     foreignField: '_id',
-
                     as: 'bookDetails',
                 },
             },
             {
                 $project: {
-                    _id: 0, // Exclude user document ID
-                    book: {
-                        $first: '$bookDetails', // Get first book document (avoids duplicates)
-                    },
-                    issueDate: 1, // Include issueDate for each unique book
+                    _id: 0,
+                    book: { $first: '$bookDetails' },
+                    issueDate: 1,
                 },
             },
             {
                 $group: {
-                    _id: { bookId: '$book._id', issueDate: '$issueDate' }, // Group by unique book ID and issueDate combination
+                    _id: { bookId: '$book._id', issueDate: '$issueDate' },
                 },
             },
             {
                 $lookup: {
-                    from: 'books', // Join with Book collection again
-                    localField: '_id.bookId', // Use grouped bookId for lookup
+                    from: 'books',
+                    localField: '_id.bookId',
                     foreignField: '_id',
                     as: 'bookDetails',
                 },
             },
-            {
-                $unwind: '$bookDetails', // Unwind book details for each group
-            },
+            { $unwind: '$bookDetails' },
             {
                 $project: {
-                    _id: 0, // Exclude group ID
-                    book: '$bookDetails', // Include book details
-                    issueDate: '$_id.issueDate', // Include issueDate from the group
+                    _id: 0,
+                    book: '$bookDetails',
+                    issueDate: '$_id.issueDate',
                 },
             },
         ];
 
         const books = await User.aggregate(issuedBooksAggregation).skip(skip).limit(limit);
 
-        if (!books) {
-            return res.status(httpStatusConstant.OK).json({
-                status: true,
+        if (!books || books.length === 0) {
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.OK,
                 message: messageConstant.NO_ISSUED_BOOK_FOUND,
             });
         }
 
-        if (!books.length) {
-            return res.status(httpStatusConstant.OK).json({
-                status: true,
-                message: messageConstant.NO_ISSUED_BOOK_FOUND,
-            });
-        }
-
-        const total = books.length;
-
+        const totalBooks = await User.aggregate(issuedBooksAggregation);
+        const total = totalBooks.length;
         const totalPages = Math.ceil(total / limit);
 
         if (pageNumber > totalPages) {
-            return res.status(httpStatusConstant.BAD_REQUEST).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.BAD_REQUEST,
                 message: messageConstant.INVALID_PAGE_NUMBER,
             });
         }
 
-        return res.status(httpStatusConstant.OK).json({
-            status: true,
-            issuedBooks: books,
-            pagination: {
-                page: pageNumber,
-                pageSize: limit,
-                totalPages,
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.OK,
+            data: {
+                issuedBooks: books,
+                pagination: {
+                    page: pageNumber,
+                    pageSize: limit,
+                    totalPages,
+                },
             },
+            message: httpErrorMessageConstant.SUCCESSFUL,
         });
-    } catch (error) {
-        throw error;
+    } catch (error: any) {
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
+            error,
+        });
     }
 };
 
@@ -123,53 +114,60 @@ const issueBook: Controller = async (req: Request, res: Response, next: NextFunc
         ]);
 
         if (!book) {
-            return res.status(httpStatusConstant.NOT_FOUND).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.NOT_FOUND,
                 message: messageConstant.BOOK_NOT_FOUND,
             });
         }
         if (!user) {
-            return res.status(httpStatusConstant.NOT_FOUND).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.NOT_FOUND,
                 message: messageConstant.USER_NOT_FOUND,
             });
         }
 
         for (const redundantBook of user.books) {
-            if (String(redundantBook.bookId) == String(book._id)) {
-                return res.status(httpStatusConstant.BAD_REQUEST).json({
-                    status: false,
+            if (String(redundantBook.bookId) === String(book._id)) {
+                return responseHandlerUtils.responseHandler(res, {
+                    statusCode: httpStatusConstant.BAD_REQUEST,
                     message: messageConstant.CANNOT_ISSUE_SAME_BOOK,
                 });
             }
         }
 
         if (book.quantityAvailable <= 0) {
-            return res.status(httpStatusConstant.BAD_REQUEST).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.BAD_REQUEST,
                 message: messageConstant.BOOK_OUT_OF_STOCK,
             });
         }
 
         if (user.books.length >= 5) {
-            return res.status(httpStatusConstant.BAD_REQUEST).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.BAD_REQUEST,
                 message: messageConstant.BOOK_LIMIT_EXCEEDED,
             });
         }
 
         if (user.dueCharges && Number(user.dueCharges) > 500) {
-            return res.status(httpStatusConstant.BAD_REQUEST).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.BAD_REQUEST,
                 message: messageConstant.OUTSTANDING_DUE_CHARGES,
             });
         }
+        if (issueDate) {
+            const providedIssueDate = new Date(issueDate);
+            const currentDate = new Date();
 
-        if (issueDate && new Date(issueDate) < new Date()) {
-            return res.status(httpStatusConstant.BAD_REQUEST).json({
-                status: false,
-                message: messageConstant.ISSUE_DATE_INVALID,
-            });
+            currentDate.setHours(0, 0, 0, 0);
+            providedIssueDate.setHours(0, 0, 0, 0);
+
+            if (providedIssueDate.getTime() < currentDate.getTime()) {
+                return responseHandlerUtils.responseHandler(res, {
+                    statusCode: httpStatusConstant.BAD_REQUEST,
+                    message: messageConstant.ISSUE_DATE_INVALID,
+                });
+            }
         }
 
         const freeDays = helperFunctionsUtils.numberOfFreeDays(issueDate, book.quantityAvailable);
@@ -187,8 +185,8 @@ const issueBook: Controller = async (req: Request, res: Response, next: NextFunc
         );
 
         if (!userUpdate) {
-            return res.status(httpStatusConstant.BAD_REQUEST).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.BAD_REQUEST,
                 message: messageConstant.ERROR_ASSIGNING_BOOK,
             });
         }
@@ -203,8 +201,8 @@ const issueBook: Controller = async (req: Request, res: Response, next: NextFunc
         );
 
         if (!bookUpdate.modifiedCount) {
-            return res.status(httpStatusConstant.BAD_REQUEST).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.BAD_REQUEST,
                 message: messageConstant.ERROR_UPDATING_BOOK,
             });
         }
@@ -216,18 +214,21 @@ const issueBook: Controller = async (req: Request, res: Response, next: NextFunc
         });
 
         if (!logHistory) {
-            return res.status(httpStatusConstant.BAD_REQUEST).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.BAD_REQUEST,
                 message: messageConstant.ERROR_LOGGING_HISTORY,
             });
         }
 
-        return res.status(httpStatusConstant.OK).json({
-            status: true,
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.OK,
             message: httpErrorMessageConstant.SUCCESSFUL,
         });
-    } catch (error) {
-        throw error;
+    } catch (error: any) {
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
+            error,
+        });
     }
 };
 
@@ -242,13 +243,14 @@ const submitBook: Controller = async (req: Request, res: Response, next: NextFun
         const [book, user] = await Promise.all([Book.findOne({ bookID }), User.findOne({ email })]);
 
         if (!book) {
-            return res.status(httpStatusConstant.BAD_REQUEST).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.BAD_REQUEST,
                 message: messageConstant.BOOK_NOT_FOUND,
             });
-        } else if (!user) {
-            return res.status(httpStatusConstant.BAD_REQUEST).json({
-                status: false,
+        }
+        if (!user) {
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.BAD_REQUEST,
                 message: messageConstant.USER_NOT_FOUND,
             });
         }
@@ -257,14 +259,14 @@ const submitBook: Controller = async (req: Request, res: Response, next: NextFun
 
         const issuedBook = user.books.find(
             (issuedBookEntry) =>
-                String(issuedBookEntry.bookId) == String(book._id) &&
+                String(issuedBookEntry.bookId) === String(book._id) &&
                 issuedBookEntry.issueDate <= submitDateObject
         );
 
         if (!issuedBook) {
-            return res.status(httpStatusConstant.BAD_REQUEST).json({
-                status: false,
-                message: messageConstant.BOOK_NOT_ISSUED,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.BAD_REQUEST,
+                message: messageConstant.BOOK_SUBMIDATE_INVALID,
             });
         }
 
@@ -280,8 +282,8 @@ const submitBook: Controller = async (req: Request, res: Response, next: NextFun
                 { $inc: { dueCharges: dueCharges } }
             );
             if (!userUpdateStatus.modifiedCount) {
-                return res.status(httpStatusConstant.BAD_REQUEST).json({
-                    status: false,
+                return responseHandlerUtils.responseHandler(res, {
+                    statusCode: httpStatusConstant.BAD_REQUEST,
                     message: messageConstant.ERROR_UPDATING_USER,
                 });
             }
@@ -293,18 +295,16 @@ const submitBook: Controller = async (req: Request, res: Response, next: NextFun
         }
 
         const deletedBook = await User.findOneAndUpdate(
-            { email, 'books.bookId': book._id }, // Filter by email and bookId
+            { email, 'books.bookId': book._id },
             {
-                $pull: {
-                    books: { bookId: book._id }, // Remove only the first matching book
-                },
+                $pull: { books: { bookId: book._id } },
             },
-            { new: true } // Return updated user document (optional)
+            { new: true }
         );
 
         if (!deletedBook) {
-            return res.status(httpStatusConstant.BAD_REQUEST).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.BAD_REQUEST,
                 message: messageConstant.BOOK_NOT_FOUND,
             });
         }
@@ -317,8 +317,8 @@ const submitBook: Controller = async (req: Request, res: Response, next: NextFun
         );
 
         if (!bookUpdateStatus.modifiedCount) {
-            return res.status(httpStatusConstant.BAD_REQUEST).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.BAD_REQUEST,
                 message: messageConstant.ERROR_UPDATING_BOOK,
             });
         }
@@ -335,8 +335,8 @@ const submitBook: Controller = async (req: Request, res: Response, next: NextFun
         );
 
         if (!logHistory) {
-            return res.status(httpStatusConstant.BAD_REQUEST).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.BAD_REQUEST,
                 message: messageConstant.ERROR_LOGGING_HISTORY,
             });
         }
@@ -344,13 +344,16 @@ const submitBook: Controller = async (req: Request, res: Response, next: NextFun
         const totalCharge = await User.findOne({ email }, { _id: 0, dueCharges: 1 });
 
         const message = `Due charges: Rs. ${totalCharge?.dueCharges || 0}. Kindly pay after submission of the book.`;
-        return res.status(httpStatusConstant.OK).json({
-            status: true,
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.OK,
+            data: { note: message },
             message: httpErrorMessageConstant.SUCCESSFUL,
-            note: message,
         });
-    } catch (error) {
-        throw error;
+    } catch (error: any) {
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
+            error,
+        });
     }
 };
 

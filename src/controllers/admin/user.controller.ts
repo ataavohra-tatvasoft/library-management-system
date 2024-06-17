@@ -3,7 +3,7 @@ import bcrypt from 'bcrypt';
 import { User } from '../../db/models';
 import { Controller } from '../../interfaces';
 import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '../../constant';
-import { helperFunctionsUtils } from '../../utils';
+import { helperFunctionsUtils, responseHandlerUtils } from '../../utils';
 import { envConfig } from '../../config';
 
 /**
@@ -24,10 +24,9 @@ const addUser: Controller = async (req: Request, res: Response, next: NextFuncti
         } = req.body;
 
         const ageLimitValid = helperFunctionsUtils.validateAgeLimit(dateOfBirth);
-
         if (!ageLimitValid) {
-            return res.status(httpStatusConstant.BAD_REQUEST).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.BAD_REQUEST,
                 message: messageConstant.INVALID_AGE,
             });
         }
@@ -48,18 +47,21 @@ const addUser: Controller = async (req: Request, res: Response, next: NextFuncti
         });
 
         if (!createUserStatus) {
-            return res.status(httpStatusConstant.BAD_REQUEST).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.BAD_REQUEST,
                 message: messageConstant.ERROR_SIGNING_USER,
             });
         }
 
-        return res.status(httpStatusConstant.OK).json({
-            status: true,
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.OK,
             message: httpErrorMessageConstant.SUCCESSFUL,
         });
-    } catch (error) {
-        throw error;
+    } catch (error: any) {
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
+            error,
+        });
     }
 };
 
@@ -72,7 +74,6 @@ const userList: Controller = async (req: Request, res: Response, next: NextFunct
 
         const pageNumber = Number(page) || 1;
         const limit = Number(pageSize) || 10;
-
         const skip = (pageNumber - 1) * limit;
 
         const userData = await User.find(
@@ -84,7 +85,6 @@ const userList: Controller = async (req: Request, res: Response, next: NextFunct
                 lastname: 1,
                 gender: 1,
                 dateOfBirth: 1,
-                // mobileNumber: 1,
                 address: 1,
                 city: 1,
                 state: 1,
@@ -93,44 +93,47 @@ const userList: Controller = async (req: Request, res: Response, next: NextFunct
         )
             .skip(skip)
             .limit(limit);
+
         if (!userData) {
-            return res.status(httpStatusConstant.BAD_REQUEST).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.BAD_REQUEST,
                 message: messageConstant.ERROR_LISTING_USER,
             });
         }
 
-        const total = await User.countDocuments({
-            isActive: true,
-        });
-
+        const total = await User.countDocuments({ isActive: true });
         if (!total) {
-            return res.status(httpStatusConstant.OK).json({
-                status: true,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.OK,
                 message: messageConstant.BOOK_NOT_FOUND,
             });
         }
 
         const totalPages = Math.ceil(total / limit);
-
         if (pageNumber > totalPages) {
-            return res.status(httpStatusConstant.BAD_REQUEST).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.BAD_REQUEST,
                 message: messageConstant.INVALID_PAGE_NUMBER,
             });
         }
 
-        return res.status(httpStatusConstant.OK).json({
-            status: true,
-            userData,
-            pagination: {
-                page: pageNumber,
-                pageSize: limit,
-                totalPages,
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.OK,
+            data: {
+                userData,
+                pagination: {
+                    page: pageNumber,
+                    pageSize: limit,
+                    totalPages,
+                },
             },
+            message: httpErrorMessageConstant.SUCCESSFUL,
         });
-    } catch (error) {
-        throw error;
+    } catch (error: any) {
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
+            error,
+        });
     }
 };
 
@@ -145,10 +148,9 @@ const updateUser: Controller = async (req: Request, res: Response, next: NextFun
         const hashedPassword = password ? await bcrypt.hash(password, 10) : undefined;
 
         const userProfile = await User.findOne({ email });
-
         if (!userProfile) {
-            return res.status(httpStatusConstant.NOT_FOUND).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.NOT_FOUND,
                 message: messageConstant.USER_NOT_FOUND,
             });
         }
@@ -165,20 +167,22 @@ const updateUser: Controller = async (req: Request, res: Response, next: NextFun
         };
 
         const updatedProfile = await User.findOneAndUpdate({ email }, updateData, { new: true });
-
         if (!updatedProfile) {
-            return res.status(httpStatusConstant.INTERNAL_SERVER_ERROR).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
                 message: messageConstant.ERROR_UPDATING_PROFILE,
             });
         }
 
-        return res.status(httpStatusConstant.OK).json({
-            status: true,
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.OK,
             message: httpErrorMessageConstant.SUCCESSFUL,
         });
-    } catch (error) {
-        throw error;
+    } catch (error: any) {
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
+            error,
+        });
     }
 };
 
@@ -191,8 +195,8 @@ const softDeleteUser: Controller = async (req: Request, res: Response, next: Nex
 
         const userExists = await User.findOne({ email, isActive: true });
         if (!userExists) {
-            return res.status(httpStatusConstant.BAD_REQUEST).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.BAD_REQUEST,
                 message: messageConstant.USER_NOT_EXISTS,
             });
         }
@@ -200,22 +204,25 @@ const softDeleteUser: Controller = async (req: Request, res: Response, next: Nex
         const updatedUser = await User.findOneAndUpdate(
             { email },
             { $set: { isActive: false } },
-            { new: true } // Return the updated document
+            { new: true }
         );
 
         if (!updatedUser) {
-            return res.status(httpStatusConstant.NOT_FOUND).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.NOT_FOUND,
                 message: messageConstant.ERROR_DELETING_USER,
             });
         }
 
-        return res.status(httpStatusConstant.OK).json({
-            status: true,
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.OK,
             message: messageConstant.USER_DELETED_SOFT,
         });
-    } catch (error) {
-        throw error;
+    } catch (error: any) {
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
+            error,
+        });
     }
 };
 
@@ -228,26 +235,29 @@ const hardDeleteUser: Controller = async (req: Request, res: Response, next: Nex
 
         const userExists = await User.findOne({ email });
         if (!userExists) {
-            return res.status(httpStatusConstant.BAD_REQUEST).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.BAD_REQUEST,
                 message: messageConstant.USER_NOT_EXISTS,
             });
         }
 
         const deletedUser = await User.deleteOne({ email });
         if (!deletedUser) {
-            return res.status(httpStatusConstant.NOT_FOUND).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.NOT_FOUND,
                 message: messageConstant.ERROR_DELETING_USER,
             });
         }
 
-        return res.status(httpStatusConstant.OK).json({
-            status: true,
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.OK,
             message: messageConstant.USER_DELETED_HARD,
         });
-    } catch (error) {
-        throw error;
+    } catch (error: any) {
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
+            error,
+        });
     }
 };
 

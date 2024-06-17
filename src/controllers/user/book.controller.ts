@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { Book, BookHistory, BookRating, BookReview, User } from '../../db/models';
 import { httpErrorMessageConstant, httpStatusConstant, messageConstant } from '../../constant';
 import { Controller } from '../../interfaces';
+import { loggerUtils, responseHandlerUtils } from '../../utils';
 
 /**
  * @description Searches for active books by name, ID, or both (returns details & aggregates).
@@ -22,14 +23,14 @@ const searchBook: Controller = async (req: Request, res: Response, next: NextFun
         if (bookID || name) {
             searchQuery.$or = [];
             if (bookID) searchQuery.$or.push({ bookID: String(bookID) });
-            if (name) searchQuery.$or.push({ name: new RegExp(name as string, 'i') }); // Case-insensitive search
+            if (name) searchQuery.$or.push({ name: new RegExp(name as string, 'i') });
         }
 
         const totalBooks = await Book.countDocuments(searchQuery);
 
         if (pageNumber > Math.ceil(totalBooks / limit)) {
-            return res.status(httpStatusConstant.BAD_REQUEST).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.BAD_REQUEST,
                 message: messageConstant.INVALID_PAGE_NUMBER,
             });
         }
@@ -46,7 +47,7 @@ const searchBook: Controller = async (req: Request, res: Response, next: NextFun
                                 $expr: {
                                     $and: [
                                         { $eq: ['$bookID', '$$bookID'] },
-                                        { $eq: ['$imageName', 'coverImage'] }, // Filter by imageName
+                                        { $eq: ['$imageName', 'coverImage'] },
                                     ],
                                 },
                             },
@@ -84,7 +85,7 @@ const searchBook: Controller = async (req: Request, res: Response, next: NextFun
                     name: 1,
                     author: 1,
                     stock: '$quantityAvailable',
-                    rating: { $ifNull: ['$rating', 0] }, // Handle if no ratings exist
+                    rating: { $ifNull: ['$rating', 0] },
                     reviewCount: 1,
                     publishYear: 1,
                     coverImage: 1,
@@ -97,23 +98,29 @@ const searchBook: Controller = async (req: Request, res: Response, next: NextFun
         const searchedBooks = await Book.aggregate(searchPipeline);
 
         if (!searchedBooks.length) {
-            return res.status(httpStatusConstant.NOT_FOUND).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.NOT_FOUND,
                 message: messageConstant.BOOK_NOT_FOUND,
             });
         }
 
-        return res.status(httpStatusConstant.OK).json({
-            status: true,
-            searchedBooks,
-            pagination: {
-                page: pageNumber,
-                pageSize: limit,
-                totalPages: Math.ceil(totalBooks / limit),
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.OK,
+            data: {
+                searchedBooks,
+                pagination: {
+                    page: pageNumber,
+                    pageSize: limit,
+                    totalPages: Math.ceil(totalBooks / limit),
+                },
             },
         });
-    } catch (error) {
-        throw error;
+    } catch (error: any) {
+        loggerUtils.logger.error(error);
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
+            error,
+        });
     }
 };
 
@@ -133,21 +140,21 @@ const bookDetails: Controller = async (req: Request, res: Response, next: NextFu
                 },
             },
             {
-                $unwind: '$gallery', // Unwind gallery to process each image individually
+                $unwind: '$gallery',
             },
             {
                 $addFields: {
-                    isCoverImage: { $eq: ['$gallery.imageName', 'coverImage'] }, // Identify cover image
+                    isCoverImage: { $eq: ['$gallery.imageName', 'coverImage'] },
                 },
             },
             {
                 $group: {
-                    _id: '$_id', // Group by book ID
-                    bookID: { $first: '$bookID' }, // Get first bookID (should be the same)
+                    _id: '$_id',
+                    bookID: { $first: '$bookID' },
                     coverImage: {
                         $first: {
                             $cond: { if: '$isCoverImage', then: '$$ROOT.gallery', else: null },
-                        }, // Get the first cover image
+                        },
                     },
                 },
             },
@@ -193,19 +200,25 @@ const bookDetails: Controller = async (req: Request, res: Response, next: NextFu
         const books = await Book.aggregate(bookDetails);
 
         if (!books.length) {
-            return res.status(httpStatusConstant.NOT_FOUND).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.NOT_FOUND,
                 message: messageConstant.BOOK_NOT_FOUND,
             });
         }
 
-        return res.status(httpStatusConstant.OK).json({
-            status: true,
-            books,
-            totalBooks,
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.OK,
+            data: {
+                books,
+                totalBooks,
+            },
         });
-    } catch (error) {
-        throw error;
+    } catch (error: any) {
+        loggerUtils.logger.error(error);
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
+            error,
+        });
     }
 };
 
@@ -219,39 +232,41 @@ const addReview: Controller = async (req: Request, res: Response, next: NextFunc
 
         const user = await User.findOne({ email });
         if (!user) {
-            return res.status(httpStatusConstant.NOT_FOUND).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.NOT_FOUND,
                 message: messageConstant.USER_NOT_FOUND,
             });
         }
 
         const book = await Book.findOne({ bookID });
         if (!book) {
-            return res.status(httpStatusConstant.NOT_FOUND).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.NOT_FOUND,
                 message: messageConstant.BOOK_NOT_FOUND,
             });
         }
 
-        // Check if the user has already reviewed the book
         const existingReview = await BookReview.findOne({ userID: user._id, bookID: book._id });
 
         if (existingReview) {
-            return res.status(httpStatusConstant.BAD_REQUEST).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.BAD_REQUEST,
                 message: messageConstant.REVIEW_ALREADY_EXIST,
             });
         }
 
-        // Create a new book review
         await BookReview.create({ userID: user._id, bookID: book._id, review });
 
-        return res.status(httpStatusConstant.OK).json({
-            status: true,
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.OK,
             message: httpErrorMessageConstant.SUCCESSFUL,
         });
-    } catch (error) {
-        throw error;
+    } catch (error: any) {
+        loggerUtils.logger.error(error);
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
+            error,
+        });
     }
 };
 
@@ -265,39 +280,41 @@ const addRating: Controller = async (req: Request, res: Response, next: NextFunc
 
         const user = await User.findOne({ email });
         if (!user) {
-            return res.status(httpStatusConstant.NOT_FOUND).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.NOT_FOUND,
                 message: messageConstant.USER_NOT_FOUND,
             });
         }
 
         const book = await Book.findOne({ bookID });
         if (!book) {
-            return res.status(httpStatusConstant.NOT_FOUND).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.NOT_FOUND,
                 message: messageConstant.BOOK_NOT_FOUND,
             });
         }
 
-        // Check if the user has already rated the book
         const existingRating = await BookRating.findOne({ userID: user._id, bookID: book._id });
 
         if (existingRating) {
-            return res.status(httpStatusConstant.BAD_REQUEST).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.BAD_REQUEST,
                 message: messageConstant.RATING_ALREADY_EXIST,
             });
         }
 
-        // Create a new book rating
         await BookRating.create({ userID: user._id, bookID: book._id, rating });
 
-        return res.status(httpStatusConstant.OK).json({
-            status: true,
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.OK,
             message: httpErrorMessageConstant.SUCCESSFUL,
         });
-    } catch (error) {
-        throw error;
+    } catch (error: any) {
+        loggerUtils.logger.error(error);
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
+            error,
+        });
     }
 };
 
@@ -310,21 +327,20 @@ const issueBookHistory: Controller = async (req: Request, res: Response, next: N
 
         const user = await User.findOne({ email });
         if (!user) {
-            return res.status(httpStatusConstant.NOT_FOUND).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.NOT_FOUND,
                 message: messageConstant.USER_NOT_FOUND,
             });
         }
 
-        // Ensure charges are included in the populated fields
         const bookHistories: any = await BookHistory.find({ userID: user._id }).populate({
             path: 'userID bookID',
-            select: 'email firstname lastname bookID name charges', // Include charges
+            select: 'email firstname lastname bookID name charges',
         });
 
         if (!bookHistories || bookHistories.length === 0) {
-            return res.status(httpStatusConstant.NOT_FOUND).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.NOT_FOUND,
                 message: messageConstant.BOOK_HISTORY_NOT_FOUND,
             });
         }
@@ -336,7 +352,6 @@ const issueBookHistory: Controller = async (req: Request, res: Response, next: N
                 ? Math.ceil((submitDate.getTime() - issueDate.getTime()) / (1000 * 60 * 60 * 24))
                 : null;
 
-            // Access charges property from the populated bookID object
             const totalAmount = submitDate ? (usedDays || 1) * history.bookID.charges : null;
 
             return {
@@ -347,12 +362,18 @@ const issueBookHistory: Controller = async (req: Request, res: Response, next: N
             };
         });
 
-        return res.status(httpStatusConstant.OK).json({
-            status: true,
-            bookHistories: formattedHistories,
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.OK,
+            data: {
+                bookHistories: formattedHistories,
+            },
         });
-    } catch (error) {
-        throw error; // Or handle the error appropriately
+    } catch (error: any) {
+        loggerUtils.logger.error(error);
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
+            error,
+        });
     }
 };
 
@@ -364,33 +385,35 @@ const summaryAPI: Controller = async (req: Request, res: Response, next: NextFun
         const { email } = req.params;
         const user = await User.findOne({ email }, { _id: 1, paidAmount: 1, dueCharges: 1 });
         if (!user) {
-            return res.status(httpStatusConstant.NOT_FOUND).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.NOT_FOUND,
                 message: messageConstant.USER_NOT_FOUND,
             });
         }
-        // Total issued books
-        const totalIssuedBooks = await BookHistory.countDocuments({ userID: user._id });
 
-        // Total submitted books
+        const totalIssuedBooks = await BookHistory.countDocuments({ userID: user._id });
         const totalSubmittedBooks = await BookHistory.countDocuments({
             userID: user._id,
             submitDate: { $exists: true, $ne: null },
         });
-
-        // Total not submitted books
         const totalNotSubmittedBooks = totalIssuedBooks - totalSubmittedBooks;
 
-        return res.status(httpStatusConstant.OK).json({
-            status: true,
-            totalIssuedBooks,
-            totalSubmittedBooks,
-            totalNotSubmittedBooks,
-            totalPaidAmount: user.paidAmount,
-            totalDueCharges: user.dueCharges,
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.OK,
+            data: {
+                totalIssuedBooks,
+                totalSubmittedBooks,
+                totalNotSubmittedBooks,
+                totalPaidAmount: user.paidAmount,
+                totalDueCharges: user.dueCharges,
+            },
         });
-    } catch (error) {
-        throw error;
+    } catch (error: any) {
+        loggerUtils.logger.error(error);
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
+            error,
+        });
     }
 };
 

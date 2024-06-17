@@ -10,9 +10,9 @@ const compileEmailTemplate = async (templateName: string, data?: object) => {
         const templateContent = await fs.promises.readFile(templatePath, 'utf8');
 
         return ejs.render(templateContent, data, { async: true });
-    } catch (err) {
-        loggerUtils.logger.error(err);
-        throw Error('Failed to compile email template');
+    } catch (error: any) {
+        loggerUtils.logger.error('Error compiling email template:', error);
+        throw new Error('Failed to compile email template');
     }
 };
 

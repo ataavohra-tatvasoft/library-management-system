@@ -10,6 +10,7 @@ import {
     ejsCompilerUtils,
     helperFunctionsUtils,
     loggerUtils,
+    responseHandlerUtils,
     sendMailUtils,
 } from '../../utils';
 import { envConfig } from '../../config';
@@ -23,21 +24,20 @@ const login: Controller = async (req: Request, res: Response, next: NextFunction
 
         const user = await User.findOne({ email, isActive: true });
         if (!user) {
-            return res.status(httpStatusConstant.NOT_FOUND).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.NOT_FOUND,
                 message: messageConstant.USER_NOT_FOUND,
             });
         }
 
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid) {
-            return res.status(httpStatusConstant.UNAUTHORIZED).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.UNAUTHORIZED,
                 message: httpErrorMessageConstant.UNAUTHORIZED,
             });
         }
 
-        // Generate JWT access token with short expiration
         const accessToken = jwt.sign(
             {
                 _id: user._id,
@@ -50,7 +50,6 @@ const login: Controller = async (req: Request, res: Response, next: NextFunction
             }
         );
 
-        // Generate refresh token with longer expiration (store securely on server)
         const refreshToken = jwt.sign(
             {
                 _id: user._id,
@@ -65,13 +64,20 @@ const login: Controller = async (req: Request, res: Response, next: NextFunction
 
         await User.updateOne({ email: user.email }, { refreshToken });
 
-        return res.status(httpStatusConstant.OK).json({
-            status: true,
-            accessToken,
-            refreshToken,
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.OK,
+            data: {
+                accessToken,
+                refreshToken,
+            },
+            message: httpErrorMessageConstant.SUCCESSFUL,
         });
-    } catch (error) {
-        throw error;
+    } catch (error: any) {
+        loggerUtils.logger.info(error);
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
+            error,
+        });
     }
 };
 
@@ -80,39 +86,36 @@ const login: Controller = async (req: Request, res: Response, next: NextFunction
  */
 const refreshToken: Controller = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        // Validate authorization header and extract refresh token
         const { token } = await authUtils.validateAuthorizationHeader(req.headers);
         const radisClient = await authUtils.createRedisClient();
         const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
-        const key = `blocked:refresh:tokens`; // Customize key prefix (access or refresh)
+        const key = `blocked:refresh:tokens`;
         const isBlocked = await radisClient.sIsMember(key, hashedToken);
+
         if (isBlocked) {
-            return res.status(httpStatusConstant.UNAUTHORIZED).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.UNAUTHORIZED,
                 message: httpErrorMessageConstant.TOKEN_BLACKLISTED,
             });
         }
 
-        // Verify the JWT refresh token
         const verifiedToken = await authUtils.verifyRefreshToken(token);
 
         if (!(verifiedToken.tokenType == 'refresh')) {
-            return res.status(httpStatusConstant.INVALID_TOKEN).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.INVALID_TOKEN,
                 message: messageConstant.INVALID_TOKEN_TYPE,
             });
         }
 
-        // Find admin by user ID from the refresh token payload
         const user = await User.findOne({ email: verifiedToken.email });
         if (!user) {
-            return res.status(httpStatusConstant.NOT_FOUND).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.NOT_FOUND,
                 message: messageConstant.USER_NOT_FOUND,
             });
         }
 
-        // Generate a new access token with short expiration
         const newAccessToken = jwt.sign(
             {
                 _id: user._id,
@@ -125,15 +128,18 @@ const refreshToken: Controller = async (req: Request, res: Response, next: NextF
             }
         );
 
-        return res.status(httpStatusConstant.OK).json({
-            status: true,
-            accessToken: newAccessToken,
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.OK,
+            data: {
+                accessToken: newAccessToken,
+            },
+            message: httpErrorMessageConstant.SUCCESSFUL,
         });
     } catch (error: any) {
         loggerUtils.logger.error(error);
-        return res.status(httpStatusConstant.INTERNAL_SERVER_ERROR).json({
-            message: httpErrorMessageConstant.INTERNAL_SERVER_ERROR,
-            error: error.message,
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
+            error,
         });
     }
 };
@@ -144,19 +150,23 @@ const refreshToken: Controller = async (req: Request, res: Response, next: NextF
 const logout: Controller = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { accessToken, refreshToken } = req.body;
-        // Verify the JWT token
+
         await authUtils.verifyAccessToken(accessToken);
         await authUtils.verifyRefreshToken(refreshToken);
 
         await authUtils.blockToken(accessToken, 'access');
         await authUtils.blockToken(refreshToken, 'refresh');
 
-        return res.status(httpStatusConstant.OK).json({
-            status: true,
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.OK,
             message: httpErrorMessageConstant.SUCCESSFUL,
         });
-    } catch (error) {
-        throw error;
+    } catch (error: any) {
+        loggerUtils.logger.error(error);
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
+            error,
+        });
     }
 };
 
@@ -168,13 +178,13 @@ const forgotPassword: Controller = async (req: Request, res: Response, next: Nex
         const { email } = req.body;
 
         const user = await User.findOne({ email, isActive: true });
-
         if (!user) {
-            return res.status(httpStatusConstant.NOT_FOUND).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.NOT_FOUND,
                 message: messageConstant.USER_NOT_FOUND,
             });
         }
+
         const resetToken = crypto.createHash('sha256').update(email).digest('hex');
         const expireTime = Date.now() + 60 * 60 * 1000; // 1 hour
 
@@ -184,12 +194,16 @@ const forgotPassword: Controller = async (req: Request, res: Response, next: Nex
 
         await sendMailUtils.sendEmail({ to: email, subject: 'Reset Password Link', html: data });
 
-        return res.status(httpStatusConstant.OK).json({
-            status: true,
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.OK,
             message: httpErrorMessageConstant.SUCCESSFUL,
         });
-    } catch (error) {
-        throw error;
+    } catch (error: any) {
+        loggerUtils.logger.error(error);
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
+            error,
+        });
     }
 };
 
@@ -207,8 +221,8 @@ const resetPassword: Controller = async (req: Request, res: Response, next: Next
         });
 
         if (!user) {
-            return res.status(httpStatusConstant.NOT_FOUND).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.NOT_FOUND,
                 message: messageConstant.USER_NOT_FOUND,
             });
         }
@@ -225,12 +239,16 @@ const resetPassword: Controller = async (req: Request, res: Response, next: Next
             }
         );
 
-        return res.status(httpStatusConstant.OK).json({
-            status: true,
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.OK,
             message: httpErrorMessageConstant.SUCCESSFUL,
         });
-    } catch (error) {
-        throw error;
+    } catch (error: any) {
+        loggerUtils.logger.error(error);
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
+            error,
+        });
     }
 };
 
@@ -240,55 +258,57 @@ const resetPassword: Controller = async (req: Request, res: Response, next: Next
 const signup: Controller = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const {
-            body: {
-                email,
-                password,
-                firstname,
-                lastname,
-                dateOfBirth,
-                mobileNumber,
-                address,
-                city,
-                state,
-            },
-        } = req;
+            email,
+            password,
+            firstname,
+            lastname,
+            dateOfBirth,
+            mobileNumber,
+            address,
+            city,
+            state,
+        } = req.body;
 
-        // eslint-disable-next-line no-undef
         const salt = await bcrypt.genSalt(Number(envConfig.saltRounds));
-        const hashedPassword = password ? await bcrypt.hash(password, salt) : undefined;
+        const hashedPassword = await bcrypt.hash(password, salt);
 
-        const ageLimit = helperFunctionsUtils.validateAgeLimit(dateOfBirth);
-
-        if (ageLimit) {
-            const signupStatus = await User.create({
-                email,
-                password: hashedPassword,
-                firstname,
-                lastname,
-                dateOfBirth: new Date(dateOfBirth),
-                mobileNumber: BigInt(mobileNumber),
-                address,
-                city,
-                state,
-            });
-            if (!signupStatus) {
-                return res.status(httpStatusConstant.BAD_REQUEST).json({
-                    status: false,
-                    message: messageConstant.ERROR_SIGNING_USER,
-                });
-            }
-        } else {
-            return res.status(httpStatusConstant.BAD_REQUEST).json({
-                status: false,
+        const ageLimitValid = helperFunctionsUtils.validateAgeLimit(dateOfBirth);
+        if (!ageLimitValid) {
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.BAD_REQUEST,
                 message: messageConstant.INVALID_AGE,
             });
         }
-        return res.status(httpStatusConstant.OK).json({
-            status: true,
+
+        const signupStatus = await User.create({
+            email,
+            password: hashedPassword,
+            firstname,
+            lastname,
+            dateOfBirth: new Date(dateOfBirth),
+            mobileNumber: BigInt(mobileNumber),
+            address,
+            city,
+            state,
+        });
+
+        if (!signupStatus) {
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.BAD_REQUEST,
+                message: messageConstant.ERROR_SIGNING_USER,
+            });
+        }
+
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.OK,
             message: httpErrorMessageConstant.SUCCESSFUL,
         });
-    } catch (error) {
-        throw error;
+    } catch (error: any) {
+        loggerUtils.logger.error(error);
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
+            error,
+        });
     }
 };
 
@@ -300,24 +320,23 @@ const updateProfile: Controller = async (req: Request, res: Response, next: Next
         const { email } = req.params;
         const { password, firstname, lastname, dateOfBirth, mobileNumber, address, city, state } =
             req.body || {};
+
         const hashedPassword = password ? await bcrypt.hash(password, 10) : undefined;
 
         const userProfile = await User.findOne({ email });
-
         if (!userProfile) {
-            return res.status(httpStatusConstant.NOT_FOUND).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.NOT_FOUND,
                 message: messageConstant.USER_NOT_FOUND,
             });
         }
 
-        // Prepare update object with filtered and potentially hashed data
         const updateData = {
             ...(hashedPassword && { password: hashedPassword }),
             ...(firstname && { firstname }),
             ...(lastname && { lastname }),
-            ...(dateOfBirth && { dateOfBirth: new Date(dateOfBirth) }), // Assuming dateOfBirth is a string
-            ...(mobileNumber && { mobileNumber: BigInt(mobileNumber) }), // Assuming mobileNumber is a bigint
+            ...(dateOfBirth && { dateOfBirth: new Date(dateOfBirth) }),
+            ...(mobileNumber && { mobileNumber: BigInt(mobileNumber) }),
             ...(address && { address }),
             ...(city && { city }),
             ...(state && { state }),
@@ -326,18 +345,22 @@ const updateProfile: Controller = async (req: Request, res: Response, next: Next
         const updatedProfile = await User.findOneAndUpdate({ email }, updateData, { new: true });
 
         if (!updatedProfile) {
-            return res.status(httpStatusConstant.INTERNAL_SERVER_ERROR).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
                 message: messageConstant.ERROR_UPDATING_PROFILE,
             });
         }
 
-        return res.status(httpStatusConstant.OK).json({
-            status: true,
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.OK,
             message: httpErrorMessageConstant.SUCCESSFUL,
         });
-    } catch (error) {
-        throw error;
+    } catch (error: any) {
+        loggerUtils.logger.error(error);
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
+            error,
+        });
     }
 };
 

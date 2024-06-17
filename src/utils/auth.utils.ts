@@ -29,6 +29,7 @@ async function verifyAccessToken(token: string): Promise<VerifiedToken> {
     try {
         return jwt.verify(token, envConfig.jwtSecretKey as string) as VerifiedToken;
     } catch (error: any) {
+        loggerUtils.logger.error('Access Token Error:', error);
         if (error instanceof jwt.JsonWebTokenError) {
             if (error.name === 'TokenExpiredError') {
                 throw new Error('Access Token Expired');
@@ -44,6 +45,7 @@ async function verifyRefreshToken(token: string): Promise<VerifiedToken> {
     try {
         return jwt.verify(token, envConfig.jwtSecretKey as string) as VerifiedToken;
     } catch (error: any) {
+        loggerUtils.logger.error('Refresh Token Error:', error);
         if (error instanceof jwt.JsonWebTokenError) {
             if (error.name === 'TokenExpiredError') {
                 throw new Error('Refresh Token Expired, kindly login again.');
@@ -54,6 +56,7 @@ async function verifyRefreshToken(token: string): Promise<VerifiedToken> {
         throw error;
     }
 }
+
 async function createRedisClient() {
     try {
         const client = createClient({
@@ -66,22 +69,23 @@ async function createRedisClient() {
         await client.connect();
         loggerUtils.logger.info('Connected to Redis successfully');
         return client;
-    } catch (error) {
-        loggerUtils.logger.info('Error connecting to Redis:', error);
-        throw error; // Re-throw the error for handling in the calling context
+    } catch (error: any) {
+        loggerUtils.logger.error('Error connecting to Redis:', error);
+        throw error;
     }
 }
+
 async function blockToken(token: string, type: 'access' | 'refresh'): Promise<void> {
     try {
         const client = await createRedisClient();
         const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
-        const key = `blocked:${type}:tokens`; // Customize key prefix
+        const key = `blocked:${type}:tokens`;
 
         await client.sAdd(key, hashedToken);
-        await client.expire(key, 24 * 60 * 60); // Set expiration
+        await client.expire(key, 24 * 60 * 60);
 
         return Promise.resolve();
-    } catch (error) {
+    } catch (error: any) {
         loggerUtils.logger.error('Error blocking token:', error);
         throw error;
     }

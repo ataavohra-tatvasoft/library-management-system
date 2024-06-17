@@ -3,8 +3,7 @@ import ejsCompilerUtils from './ejsCompiler.utils';
 import helperFunctionsUtils from './helperFunctions.utils';
 import loggerUtils from './logger.utils';
 import sendMailUtils from './sendMail.utils';
-import errorHandlerUtils from './errorHandler.utils';
-import responseHandlerUtils from './errorHandler.utils';
+import responseHandlerUtils from './responseHandler.utils';
 
 export {
     authUtils,
@@ -12,6 +11,5 @@ export {
     helperFunctionsUtils,
     loggerUtils,
     sendMailUtils,
-    errorHandlerUtils,
     responseHandlerUtils,
 };

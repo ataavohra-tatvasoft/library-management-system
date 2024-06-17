@@ -27,6 +27,8 @@ export const messageConstant = {
     BOOK_OUT_OF_STOCK: 'Book out of stock',
     BOOK_LIMIT_EXCEEDED: 'User cannot have more than 5 books issued',
     BOOK_NOT_ISSUED: 'Book is not issued to this user!',
+    BOOK_SUBMIDATE_INVALID:
+        'Book is not issued to this user or submit date is invalid, kindly check!',
     SUBMIT_DATE_INVALID: 'Submit date cannot be before to the issue date',
     OUTSTANDING_DUE_CHARGES:
         'User has outstanding due charges. Please clear them before issuing a book.',

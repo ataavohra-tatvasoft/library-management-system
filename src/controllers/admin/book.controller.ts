@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { Book } from '../../db/models';
 import { Controller } from '../../interfaces';
 import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '../../constant';
+import { responseHandlerUtils } from '../../utils';
 
 /**
  * @description Adds a new book to the library (checks for duplicates).
@@ -22,8 +23,8 @@ const addBook: Controller = async (req: Request, res: Response, next: NextFuncti
 
         const existingBook = await Book.findOne({ bookID });
         if (existingBook) {
-            return res.status(httpStatusConstant.BAD_REQUEST).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.BAD_REQUEST,
                 message: messageConstant.BOOK_ALREADY_EXISTS,
             });
         }
@@ -37,18 +38,23 @@ const addBook: Controller = async (req: Request, res: Response, next: NextFuncti
             charges: Number(charges),
             description,
         });
+
         if (!newBook) {
-            return res.status(httpStatusConstant.BAD_REQUEST).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.BAD_REQUEST,
                 message: messageConstant.ERROR_CREATING_BOOK,
             });
         }
-        return res.status(httpStatusConstant.OK).json({
-            status: true,
+
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.OK,
             message: httpErrorMessageConstant.SUCCESSFUL,
         });
-    } catch (error) {
-        throw error;
+    } catch (error: any) {
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
+            error,
+        });
     }
 };
 
@@ -61,15 +67,14 @@ const bookList: Controller = async (req: Request, res: Response, next: NextFunct
 
         const pageNumber = Number(page) || 1;
         const limit = Number(pageSize) || 10;
-
         const skip = (pageNumber - 1) * limit;
 
-        const totalBooks = await Book.countDocuments({ isActive: true }); // Get total book count
+        const totalBooks = await Book.countDocuments({ isActive: true });
         const totalPages = Math.ceil(totalBooks / limit);
 
         if (pageNumber > totalPages) {
-            return res.status(httpStatusConstant.BAD_REQUEST).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.BAD_REQUEST,
                 message: messageConstant.INVALID_PAGE_NUMBER,
             });
         }
@@ -90,23 +95,29 @@ const bookList: Controller = async (req: Request, res: Response, next: NextFunct
             .limit(limit);
 
         if (!bookData) {
-            return res.status(httpStatusConstant.BAD_REQUEST).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.BAD_REQUEST,
                 message: messageConstant.ERROR_LISTING_BOOK,
             });
         }
 
-        return res.status(httpStatusConstant.OK).json({
-            status: true,
-            bookData,
-            pagination: {
-                page: pageNumber,
-                pageSize: limit,
-                totalPages,
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.OK,
+            data: {
+                bookData,
+                pagination: {
+                    page: pageNumber,
+                    pageSize: limit,
+                    totalPages,
+                },
             },
+            message: httpErrorMessageConstant.SUCCESSFUL,
         });
-    } catch (error) {
-        throw error;
+    } catch (error: any) {
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
+            error,
+        });
     }
 };
 
@@ -129,8 +140,8 @@ const updateBook: Controller = async (req: Request, res: Response, next: NextFun
         const bookExists = await Book.findOne({ bookID });
 
         if (!bookExists) {
-            return res.status(httpStatusConstant.NOT_FOUND).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.NOT_FOUND,
                 message: messageConstant.BOOK_NOT_FOUND,
             });
         }
@@ -145,22 +156,24 @@ const updateBook: Controller = async (req: Request, res: Response, next: NextFun
             ...(description && { description }),
         };
 
-        // Update admin profile and return the updated document
         const updatedBook = await Book.findOneAndUpdate({ bookID }, updateData, { new: true });
 
         if (!updatedBook) {
-            return res.status(httpStatusConstant.INTERNAL_SERVER_ERROR).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
                 message: messageConstant.ERROR_UPDATING_BOOK,
             });
         }
 
-        return res.status(httpStatusConstant.OK).json({
-            status: true,
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.OK,
             message: httpErrorMessageConstant.SUCCESSFUL,
         });
-    } catch (error) {
-        throw error;
+    } catch (error: any) {
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
+            error,
+        });
     }
 };
 
@@ -173,8 +186,8 @@ const softDeleteBook: Controller = async (req: Request, res: Response, next: Nex
 
         const bookExists = await Book.findOne({ bookID, isActive: true });
         if (!bookExists) {
-            return res.status(httpStatusConstant.BAD_REQUEST).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.BAD_REQUEST,
                 message: messageConstant.BOOK_NOT_EXISTS,
             });
         }
@@ -182,22 +195,25 @@ const softDeleteBook: Controller = async (req: Request, res: Response, next: Nex
         const updatedBook = await Book.findOneAndUpdate(
             { bookID },
             { $set: { isActive: false } },
-            { new: true } // Return the updated document
+            { new: true }
         );
 
         if (!updatedBook) {
-            return res.status(httpStatusConstant.NOT_FOUND).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.NOT_FOUND,
                 message: messageConstant.ERROR_DELETING_BOOK,
             });
         }
 
-        return res.status(httpStatusConstant.OK).json({
-            status: true,
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.OK,
             message: messageConstant.BOOK_DELETED_SOFT,
         });
-    } catch (error) {
-        throw error;
+    } catch (error: any) {
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
+            error,
+        });
     }
 };
 
@@ -210,26 +226,29 @@ const hardDeleteBook: Controller = async (req: Request, res: Response, next: Nex
 
         const bookExists = await Book.findOne({ bookID });
         if (!bookExists) {
-            return res.status(httpStatusConstant.BAD_REQUEST).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.BAD_REQUEST,
                 message: messageConstant.BOOK_NOT_EXISTS,
             });
         }
 
         const deletedBook = await Book.deleteOne({ bookID });
         if (!deletedBook) {
-            return res.status(httpStatusConstant.NOT_FOUND).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.NOT_FOUND,
                 message: messageConstant.ERROR_DELETING_BOOK,
             });
         }
 
-        return res.status(httpStatusConstant.OK).json({
-            status: true,
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.OK,
             message: messageConstant.BOOK_DELETED_HARD,
         });
-    } catch (error) {
-        throw error;
+    } catch (error: any) {
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
+            error,
+        });
     }
 };
 

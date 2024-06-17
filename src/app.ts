@@ -1,10 +1,9 @@
-import express, { Express } from 'express';
+import express, { Express, Request, Response, NextFunction } from 'express';
 import bodyParser from 'body-parser';
 import { dbConfig, envConfig } from './config';
-import { messageConstant } from './constant';
+import { httpStatusConstant, messageConstant } from './constant';
 import routes from './routes';
-import { errors } from 'celebrate';
-import { errorHandlerUtils, loggerUtils } from './utils';
+import { loggerUtils, responseHandlerUtils } from './utils';
 
 const app: Express = express();
 (async () => {
@@ -25,7 +24,11 @@ app.use(
 );
 app.use(bodyParser.json());
 app.use(routes);
-app.use(errors());
-app.use(errorHandlerUtils.errorHandler);
+app.use((error: any, req: Request, res: Response, next: NextFunction) => {
+    return responseHandlerUtils.responseHandler(res, {
+        statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
+        error,
+    });
+});
 
 app.listen(envConfig.serverPort);

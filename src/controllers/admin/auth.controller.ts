@@ -18,16 +18,16 @@ const login: Controller = async (req: Request, res: Response, next: NextFunction
 
         const admin = await Admin.findOne({ email, isActive: true });
         if (!admin) {
-            return res.status(httpStatusConstant.NOT_FOUND).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.NOT_FOUND,
                 message: messageConstant.ADMIN_NOT_FOUND,
             });
         }
 
         const isPasswordValid = await bcrypt.compare(password, admin.password);
         if (!isPasswordValid) {
-            return res.status(httpStatusConstant.UNAUTHORIZED).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.UNAUTHORIZED,
                 message: httpErrorMessageConstant.UNAUTHORIZED,
             });
         }
@@ -60,23 +60,16 @@ const login: Controller = async (req: Request, res: Response, next: NextFunction
 
         await Admin.updateOne({ email: admin.email }, { refreshToken });
 
-        return await responseHandlerUtils.responseHandler(
-            res,
-            httpStatusConstant.OK,
-            {
-                accessToken,
-                refreshToken,
-            },
-            httpErrorMessageConstant.SUCCESSFUL
-        );
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.OK,
+            data: { accessToken, refreshToken },
+            message: httpErrorMessageConstant.SUCCESSFUL,
+        });
     } catch (error: any) {
-        return await responseHandlerUtils.responseHandler(
-            res,
-            httpStatusConstant.INTERNAL_SERVER_ERROR,
-            null,
-            null,
-            error
-        );
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
+            error,
+        });
     }
 };
 
@@ -92,34 +85,29 @@ const refreshToken: Controller = async (req: Request, res: Response, next: NextF
         const key = `blocked:refresh:tokens`; // Customize key prefix (access or refresh)
         const isBlocked = await radisClient.sIsMember(key, hashedToken);
         if (isBlocked) {
-            return await responseHandlerUtils.responseHandler(
-                res,
-                httpStatusConstant.UNAUTHORIZED,
-                null,
-                httpErrorMessageConstant.TOKEN_BLACKLISTED
-            );
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.UNAUTHORIZED,
+                message: httpErrorMessageConstant.TOKEN_BLACKLISTED,
+            });
         }
+
         // Verify the JWT refresh token
         const verifiedToken = await authUtils.verifyRefreshToken(token);
 
-        if (!(verifiedToken.tokenType == 'refresh')) {
-            return await responseHandlerUtils.responseHandler(
-                res,
-                httpStatusConstant.INVALID_TOKEN,
-                null,
-                messageConstant.INVALID_TOKEN_TYPE
-            );
+        if (verifiedToken.tokenType !== 'refresh') {
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.INVALID_TOKEN,
+                message: messageConstant.INVALID_TOKEN_TYPE,
+            });
         }
 
         // Find admin by user ID from the refresh token payload
         const admin = await Admin.findOne({ email: verifiedToken.email });
         if (!admin) {
-            return await responseHandlerUtils.responseHandler(
-                res,
-                httpStatusConstant.NOT_FOUND,
-                null,
-                messageConstant.ADMIN_NOT_FOUND
-            );
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.NOT_FOUND,
+                message: messageConstant.ADMIN_NOT_FOUND,
+            });
         }
 
         // Generate a new access token with short expiration
@@ -135,22 +123,16 @@ const refreshToken: Controller = async (req: Request, res: Response, next: NextF
             }
         );
 
-        return await responseHandlerUtils.responseHandler(
-            res,
-            httpStatusConstant.OK,
-            {
-                newAccessToken,
-            },
-            httpErrorMessageConstant.SUCCESSFUL
-        );
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.OK,
+            data: { newAccessToken },
+            message: httpErrorMessageConstant.SUCCESSFUL,
+        });
     } catch (error: any) {
-        return await responseHandlerUtils.responseHandler(
-            res,
-            httpStatusConstant.INTERNAL_SERVER_ERROR,
-            null,
-            null,
-            error
-        );
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
+            error,
+        });
     }
 };
 
@@ -160,19 +142,24 @@ const refreshToken: Controller = async (req: Request, res: Response, next: NextF
 const logout: Controller = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { accessToken, refreshToken } = req.body;
-        // Verify the JWT token
+
+        // Verify the JWT tokens
         await authUtils.verifyAccessToken(accessToken);
         await authUtils.verifyRefreshToken(refreshToken);
 
+        // Block the tokens
         await authUtils.blockToken(accessToken, 'access');
         await authUtils.blockToken(refreshToken, 'refresh');
 
-        return res.status(httpStatusConstant.OK).json({
-            status: true,
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.OK,
             message: httpErrorMessageConstant.SUCCESSFUL,
         });
-    } catch (error) {
-        throw error;
+    } catch (error: any) {
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
+            error,
+        });
     }
 };
 
@@ -184,13 +171,13 @@ const forgotPassword: Controller = async (req: Request, res: Response, next: Nex
         const { email } = req.body;
 
         const admin = await Admin.findOne({ email, isActive: true });
-
         if (!admin) {
-            return res.status(httpStatusConstant.NOT_FOUND).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.NOT_FOUND,
                 message: messageConstant.ADMIN_NOT_FOUND,
             });
         }
+
         const resetToken = crypto.createHash('sha256').update(email).digest('hex');
         const expireTime = Date.now() + 60 * 60 * 1000; // 1 hour
 
@@ -204,12 +191,15 @@ const forgotPassword: Controller = async (req: Request, res: Response, next: Nex
             html: data,
         });
 
-        return res.status(httpStatusConstant.OK).json({
-            status: true,
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.OK,
             message: httpErrorMessageConstant.SUCCESSFUL,
         });
-    } catch (error) {
-        throw error;
+    } catch (error: any) {
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
+            error,
+        });
     }
 };
 
@@ -227,8 +217,8 @@ const resetPassword: Controller = async (req: Request, res: Response, next: Next
         });
 
         if (!admin) {
-            return res.status(httpStatusConstant.NOT_FOUND).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.NOT_FOUND,
                 message: messageConstant.ADMIN_NOT_FOUND,
             });
         }
@@ -245,12 +235,15 @@ const resetPassword: Controller = async (req: Request, res: Response, next: Next
             }
         );
 
-        return res.status(httpStatusConstant.OK).json({
-            status: true,
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.OK,
             message: httpErrorMessageConstant.SUCCESSFUL,
         });
-    } catch (error) {
-        throw error;
+    } catch (error: any) {
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
+            error,
+        });
     }
 };
 
@@ -267,8 +260,8 @@ const updateProfile: Controller = async (req: Request, res: Response, next: Next
         const adminProfile = await Admin.findOne({ email });
 
         if (!adminProfile) {
-            return res.status(httpStatusConstant.NOT_FOUND).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.NOT_FOUND,
                 message: messageConstant.ADMIN_NOT_FOUND,
             });
         }
@@ -289,18 +282,21 @@ const updateProfile: Controller = async (req: Request, res: Response, next: Next
         const updatedProfile = await Admin.findOneAndUpdate({ email }, updateData, { new: true });
 
         if (!updatedProfile) {
-            return res.status(httpStatusConstant.INTERNAL_SERVER_ERROR).json({
-                status: false,
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
                 message: messageConstant.ERROR_UPDATING_PROFILE,
             });
         }
 
-        return res.status(httpStatusConstant.OK).json({
-            status: true,
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.OK,
             message: httpErrorMessageConstant.SUCCESSFUL,
         });
-    } catch (error) {
-        throw error;
+    } catch (error: any) {
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
+            error,
+        });
     }
 };
 

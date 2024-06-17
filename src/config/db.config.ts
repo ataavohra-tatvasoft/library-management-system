@@ -14,14 +14,10 @@ async function connectToDatabase() {
 
         loggerUtils.logger.info(`${messageConstant.DB_CONNECTED}`);
         loggerUtils.logger.info(`Host: ${conn.connection.host}`);
-    } catch (error) {
-        handleError(error);
+    } catch (error: any) {
+        loggerUtils.logger.error(error.message);
+        throw new Error(messageConstant.CONNECTION_ERROR);
     }
-}
-function handleError(error: unknown) {
-    const typedError = error as Error;
-    loggerUtils.logger.error(typedError.message);
-    throw new Error(messageConstant.CONNECTION_ERROR);
 }
 
 export default { connectToDatabase };
