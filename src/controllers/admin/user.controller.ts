@@ -57,11 +57,8 @@ const addUser: Controller = async (req: Request, res: Response, next: NextFuncti
             statusCode: httpStatusConstant.OK,
             message: httpErrorMessageConstant.SUCCESSFUL,
         });
-    } catch (error: any) {
-        return responseHandlerUtils.responseHandler(res, {
-            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
-            error,
-        });
+    } catch (error) {
+        return next(error);
     }
 };
 
@@ -129,11 +126,8 @@ const userList: Controller = async (req: Request, res: Response, next: NextFunct
             },
             message: httpErrorMessageConstant.SUCCESSFUL,
         });
-    } catch (error: any) {
-        return responseHandlerUtils.responseHandler(res, {
-            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
-            error,
-        });
+    } catch (error) {
+        return next(error);
     }
 };
 
@@ -178,11 +172,8 @@ const updateUser: Controller = async (req: Request, res: Response, next: NextFun
             statusCode: httpStatusConstant.OK,
             message: httpErrorMessageConstant.SUCCESSFUL,
         });
-    } catch (error: any) {
-        return responseHandlerUtils.responseHandler(res, {
-            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
-            error,
-        });
+    } catch (error) {
+        return next(error);
     }
 };
 
@@ -218,11 +209,8 @@ const softDeleteUser: Controller = async (req: Request, res: Response, next: Nex
             statusCode: httpStatusConstant.OK,
             message: messageConstant.USER_DELETED_SOFT,
         });
-    } catch (error: any) {
-        return responseHandlerUtils.responseHandler(res, {
-            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
-            error,
-        });
+    } catch (error) {
+        return next(error);
     }
 };
 
@@ -253,11 +241,8 @@ const hardDeleteUser: Controller = async (req: Request, res: Response, next: Nex
             statusCode: httpStatusConstant.OK,
             message: messageConstant.USER_DELETED_HARD,
         });
-    } catch (error: any) {
-        return responseHandlerUtils.responseHandler(res, {
-            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
-            error,
-        });
+    } catch (error) {
+        return next(error);
     }
 };
 

@@ -93,11 +93,8 @@ const issueBookList: Controller = async (req: Request, res: Response, next: Next
             },
             message: httpErrorMessageConstant.SUCCESSFUL,
         });
-    } catch (error: any) {
-        return responseHandlerUtils.responseHandler(res, {
-            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
-            error,
-        });
+    } catch (error) {
+        return next(error);
     }
 };
 
@@ -224,11 +221,8 @@ const issueBook: Controller = async (req: Request, res: Response, next: NextFunc
             statusCode: httpStatusConstant.OK,
             message: httpErrorMessageConstant.SUCCESSFUL,
         });
-    } catch (error: any) {
-        return responseHandlerUtils.responseHandler(res, {
-            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
-            error,
-        });
+    } catch (error) {
+        return next(error);
     }
 };
 
@@ -266,7 +260,20 @@ const submitBook: Controller = async (req: Request, res: Response, next: NextFun
         if (!issuedBook) {
             return responseHandlerUtils.responseHandler(res, {
                 statusCode: httpStatusConstant.BAD_REQUEST,
-                message: messageConstant.BOOK_SUBMIDATE_INVALID,
+                message: messageConstant.BOOK_NOT_ISSUED,
+            });
+        }
+
+        const submitDateCheck = user.books.find(
+            (issuedBookEntry) =>
+                String(issuedBookEntry.bookId) === String(book._id) &&
+                issuedBookEntry.issueDate <= submitDateObject
+        );
+
+        if (!submitDateCheck) {
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.BAD_REQUEST,
+                message: messageConstant.SUBMIDATE_INVALID,
             });
         }
 
@@ -284,7 +291,7 @@ const submitBook: Controller = async (req: Request, res: Response, next: NextFun
             if (!userUpdateStatus.modifiedCount) {
                 return responseHandlerUtils.responseHandler(res, {
                     statusCode: httpStatusConstant.BAD_REQUEST,
-                    message: messageConstant.ERROR_UPDATING_USER,
+                    message: messageConstant.ERROR_UPDATING_DUE_CHARGES_IN_USER,
                 });
             }
         } else {
@@ -305,7 +312,7 @@ const submitBook: Controller = async (req: Request, res: Response, next: NextFun
         if (!deletedBook) {
             return responseHandlerUtils.responseHandler(res, {
                 statusCode: httpStatusConstant.BAD_REQUEST,
-                message: messageConstant.BOOK_NOT_FOUND,
+                message: messageConstant.ERROR_DELETING_BOOK,
             });
         }
 
@@ -344,16 +351,14 @@ const submitBook: Controller = async (req: Request, res: Response, next: NextFun
         const totalCharge = await User.findOne({ email }, { _id: 0, dueCharges: 1 });
 
         const message = `Due charges: Rs. ${totalCharge?.dueCharges || 0}. Kindly pay after submission of the book.`;
+
         return responseHandlerUtils.responseHandler(res, {
             statusCode: httpStatusConstant.OK,
             data: { note: message },
             message: httpErrorMessageConstant.SUCCESSFUL,
         });
-    } catch (error: any) {
-        return responseHandlerUtils.responseHandler(res, {
-            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
-            error,
-        });
+    } catch (error) {
+        return next(error);
     }
 };
 

@@ -9,7 +9,6 @@ import {
     authUtils,
     ejsCompilerUtils,
     helperFunctionsUtils,
-    loggerUtils,
     responseHandlerUtils,
     sendMailUtils,
 } from '../../utils';
@@ -72,26 +71,23 @@ const login: Controller = async (req: Request, res: Response, next: NextFunction
             },
             message: httpErrorMessageConstant.SUCCESSFUL,
         });
-    } catch (error: any) {
-        loggerUtils.logger.info(error);
-        return responseHandlerUtils.responseHandler(res, {
-            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
-            error,
-        });
+    } catch (error) {
+        return next(error);
     }
 };
 
 /**
  * @description Refreshes user access token upon valid refresh token verification.
  */
-const refreshToken: Controller = async (req: Request, res: Response, next: NextFunction) => {
+const newAccessToken: Controller = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { token } = await authUtils.validateAuthorizationHeader(req.headers);
+
         const radisClient = await authUtils.createRedisClient();
         const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
         const key = `blocked:refresh:tokens`;
-        const isBlocked = await radisClient.sIsMember(key, hashedToken);
 
+        const isBlocked = await radisClient.sIsMember(key, hashedToken);
         if (isBlocked) {
             return responseHandlerUtils.responseHandler(res, {
                 statusCode: httpStatusConstant.UNAUTHORIZED,
@@ -100,7 +96,6 @@ const refreshToken: Controller = async (req: Request, res: Response, next: NextF
         }
 
         const verifiedToken = await authUtils.verifyRefreshToken(token);
-
         if (!(verifiedToken.tokenType == 'refresh')) {
             return responseHandlerUtils.responseHandler(res, {
                 statusCode: httpStatusConstant.INVALID_TOKEN,
@@ -135,12 +130,8 @@ const refreshToken: Controller = async (req: Request, res: Response, next: NextF
             },
             message: httpErrorMessageConstant.SUCCESSFUL,
         });
-    } catch (error: any) {
-        loggerUtils.logger.error(error);
-        return responseHandlerUtils.responseHandler(res, {
-            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
-            error,
-        });
+    } catch (error) {
+        return next(error);
     }
 };
 
@@ -151,9 +142,11 @@ const logout: Controller = async (req: Request, res: Response, next: NextFunctio
     try {
         const { accessToken, refreshToken } = req.body;
 
-        await authUtils.verifyAccessToken(accessToken);
+        // Verify the JWT tokens
         await authUtils.verifyRefreshToken(refreshToken);
+        await authUtils.verifyAccessToken(accessToken);
 
+        // Block the tokens
         await authUtils.blockToken(accessToken, 'access');
         await authUtils.blockToken(refreshToken, 'refresh');
 
@@ -161,12 +154,8 @@ const logout: Controller = async (req: Request, res: Response, next: NextFunctio
             statusCode: httpStatusConstant.OK,
             message: httpErrorMessageConstant.SUCCESSFUL,
         });
-    } catch (error: any) {
-        loggerUtils.logger.error(error);
-        return responseHandlerUtils.responseHandler(res, {
-            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
-            error,
-        });
+    } catch (error) {
+        return next(error);
     }
 };
 
@@ -198,12 +187,8 @@ const forgotPassword: Controller = async (req: Request, res: Response, next: Nex
             statusCode: httpStatusConstant.OK,
             message: httpErrorMessageConstant.SUCCESSFUL,
         });
-    } catch (error: any) {
-        loggerUtils.logger.error(error);
-        return responseHandlerUtils.responseHandler(res, {
-            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
-            error,
-        });
+    } catch (error) {
+        return next(error);
     }
 };
 
@@ -223,7 +208,7 @@ const resetPassword: Controller = async (req: Request, res: Response, next: Next
         if (!user) {
             return responseHandlerUtils.responseHandler(res, {
                 statusCode: httpStatusConstant.NOT_FOUND,
-                message: messageConstant.USER_NOT_FOUND,
+                message: messageConstant.INVALID_RESET_TOKEN,
             });
         }
 
@@ -243,12 +228,8 @@ const resetPassword: Controller = async (req: Request, res: Response, next: Next
             statusCode: httpStatusConstant.OK,
             message: httpErrorMessageConstant.SUCCESSFUL,
         });
-    } catch (error: any) {
-        loggerUtils.logger.error(error);
-        return responseHandlerUtils.responseHandler(res, {
-            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
-            error,
-        });
+    } catch (error) {
+        return next(error);
     }
 };
 
@@ -303,12 +284,8 @@ const signup: Controller = async (req: Request, res: Response, next: NextFunctio
             statusCode: httpStatusConstant.OK,
             message: httpErrorMessageConstant.SUCCESSFUL,
         });
-    } catch (error: any) {
-        loggerUtils.logger.error(error);
-        return responseHandlerUtils.responseHandler(res, {
-            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
-            error,
-        });
+    } catch (error) {
+        return next(error);
     }
 };
 
@@ -355,18 +332,14 @@ const updateProfile: Controller = async (req: Request, res: Response, next: Next
             statusCode: httpStatusConstant.OK,
             message: httpErrorMessageConstant.SUCCESSFUL,
         });
-    } catch (error: any) {
-        loggerUtils.logger.error(error);
-        return responseHandlerUtils.responseHandler(res, {
-            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
-            error,
-        });
+    } catch (error) {
+        return next(error);
     }
 };
 
 export default {
     login,
-    refreshToken,
+    newAccessToken,
     logout,
     forgotPassword,
     resetPassword,

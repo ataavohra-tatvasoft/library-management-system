@@ -115,12 +115,8 @@ const searchBook: Controller = async (req: Request, res: Response, next: NextFun
                 },
             },
         });
-    } catch (error: any) {
-        loggerUtils.logger.error(error);
-        return responseHandlerUtils.responseHandler(res, {
-            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
-            error,
-        });
+    } catch (error) {
+        return next(error);
     }
 };
 
@@ -261,12 +257,8 @@ const addReview: Controller = async (req: Request, res: Response, next: NextFunc
             statusCode: httpStatusConstant.OK,
             message: httpErrorMessageConstant.SUCCESSFUL,
         });
-    } catch (error: any) {
-        loggerUtils.logger.error(error);
-        return responseHandlerUtils.responseHandler(res, {
-            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
-            error,
-        });
+    } catch (error) {
+        return next(error);
     }
 };
 
@@ -309,12 +301,8 @@ const addRating: Controller = async (req: Request, res: Response, next: NextFunc
             statusCode: httpStatusConstant.OK,
             message: httpErrorMessageConstant.SUCCESSFUL,
         });
-    } catch (error: any) {
-        loggerUtils.logger.error(error);
-        return responseHandlerUtils.responseHandler(res, {
-            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
-            error,
-        });
+    } catch (error) {
+        return next(error);
     }
 };
 
@@ -333,7 +321,7 @@ const issueBookHistory: Controller = async (req: Request, res: Response, next: N
             });
         }
 
-        const bookHistories: any = await BookHistory.find({ userID: user._id }).populate({
+        const bookHistories = await BookHistory.find({ userID: user._id }).populate({
             path: 'userID bookID',
             select: 'email firstname lastname bookID name charges',
         });
@@ -352,7 +340,7 @@ const issueBookHistory: Controller = async (req: Request, res: Response, next: N
                 ? Math.ceil((submitDate.getTime() - issueDate.getTime()) / (1000 * 60 * 60 * 24))
                 : null;
 
-            const totalAmount = submitDate ? (usedDays || 1) * history.bookID.charges : null;
+            const totalAmount = submitDate ? (usedDays || 0) * history.bookID.charges : null;
 
             return {
                 issueDate,
@@ -368,12 +356,8 @@ const issueBookHistory: Controller = async (req: Request, res: Response, next: N
                 bookHistories: formattedHistories,
             },
         });
-    } catch (error: any) {
-        loggerUtils.logger.error(error);
-        return responseHandlerUtils.responseHandler(res, {
-            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
-            error,
-        });
+    } catch (error) {
+        return next(error);
     }
 };
 
@@ -408,12 +392,8 @@ const summaryAPI: Controller = async (req: Request, res: Response, next: NextFun
                 totalDueCharges: user.dueCharges,
             },
         });
-    } catch (error: any) {
-        loggerUtils.logger.error(error);
-        return responseHandlerUtils.responseHandler(res, {
-            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
-            error,
-        });
+    } catch (error) {
+        return next(error);
     }
 };
 

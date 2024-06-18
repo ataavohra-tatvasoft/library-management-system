@@ -2,12 +2,12 @@ import { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
 import { Admin } from '../db/models';
 import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '../constant';
-import { authUtils, loggerUtils } from '../utils';
+import { authUtils } from '../utils';
 
 const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const radisClient = await authUtils.createRedisClient();
         const { token } = await authUtils.validateAuthorizationHeader(req.headers);
+        const radisClient = await authUtils.createRedisClient();
         const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
         const key = `blocked:access:tokens`; // Customize key prefix (access or refresh)
         const isBlocked = await radisClient.sIsMember(key, hashedToken);
@@ -35,12 +35,8 @@ const authMiddleware = async (req: Request, res: Response, next: NextFunction) =
             });
         }
         next();
-    } catch (error: any) {
-        loggerUtils.logger.error(error);
-        return res.status(httpStatusConstant.INTERNAL_SERVER_ERROR).json({
-            message: httpErrorMessageConstant.INTERNAL_SERVER_ERROR,
-            error: error.message,
-        });
+    } catch (error) {
+        return next(error);
     }
 };
 

@@ -7,7 +7,7 @@ import { userAuthMiddleware } from '../../middlewares';
 const router: Router = express.Router();
 
 router.post('/login', celebrate(userAuthSchema.login), userAuthController.login);
-router.get('/get-access-token', userAuthController.refreshToken);
+router.get('/get-access-token', userAuthController.newAccessToken);
 router.post('/logout', userAuthMiddleware.authMiddleware, userAuthController.logout);
 router.post(
     '/forgot-password',

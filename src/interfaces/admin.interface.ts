@@ -12,6 +12,5 @@ export interface IAdmin {
     state: string;
     resetToken: string;
     resetTokenExpiry: BigInt;
-    refreshToken: string;
     isActive: Boolean;
 }

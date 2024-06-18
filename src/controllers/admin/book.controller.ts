@@ -50,11 +50,8 @@ const addBook: Controller = async (req: Request, res: Response, next: NextFuncti
             statusCode: httpStatusConstant.OK,
             message: httpErrorMessageConstant.SUCCESSFUL,
         });
-    } catch (error: any) {
-        return responseHandlerUtils.responseHandler(res, {
-            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
-            error,
-        });
+    } catch (error) {
+        return next(error);
     }
 };
 
@@ -113,11 +110,8 @@ const bookList: Controller = async (req: Request, res: Response, next: NextFunct
             },
             message: httpErrorMessageConstant.SUCCESSFUL,
         });
-    } catch (error: any) {
-        return responseHandlerUtils.responseHandler(res, {
-            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
-            error,
-        });
+    } catch (error) {
+        return next(error);
     }
 };
 
@@ -169,11 +163,8 @@ const updateBook: Controller = async (req: Request, res: Response, next: NextFun
             statusCode: httpStatusConstant.OK,
             message: httpErrorMessageConstant.SUCCESSFUL,
         });
-    } catch (error: any) {
-        return responseHandlerUtils.responseHandler(res, {
-            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
-            error,
-        });
+    } catch (error) {
+        return next(error);
     }
 };
 
@@ -209,11 +200,8 @@ const softDeleteBook: Controller = async (req: Request, res: Response, next: Nex
             statusCode: httpStatusConstant.OK,
             message: messageConstant.BOOK_DELETED_SOFT,
         });
-    } catch (error: any) {
-        return responseHandlerUtils.responseHandler(res, {
-            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
-            error,
-        });
+    } catch (error) {
+        return next(error);
     }
 };
 
@@ -244,11 +232,8 @@ const hardDeleteBook: Controller = async (req: Request, res: Response, next: Nex
             statusCode: httpStatusConstant.OK,
             message: messageConstant.BOOK_DELETED_HARD,
         });
-    } catch (error: any) {
-        return responseHandlerUtils.responseHandler(res, {
-            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
-            error,
-        });
+    } catch (error) {
+        return next(error);
     }
 };
 

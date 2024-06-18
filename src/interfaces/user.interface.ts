@@ -16,7 +16,6 @@ export interface IUser {
     dueCharges: Number;
     resetToken: string;
     resetTokenExpiry: BigInt;
-    refreshToken: string;
     isActive: Boolean;
     books: INestedBook[];
 }

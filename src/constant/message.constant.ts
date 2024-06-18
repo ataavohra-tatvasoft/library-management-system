@@ -27,8 +27,7 @@ export const messageConstant = {
     BOOK_OUT_OF_STOCK: 'Book out of stock',
     BOOK_LIMIT_EXCEEDED: 'User cannot have more than 5 books issued',
     BOOK_NOT_ISSUED: 'Book is not issued to this user!',
-    BOOK_SUBMIDATE_INVALID:
-        'Book is not issued to this user or submit date is invalid, kindly check!',
+    SUBMIDATE_INVALID: 'submit date is invalid, kindly check!',
     SUBMIT_DATE_INVALID: 'Submit date cannot be before to the issue date',
     OUTSTANDING_DUE_CHARGES:
         'User has outstanding due charges. Please clear them before issuing a book.',
@@ -39,6 +38,12 @@ export const messageConstant = {
     BOOK_HISTORY_NOT_FOUND: 'Book history not found!',
     NO_ISSUED_BOOK_FOUND: 'No issued books found!',
     INVALID_PAGE_NUMBER: 'Page number must be less than total pages',
+    INVALID_ACCESS_TOKEN: 'Invalid access token',
+    INVALID_REFRESH_TOKEN: 'Invalid refresh token',
+    INVALID_HEADER: 'Invalid header',
+    INVALID_DATE_FORMAT: 'Invalid date format',
     CANNOT_ISSUE_SAME_BOOK: 'User cannot issue the same book again!',
     INVALID_TOKEN_TYPE: 'Invalid token type',
+    INVALID_RESET_TOKEN: 'Invalid reset token',
+    ERROR_UPDATING_DUE_CHARGES_IN_USER: 'Error while updating due charges in user',
 };

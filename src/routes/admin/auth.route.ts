@@ -7,10 +7,9 @@ import { adminAuthMiddleware } from '../../middlewares';
 const router: Router = express.Router();
 
 router.post('/login', celebrate(adminAuthSchema.login), adminAuthController.login);
-router.get('/get-access-token', adminAuthController.refreshToken);
+router.get('/get-access-token', adminAuthController.newAccessToken);
 router.post(
     '/logout',
-    adminAuthMiddleware.authMiddleware,
     adminAuthController.logout
 );
 router.post(

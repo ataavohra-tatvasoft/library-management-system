@@ -128,6 +128,30 @@ const seedData = async () => {
                 numberOfFreeDays: 9,
                 description: 'This is the description of the Book 4',
             },
+            {
+                bookID: helperFunctionsUtils.generatePlaceholderbookID(),
+                name: 'Book 5',
+                author: 'Author 5',
+                charges: 145,
+                issueCount: 40,
+                submitCount: 30,
+                publishedDate: new Date('2024-04-20'),
+                quantityAvailable: 30,
+                numberOfFreeDays: 9,
+                description: 'This is the description of the Book 5',
+            },
+            {
+                bookID: helperFunctionsUtils.generatePlaceholderbookID(),
+                name: 'Book 6',
+                author: 'Author 6',
+                charges: 155,
+                issueCount: 45,
+                submitCount: 35,
+                publishedDate: new Date('2024-04-20'),
+                quantityAvailable: 30,
+                numberOfFreeDays: 9,
+                description: 'This is the description of the Book 6',
+            },
         ];
 
         // Insert books in bulk for efficiency

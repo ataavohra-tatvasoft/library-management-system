@@ -53,10 +53,6 @@ const userSchema: Schema = new Schema<IUser, UserModel>({
         type: BigInt,
         allownull: true,
     },
-    refreshToken: {
-        type: String,
-        allownull: true,
-    },
     isActive: {
         type: Boolean,
         allownull: false,
