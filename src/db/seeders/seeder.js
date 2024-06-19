@@ -171,6 +171,11 @@ const seedData = async () => {
                 imageName: 'coverImage',
             },
             {
+                bookID: insertedBooks[0]._id,
+                imagePath: '../../public/images/book1_new.jpg',
+                imageName: 'demo',
+            },
+            {
                 bookID: insertedBooks[1]._id,
                 imagePath: '../../public/images/book2.jpg',
                 imageName: 'coverImage',

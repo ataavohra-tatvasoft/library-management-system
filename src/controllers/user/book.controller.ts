@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { Book, BookHistory, BookRating, BookReview, User } from '../../db/models';
 import { httpErrorMessageConstant, httpStatusConstant, messageConstant } from '../../constant';
 import { Controller } from '../../interfaces';
-import { loggerUtils, responseHandlerUtils } from '../../utils';
+import { responseHandlerUtils } from '../../utils';
 
 /**
  * @description Searches for active books by name, ID, or both (returns details & aggregates).
@@ -26,7 +26,7 @@ const searchBook: Controller = async (req: Request, res: Response, next: NextFun
             if (name) searchQuery.$or.push({ name: new RegExp(name as string, 'i') });
         }
 
-        const totalBooks = await Book.countDocuments(searchQuery);
+        const totalBooks = await Book.countDocuments({ isActive: true });
 
         if (pageNumber > Math.ceil(totalBooks / limit)) {
             return responseHandlerUtils.responseHandler(res, {
@@ -120,38 +120,32 @@ const searchBook: Controller = async (req: Request, res: Response, next: NextFun
     }
 };
 
-/**yet to be completed */
+/**
+ * @description Searches for active books and returns it's every detail.
+ */
 const bookDetails: Controller = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const totalBooks = await Book.countDocuments({ isActive: true });
 
-        const bookDetails = [
+        const searchPipeline = [
             { $match: { isActive: true } },
             {
                 $lookup: {
                     from: 'bookgalleries',
-                    localField: '_id',
-                    foreignField: 'bookID',
-                    as: 'gallery',
-                },
-            },
-            {
-                $unwind: '$gallery',
-            },
-            {
-                $addFields: {
-                    isCoverImage: { $eq: ['$gallery.imageName', 'coverImage'] },
-                },
-            },
-            {
-                $group: {
-                    _id: '$_id',
-                    bookID: { $first: '$bookID' },
-                    coverImage: {
-                        $first: {
-                            $cond: { if: '$isCoverImage', then: '$$ROOT.gallery', else: null },
+                    let: { bookID: '$_id' },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        { $eq: ['$bookID', '$$bookID'] },
+                                        { $eq: ['$imageName', 'coverImage'] },
+                                    ],
+                                },
+                            },
                         },
-                    },
+                    ],
+                    as: 'coverImage',
                 },
             },
             {
@@ -171,6 +165,14 @@ const bookDetails: Controller = async (req: Request, res: Response, next: NextFu
                 },
             },
             {
+                $lookup: {
+                    from: 'bookgalleries',
+                    localField: '_id',
+                    foreignField: 'bookID',
+                    as: 'gallery',
+                },
+            },
+            {
                 $addFields: {
                     rating: { $avg: '$ratings.rating' },
                     reviewCount: { $size: '$reviews' },
@@ -182,18 +184,18 @@ const bookDetails: Controller = async (req: Request, res: Response, next: NextFu
                     bookID: 1,
                     name: 1,
                     author: 1,
-                    image: 1,
-                    gallery: 1,
                     stock: '$quantityAvailable',
-                    rating: 1,
-                    reviewCount: 1,
-                    reviews: 1,
                     publishedDate: 1,
+                    coverImage: 1,
+                    gallery: 1,
+                    rating: 1,
+                    reviews: 1,
+                    reviewCount: 1,
                 },
             },
         ];
 
-        const books = await Book.aggregate(bookDetails);
+        const books = await Book.aggregate(searchPipeline);
 
         if (!books.length) {
             return responseHandlerUtils.responseHandler(res, {
@@ -209,12 +211,8 @@ const bookDetails: Controller = async (req: Request, res: Response, next: NextFu
                 totalBooks,
             },
         });
-    } catch (error: any) {
-        loggerUtils.logger.error(error);
-        return responseHandlerUtils.responseHandler(res, {
-            statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
-            error,
-        });
+    } catch (error) {
+        return next(error);
     }
 };
 
@@ -374,7 +372,6 @@ const summaryAPI: Controller = async (req: Request, res: Response, next: NextFun
                 message: messageConstant.USER_NOT_FOUND,
             });
         }
-
         const totalIssuedBooks = await BookHistory.countDocuments({ userID: user._id });
         const totalSubmittedBooks = await BookHistory.countDocuments({
             userID: user._id,
