@@ -172,7 +172,7 @@ const forgotPassword: Controller = async (req: Request, res: Response, next: Nex
         await sendMailUtils.sendEmail({
             to: email,
             subject: 'Reset Password Link',
-            html: data,
+            html: data, 
         });
 
         return responseHandlerUtils.responseHandler(res, {

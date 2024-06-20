@@ -23,27 +23,25 @@ const sendEmail = async ({
     const transporter: SentMessageInfo = createTransport({
         host: String(envConfig.emailHost),
         port: Number(envConfig.emailPort),
-        service: 'ethereal',
         auth: {
             user: String(envConfig.emailUser),
             pass: String(envConfig.emailPass),
         } as EmailAuth,
-        tls: { rejectUnauthorized: false },
     });
 
     const mailOptions = {
         from: String(envConfig.emailUser),
         to,
         subject,
-        text,
-        html,
-        attachments,
+        ...(text && { text }),
+        ...(html && { html }),
+        ...(attachments && { attachments }),
     };
 
     transporter
         .sendMail(mailOptions)
-        .then((info: string) => {
-            loggerUtils.logger.info(info);
+        .then(() => {
+            loggerUtils.logger.info('Email sent successfully.');
         })
         .catch((err: Error) => {
             loggerUtils.logger.error('Error while sending mail', err);

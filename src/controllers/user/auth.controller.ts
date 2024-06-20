@@ -179,7 +179,9 @@ const forgotPassword: Controller = async (req: Request, res: Response, next: Nex
 
         await User.updateOne({ email }, { resetToken, resetTokenExpiry: expireTime });
 
-        const data = await ejsCompilerUtils.compileEmailTemplate('resetPassword');
+        const data = await ejsCompilerUtils.compileEmailTemplate('resetPassword', {
+            link: envConfig.resetPassLink,
+        });
 
         await sendMailUtils.sendEmail({ to: email, subject: 'Reset Password Link', html: data });
 

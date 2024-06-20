@@ -27,7 +27,7 @@ const seedData = async () => {
 
         const admins = [
             {
-                email: 'admin@yopmail.com',
+                email: 'admin@mailinator.com',
                 password: await hash('Password@789', SALT_ROUNDS),
                 isAuthToken: 'false',
                 firstname: 'Dummy',
@@ -54,7 +54,7 @@ const seedData = async () => {
 
         const users = [
             {
-                email: 'user@yopmail.com',
+                email: 'user@mailinator.com',
                 password: await hash('Password@789', SALT_ROUNDS),
                 isAuthToken: 'false',
                 firstname: 'Dummy_2',
