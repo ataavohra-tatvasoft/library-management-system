@@ -12,6 +12,7 @@ export interface IUser {
     address: string;
     city: string;
     state: string;
+    profilePhoto: string;
     paidAmount: Number;
     dueCharges: Number;
     resetToken: string;

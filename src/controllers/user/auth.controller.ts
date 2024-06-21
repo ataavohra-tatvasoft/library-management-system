@@ -179,11 +179,10 @@ const forgotPassword: Controller = async (req: Request, res: Response, next: Nex
 
         await User.updateOne({ email }, { resetToken, resetTokenExpiry: expireTime });
 
-        const data = await ejsCompilerUtils.compileEmailTemplate('resetPassword', {
-            link: envConfig.resetPassLink,
-        });
+        const data = { link: envConfig.resetPassLink };
+        const html = await ejsCompilerUtils.compileEmailTemplate('resetPassword', data);
 
-        await sendMailUtils.sendEmail({ to: email, subject: 'Reset Password Link', html: data });
+        await sendMailUtils.sendEmail({ to: email, subject: 'Reset Password Link', html });
 
         return responseHandlerUtils.responseHandler(res, {
             statusCode: httpStatusConstant.OK,
@@ -339,6 +338,55 @@ const updateProfile: Controller = async (req: Request, res: Response, next: Next
     }
 };
 
+/**
+ * @description Uploads user profile photo.
+ */
+const uploadProfilePhoto: Controller = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { email } = req.params;
+
+        const exists = await User.findOne({ email });
+        if (!exists) {
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.NOT_FOUND,
+                message: messageConstant.USER_NOT_FOUND,
+            });
+        }
+
+        // Check if file was uploaded
+        if (!req.file) {
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.BAD_REQUEST,
+                message: messageConstant.FILE_NOT_UPLOADED,
+            });
+        }
+
+        // Create record for uploaded file
+        const uploadFile = await User.findOneAndUpdate(
+            { email },
+            {
+                profilePhoto: req.file.path,
+            }
+        );
+
+        // Check if file was successfully uploaded
+        if (!uploadFile) {
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.BAD_REQUEST,
+                message: messageConstant.ERROR_UPLOAD_FILE,
+            });
+        }
+
+        // Return success response
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.OK,
+            message: httpErrorMessageConstant.SUCCESSFUL,
+        });
+    } catch (error) {
+        return next(error);
+    }
+};
+
 export default {
     login,
     newAccessToken,
@@ -347,4 +395,5 @@ export default {
     resetPassword,
     signup,
     updateProfile,
+    uploadProfilePhoto,
 };

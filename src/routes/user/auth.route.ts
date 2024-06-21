@@ -3,6 +3,7 @@ import { celebrate } from 'celebrate';
 import { userAuthController } from '../../controllers';
 import { userAuthSchema } from '../../validations';
 import { userAuthMiddleware } from '../../middlewares';
+import { upload } from '../../utils/multerConfig.utils';
 
 const router: Router = express.Router();
 
@@ -25,6 +26,12 @@ router.put(
     celebrate(userAuthSchema.updateProfile),
     userAuthMiddleware.authMiddleware,
     userAuthController.updateProfile
+);
+router.put(
+    '/upload-profile-photo/:email',
+    upload.single('profilePhoto'),
+    userAuthMiddleware.authMiddleware,
+    userAuthController.uploadProfilePhoto
 );
 
 export default router;

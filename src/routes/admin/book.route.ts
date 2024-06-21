@@ -3,6 +3,7 @@ import { celebrate } from 'celebrate';
 import { adminBookController } from '../../controllers';
 import { adminBookSchema } from '../../validations';
 import { adminAuthMiddleware } from '../../middlewares';
+import { upload } from '../../utils/multerConfig.utils';
 
 const router: Router = express.Router();
 
@@ -18,11 +19,7 @@ router.put(
     adminAuthMiddleware.authMiddleware,
     adminBookController.updateBook
 );
-router.get(
-    '/book-list',
-    adminAuthMiddleware.authMiddleware,
-    adminBookController.bookList
-);
+router.get('/book-list', adminAuthMiddleware.authMiddleware, adminBookController.bookList);
 
 router.put(
     '/soft-delete-book/:bookID',
@@ -36,6 +33,20 @@ router.delete(
     celebrate(adminBookSchema.deleteBook),
     adminAuthMiddleware.authMiddleware,
     adminBookController.hardDeleteBook
+);
+
+router.post(
+    '/upload-book-photo/:bookID',
+    upload.single('bookPhoto'),
+    adminAuthMiddleware.authMiddleware,
+    adminBookController.uploadBookPhoto
+);
+
+router.put(
+    '/upload-book-cover-photo/:bookID',
+    upload.single('bookCoverPhoto'),
+    adminAuthMiddleware.authMiddleware,
+    adminBookController.uploadBookCoverPhoto
 );
 
 export default router;

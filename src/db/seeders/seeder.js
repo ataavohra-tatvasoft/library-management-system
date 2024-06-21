@@ -167,27 +167,32 @@ const seedData = async () => {
         const bookGalleryEntries = [
             {
                 bookID: insertedBooks[0]._id,
-                imagePath: '../../public/images/book1.jpg',
+                imagePath: `public/images/book1.jpg`,
                 imageName: 'coverImage',
             },
             {
-                bookID: insertedBooks[0]._id,
-                imagePath: '../../public/images/book1_new.jpg',
-                imageName: 'demo',
-            },
-            {
                 bookID: insertedBooks[1]._id,
-                imagePath: '../../public/images/book2.jpg',
+                imagePath: `public/images/book2.jpg`,
                 imageName: 'coverImage',
             },
             {
                 bookID: insertedBooks[2]._id,
-                imagePath: '../../public/images/book3.jpg',
+                imagePath: `public/images/book3.jpg`,
                 imageName: 'coverImage',
             },
             {
                 bookID: insertedBooks[3]._id,
-                imagePath: '../../public/images/book4.jpg',
+                imagePath: `public/images/book4.jpg`,
+                imageName: 'coverImage',
+            },
+            {
+                bookID: insertedBooks[4]._id,
+                imagePath: `public/images/book5.jpg`,
+                imageName: 'coverImage',
+            },
+            {
+                bookID: insertedBooks[5]._id,
+                imagePath: `public/images/book6.jpg`,
                 imageName: 'coverImage',
             },
         ];

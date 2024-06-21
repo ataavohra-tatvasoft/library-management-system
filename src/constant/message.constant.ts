@@ -46,4 +46,6 @@ export const messageConstant = {
     INVALID_TOKEN_TYPE: 'Invalid token type',
     INVALID_RESET_TOKEN: 'Invalid reset token',
     ERROR_UPDATING_DUE_CHARGES_IN_USER: 'Error while updating due charges in user',
+    FILE_NOT_UPLOADED: 'File not uploaded',
+    ERROR_UPLOAD_FILE: 'Error while uploading file',
 };

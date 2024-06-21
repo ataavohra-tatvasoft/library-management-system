@@ -13,4 +13,6 @@ export interface IAdmin {
     resetToken: string;
     resetTokenExpiry: BigInt;
     isActive: Boolean;
+    createdAt: Date; 
+  updatedAt: Date; 
 }

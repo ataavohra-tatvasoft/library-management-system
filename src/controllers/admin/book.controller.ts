@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { Book } from '../../db/models';
+import { Book, BookGallery } from '../../db/models';
 import { Controller } from '../../interfaces';
 import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '../../constant';
 import { responseHandlerUtils } from '../../utils';
@@ -237,10 +237,156 @@ const hardDeleteBook: Controller = async (req: Request, res: Response, next: Nex
     }
 };
 
+/**
+ * @description Uploads book's display photos.
+ */
+const uploadBookPhoto: Controller = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { bookID } = req.params;
+
+        const exists = await Book.findOne({ bookID });
+        if (!exists) {
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.NOT_FOUND,
+                message: messageConstant.BOOK_NOT_FOUND,
+            });
+        }
+
+        // Check if file was uploaded
+        if (!req.file) {
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.BAD_REQUEST,
+                message: messageConstant.FILE_NOT_UPLOADED,
+            });
+        }
+
+        // Rename file if a file with the same name already exists
+        let newFileName = req.file.originalname;
+
+        const existingFile = await BookGallery.findOne({
+            bookID: exists._id,
+            imageName: newFileName,
+        });
+
+        if (existingFile) {
+            let counter = 1;
+            let filenameParts = newFileName.split('.');
+            const extension = filenameParts.pop();
+            const baseFilename = filenameParts.join('.');
+
+            while (
+                await BookGallery.findOne({
+                    bookID: exists._id,
+                    imageName: newFileName,
+                })
+            ) {
+                newFileName = `${baseFilename} (${counter}).${extension}`;
+                counter++;
+            }
+        }
+
+        // Create record for uploaded file
+        const uploadFile = await BookGallery.create({
+            bookID: exists._id,
+            imageName: newFileName,
+            imagePath: req.file.path,
+        });
+
+        // Check if file was successfully uploaded
+        if (!uploadFile) {
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.BAD_REQUEST,
+                message: messageConstant.ERROR_UPLOAD_FILE,
+            });
+        }
+
+        // Return success response
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.OK,
+            message: httpErrorMessageConstant.SUCCESSFUL,
+        });
+    } catch (error) {
+        return next(error);
+    }
+};
+
+/**
+ * @description Uploads book's cover photo.
+ */
+const uploadBookCoverPhoto: Controller = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const { bookID } = req.params;
+
+        const exists = await Book.findOne({ bookID });
+        if (!exists) {
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.NOT_FOUND,
+                message: messageConstant.BOOK_NOT_FOUND,
+            });
+        }
+
+        if (!req.file) {
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.BAD_REQUEST,
+                message: messageConstant.FILE_NOT_UPLOADED,
+            });
+        }
+
+        const existingFile = await BookGallery.findOne({
+            bookID: exists._id,
+            imageName: 'coverImage',
+        });
+
+        if (existingFile) {
+            const updateCoverImage = await BookGallery.updateOne(
+                {
+                    bookID: exists._id,
+                },
+                {
+                    imagePath: req.file.path,
+                    imageName: 'coverImage',
+                }
+            );
+            if (!updateCoverImage) {
+                return responseHandlerUtils.responseHandler(res, {
+                    statusCode: httpStatusConstant.BAD_REQUEST,
+                    message: messageConstant.ERROR_UPLOAD_FILE,
+                });
+            }
+        } else {
+            const uploadFile = await BookGallery.create({
+                bookID: exists._id,
+                imageName: 'coverImage',
+                imagePath: req.file.path,
+            });
+
+            if (!uploadFile) {
+                return responseHandlerUtils.responseHandler(res, {
+                    statusCode: httpStatusConstant.BAD_REQUEST,
+                    message: messageConstant.ERROR_UPLOAD_FILE,
+                });
+            }
+        }
+
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.OK,
+            message: httpErrorMessageConstant.SUCCESSFUL,
+        });
+    } catch (error) {
+        return next(error);
+    }
+};
+
 export default {
     addBook,
     bookList,
     updateBook,
     softDeleteBook,
     hardDeleteBook,
+    uploadBookPhoto,
+    uploadBookCoverPhoto,
 };

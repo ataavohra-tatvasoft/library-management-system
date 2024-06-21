@@ -3,27 +3,32 @@ import { IBookReview } from '../../interfaces'; // Assuming you have a User mode
 
 type BookReviewModel = Model<IBookReview>;
 
-const bookReviewSchema: Schema = new Schema<IBookReview, BookReviewModel>({
-    bookID: {
-        type: Schema.Types.ObjectId,
-        ref: 'books',
-        required: true,
+const bookReviewSchema: Schema = new Schema<IBookReview, BookReviewModel>(
+    {
+        bookID: {
+            type: Schema.Types.ObjectId,
+            ref: 'books',
+            required: true,
+        },
+        userID: {
+            type: Schema.Types.ObjectId,
+            ref: 'users',
+            required: true,
+        },
+        review: {
+            type: String,
+            required: true,
+            maxlength: 500, // Set maximum review length
+        },
+        createdAt: {
+            type: Date,
+            default: Date.now, // Set default to current time
+        },
     },
-    userID: {
-        type: Schema.Types.ObjectId,
-        ref: 'users',
-        required: true,
-    },
-    review: {
-        type: String,
-        required: true,
-        maxlength: 500, // Set maximum review length
-    },
-    createdAt: {
-        type: Date,
-        default: Date.now, // Set default to current time
-    },
-});
+    {
+        timestamps: true,
+    }
+);
 
 // Enforce unique rating and review per user for a book
 bookReviewSchema.index({ bookID: 1, userID: 1 }, { unique: true });
