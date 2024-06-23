@@ -98,7 +98,7 @@ const issueBookList: Controller = async (req: Request, res: Response, next: Next
     }
 };
 
-/**
+/** 
  * @description Issues a book to a user after validating availability and limits.
  */
 const issueBook: Controller = async (req: Request, res: Response, next: NextFunction) => {
@@ -107,7 +107,7 @@ const issueBook: Controller = async (req: Request, res: Response, next: NextFunc
 
         const [book, user] = await Promise.all([
             Book.findOne({ bookID }),
-            User.findOne({ email }).populate('books'),
+            User.findOne({ email }).populate('books.bookId'),
         ]);
 
         if (!book) {
@@ -152,6 +152,7 @@ const issueBook: Controller = async (req: Request, res: Response, next: NextFunc
                 message: messageConstant.OUTSTANDING_DUE_CHARGES,
             });
         }
+
         if (issueDate) {
             const providedIssueDate = new Date(issueDate);
             const currentDate = new Date();
@@ -277,8 +278,14 @@ const submitBook: Controller = async (req: Request, res: Response, next: NextFun
             });
         }
 
-        const durationInDays = Math.ceil(
-            (submitDateObject.getTime() - issuedBook.issueDate.getTime()) / DAY_IN_MILLISECONDS
+        const subscriptionEndDate = new Date(
+            issuedBook.issueDate.getTime() + book.subscriptionDays * DAY_IN_MILLISECONDS
+        );
+        const durationInDays = Math.max(
+            0,
+            Math.ceil(
+                (submitDateObject.getTime() - subscriptionEndDate.getTime()) / DAY_IN_MILLISECONDS
+            )
         );
 
         const dueCharges = durationInDays * book.charges;

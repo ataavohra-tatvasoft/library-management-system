@@ -361,12 +361,16 @@ const uploadProfilePhoto: Controller = async (req: Request, res: Response, next:
             });
         }
 
+        // File path and name are already unique due to multer configuration
+        const profilePhotoPath = req.file.path;
+
         // Create record for uploaded file
         const uploadFile = await User.findOneAndUpdate(
             { email },
             {
-                profilePhoto: req.file.path,
-            }
+                profilePhoto: profilePhotoPath,
+            },
+            { new: true } // Ensure the updated document is returned
         );
 
         // Check if file was successfully uploaded

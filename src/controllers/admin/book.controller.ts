@@ -260,30 +260,8 @@ const uploadBookPhoto: Controller = async (req: Request, res: Response, next: Ne
             });
         }
 
-        // Rename file if a file with the same name already exists
-        let newFileName = req.file.originalname;
-
-        const existingFile = await BookGallery.findOne({
-            bookID: exists._id,
-            imageName: newFileName,
-        });
-
-        if (existingFile) {
-            let counter = 1;
-            let filenameParts = newFileName.split('.');
-            const extension = filenameParts.pop();
-            const baseFilename = filenameParts.join('.');
-
-            while (
-                await BookGallery.findOne({
-                    bookID: exists._id,
-                    imageName: newFileName,
-                })
-            ) {
-                newFileName = `${baseFilename} (${counter}).${extension}`;
-                counter++;
-            }
-        }
+        // File path and name are already unique due to multer configuration
+        const newFileName = req.file.filename;
 
         // Create record for uploaded file
         const uploadFile = await BookGallery.create({
@@ -313,11 +291,7 @@ const uploadBookPhoto: Controller = async (req: Request, res: Response, next: Ne
 /**
  * @description Uploads book's cover photo.
  */
-const uploadBookCoverPhoto: Controller = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-) => {
+const uploadBookCoverPhoto: Controller = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { bookID } = req.params;
 
@@ -329,6 +303,7 @@ const uploadBookCoverPhoto: Controller = async (
             });
         }
 
+        // Check if file was uploaded
         if (!req.file) {
             return responseHandlerUtils.responseHandler(res, {
                 statusCode: httpStatusConstant.BAD_REQUEST,
@@ -336,6 +311,7 @@ const uploadBookCoverPhoto: Controller = async (
             });
         }
 
+        // Since the filename is structured uniquely by multer, we use 'coverImage' convention for the record
         const existingFile = await BookGallery.findOne({
             bookID: exists._id,
             imageName: 'coverImage',
@@ -345,12 +321,13 @@ const uploadBookCoverPhoto: Controller = async (
             const updateCoverImage = await BookGallery.updateOne(
                 {
                     bookID: exists._id,
+                    imageName: 'coverImage',
                 },
                 {
                     imagePath: req.file.path,
-                    imageName: 'coverImage',
                 }
             );
+
             if (!updateCoverImage) {
                 return responseHandlerUtils.responseHandler(res, {
                     statusCode: httpStatusConstant.BAD_REQUEST,
@@ -380,6 +357,7 @@ const uploadBookCoverPhoto: Controller = async (
         return next(error);
     }
 };
+
 
 export default {
     addBook,
