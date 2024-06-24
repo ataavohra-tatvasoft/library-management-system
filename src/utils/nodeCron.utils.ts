@@ -59,4 +59,4 @@ const scheduleUpdateDueCharges = () => {
     cron.schedule('0 0 * * *', updateDueCharges);
 };
 
-export { scheduleUpdateDueCharges };
+export default { scheduleUpdateDueCharges };

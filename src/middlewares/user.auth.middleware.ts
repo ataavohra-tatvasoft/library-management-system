@@ -27,11 +27,11 @@ const authMiddleware = async (req: Request, res: Response, next: NextFunction) =
             });
         }
 
-        const user = await User.findOne({ email: verifiedToken.email, isActive: true });
+        const user = await User.findOne({ email: verifiedToken.email, isDeleted: false });
         if (!user) {
             return res.status(httpStatusConstant.NOT_FOUND).json({
                 status: false,
-                message: messageConstant.USER_NOT_FOUND,
+                message: messageConstant.USER_NOT_FOUND + 'or Invalid Token',
             });
         }
         next();

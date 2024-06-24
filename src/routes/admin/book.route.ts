@@ -49,4 +49,18 @@ router.put(
     adminBookController.uploadBookCoverPhoto
 );
 
+router.get(
+    '/book-ratings-summary/:bookID',
+    celebrate(adminBookSchema.ratingsSummary),
+    adminAuthMiddleware.authMiddleware,
+    adminBookController.ratingsSummary
+);
+
+router.get(
+    '/book-reviews-summary/:bookID',
+    celebrate(adminBookSchema.reviewsSummary),
+    adminAuthMiddleware.authMiddleware,
+    adminBookController.reviewsSummary
+);
+
 export default router;

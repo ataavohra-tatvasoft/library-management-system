@@ -16,7 +16,7 @@ const login: Controller = async (req: Request, res: Response, next: NextFunction
     try {
         const { email, password } = req.body;
 
-        const admin = await Admin.findOne({ email, isActive: true });
+        const admin = await Admin.findOne({ email, isDeleted: false });
         if (!admin) {
             return responseHandlerUtils.responseHandler(res, {
                 statusCode: httpStatusConstant.NOT_FOUND,
@@ -154,7 +154,7 @@ const forgotPassword: Controller = async (req: Request, res: Response, next: Nex
     try {
         const { email } = req.body;
 
-        const admin = await Admin.findOne({ email, isActive: true });
+        const admin = await Admin.findOne({ email, isDeleted: false});
         if (!admin) {
             return responseHandlerUtils.responseHandler(res, {
                 statusCode: httpStatusConstant.NOT_FOUND,
@@ -197,7 +197,7 @@ const resetPassword: Controller = async (req: Request, res: Response, next: Next
         const admin = await Admin.findOne({
             resetToken,
             resetTokenExpiry: { $gt: Date.now() },
-            isActive: true,
+            isDeleted: false
         });
 
         if (!admin) {

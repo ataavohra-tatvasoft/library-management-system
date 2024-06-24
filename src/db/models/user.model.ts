@@ -48,7 +48,6 @@ const userSchema: Schema = new Schema<IUser, UserModel>(
             type: Number,
             allownull: false,
             default: 0,
-            min: 0,
         },
         resetToken: {
             type: String,
@@ -58,10 +57,15 @@ const userSchema: Schema = new Schema<IUser, UserModel>(
             type: BigInt,
             allownull: true,
         },
-        isActive: {
+        isDeleted: {
             type: Boolean,
             allownull: false,
-            default: true,
+            default: false,
+        },
+        deletedAt: {
+            type: Date,
+            allownull: true,
+            default: null,
         },
         // Reference to books
         books: [

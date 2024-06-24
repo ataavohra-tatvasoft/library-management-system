@@ -19,4 +19,5 @@ export default {
     redisPassword: process.env.REDIS_PASSWORD,
     redisHost: process.env.REDIS_HOST,
     redisPort: process.env.REDIS_PORT,
+    stripeApiKey: process.env.STRIPE_API_KEY,
 };

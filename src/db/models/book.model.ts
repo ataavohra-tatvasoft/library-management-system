@@ -59,10 +59,15 @@ const bookSchema: Schema = new Schema<IBook, BookModel>(
             type: String,
             allownull: true,
         },
-        isActive: {
+        isDeleted: {
             type: Boolean,
             allownull: false,
-            default: true,
+            default: false,
+        },
+        deletedAt: {
+            type: Date,
+            allownull: true,
+            default: null,
         },
     },
     {

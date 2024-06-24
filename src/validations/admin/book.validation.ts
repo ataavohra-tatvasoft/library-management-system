@@ -40,9 +40,27 @@ const deleteBook = {
     }),
 };
 
+const ratingsSummary = {
+    params: Joi.object().keys({
+        bookID: Joi.string().required().min(13).max(13).trim(),
+    }),
+};
+
+const reviewsSummary = {
+    params: Joi.object().keys({
+        bookID: Joi.string().required().min(13).max(13).trim(),
+    }),
+    query: Joi.object().keys({
+        page: Joi.string().min(1).optional().default(1),
+        pageSize: Joi.string().min(1).optional().default(10),
+    }),
+};
+
 export default {
     addBook,
     bookList,
     updateBook,
     deleteBook,
+    ratingsSummary,
+    reviewsSummary,
 };

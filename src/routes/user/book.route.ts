@@ -12,11 +12,7 @@ router.get(
     userAuthMiddleware.authMiddleware,
     userBookController.searchBook
 );
-router.get(
-    '/book-details',
-    userAuthMiddleware.authMiddleware,
-    userBookController.bookDetails
-);
+router.get('/book-details', userAuthMiddleware.authMiddleware, userBookController.bookDetails);
 router.post(
     '/book/add-review/:email',
     celebrate(userBookSchema.addReview),
@@ -40,6 +36,19 @@ router.get(
     celebrate(userBookSchema.summaryAPI),
     userAuthMiddleware.authMiddleware,
     userBookController.summaryAPI
+);
+router.get(
+    '/book-ratings-summary/:bookID',
+    celebrate(userBookSchema.ratingsSummary),
+    userAuthMiddleware.authMiddleware,
+    userBookController.ratingsSummary
+);
+
+router.get(
+    '/book-reviews-summary/:bookID',
+    celebrate(userBookSchema.reviewsSummary),
+    userAuthMiddleware.authMiddleware,
+    userBookController.reviewsSummary
 );
 
 export default router;

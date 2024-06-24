@@ -23,6 +23,16 @@ const bookHistorySchema: Schema = new Schema<IBookHistory, BookHistoryModel>(
             allownull: true,
             default: null,
         },
+        isDeleted: {
+            type: Boolean,
+            allownull: false,
+            default: false,
+        },
+        deletedAt: {
+            type: Date,
+            allownull: true,
+            default: null,
+        },
     },
     {
         timestamps: true,

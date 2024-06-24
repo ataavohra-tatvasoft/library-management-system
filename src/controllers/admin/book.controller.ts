@@ -3,6 +3,7 @@ import { Book, BookGallery } from '../../db/models';
 import { Controller } from '../../interfaces';
 import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '../../constant';
 import { responseHandlerUtils } from '../../utils';
+import { getRatingService, getReviewService } from '../../services/book';
 
 /**
  * @description Adds a new book to the library (checks for duplicates).
@@ -66,7 +67,7 @@ const bookList: Controller = async (req: Request, res: Response, next: NextFunct
         const limit = Number(pageSize) || 10;
         const skip = (pageNumber - 1) * limit;
 
-        const totalBooks = await Book.countDocuments({ isActive: true });
+        const totalBooks = await Book.countDocuments({ isDeleted: false });
         const totalPages = Math.ceil(totalBooks / limit);
 
         if (pageNumber > totalPages) {
@@ -77,7 +78,7 @@ const bookList: Controller = async (req: Request, res: Response, next: NextFunct
         }
 
         const bookData = await Book.find(
-            { isActive: true },
+            { isDeleted: false },
             {
                 _id: 0,
                 bookID: 1,
@@ -175,7 +176,7 @@ const softDeleteBook: Controller = async (req: Request, res: Response, next: Nex
     try {
         const { bookID } = req.params;
 
-        const bookExists = await Book.findOne({ bookID, isActive: true });
+        const bookExists = await Book.findOne({ bookID, isDeleted: false });
         if (!bookExists) {
             return responseHandlerUtils.responseHandler(res, {
                 statusCode: httpStatusConstant.BAD_REQUEST,
@@ -185,7 +186,7 @@ const softDeleteBook: Controller = async (req: Request, res: Response, next: Nex
 
         const updatedBook = await Book.findOneAndUpdate(
             { bookID },
-            { $set: { isActive: false } },
+            { $set: { isDeleted: true, deletedAt: Date.now() } },
             { new: true }
         );
 
@@ -291,7 +292,11 @@ const uploadBookPhoto: Controller = async (req: Request, res: Response, next: Ne
 /**
  * @description Uploads book's cover photo.
  */
-const uploadBookCoverPhoto: Controller = async (req: Request, res: Response, next: NextFunction) => {
+const uploadBookCoverPhoto: Controller = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
     try {
         const { bookID } = req.params;
 
@@ -358,6 +363,77 @@ const uploadBookCoverPhoto: Controller = async (req: Request, res: Response, nex
     }
 };
 
+/**
+ * @description Gets overall ratings summary of the specific book.
+ */
+const ratingsSummary: Controller = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { bookID } = req.params;
+
+        const ratingsSummary = await getRatingService.getRatings(Number(bookID));
+
+        if (!ratingsSummary) {
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.NOT_FOUND,
+                message: messageConstant.NO_RATINGS_FOUND,
+            });
+        }
+
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.OK,
+            data: ratingsSummary,
+        });
+    } catch (error) {
+        return next(error);
+    }
+};
+
+/**
+ * @description Gets overall reviews summary of the specific book.
+ */
+const reviewsSummary: Controller = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { bookID } = req.params;
+        const { page = 1, pageSize = 10 } = req.query;
+        const pageNumber = Number(page);
+        const limit = Number(pageSize);
+        const skip = (pageNumber - 1) * limit;
+
+        const totalReviews = await getReviewService.getReviewsCount(Number(bookID));
+        const totalPages = Math.ceil(totalReviews / limit);
+
+        if (pageNumber > totalPages) {
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.BAD_REQUEST,
+                message: messageConstant.INVALID_PAGE_NUMBER,
+            });
+        }
+
+        const reviews = await getReviewService.getReviews(Number(bookID), skip, limit);
+
+        if (!reviews || reviews.length === 0) {
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.NOT_FOUND,
+                message: messageConstant.NO_REVIEWS_FOUND,
+            });
+        }
+
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.OK,
+            data: {
+                reviews: reviews.bookReviews,
+                pagination: {
+                    page: pageNumber,
+                    pageSize: limit,
+                    totalPages,
+                },
+            },
+            message: httpErrorMessageConstant.SUCCESSFUL,
+        });
+    } catch (error) {
+        return next(error);
+    }
+};
 
 export default {
     addBook,
@@ -367,4 +443,6 @@ export default {
     hardDeleteBook,
     uploadBookPhoto,
     uploadBookCoverPhoto,
+    ratingsSummary,
+    reviewsSummary,
 };

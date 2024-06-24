@@ -5,4 +5,6 @@ export interface IBookReview {
     userID: Schema.Types.ObjectId; // Reference to the User document
     review: string; // Rating value (1-5)
     createdAt: Date; // Date and time of the review creation
+    isDeleted: boolean;
+    deletedAt: Date;
 }

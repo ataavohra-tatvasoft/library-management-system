@@ -26,12 +26,12 @@ const authMiddleware = async (req: Request, res: Response, next: NextFunction) =
                 message: messageConstant.INVALID_TOKEN_TYPE,
             });
         }
-        const admin = await Admin.findOne({ email: verifiedToken.email, isActive: true });
+        const admin = await Admin.findOne({ email: verifiedToken.email, isDeleted: false });
 
         if (!admin) {
             return res.status(httpStatusConstant.NOT_FOUND).json({
                 status: false,
-                message: messageConstant.ADMIN_NOT_FOUND,
+                message: messageConstant.ADMIN_NOT_FOUND + 'or Invalid Token',
             });
         }
         next();

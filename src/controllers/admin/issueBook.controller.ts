@@ -194,7 +194,6 @@ const issueBook: Controller = async (req: Request, res: Response, next: NextFunc
             {
                 $inc: { quantityAvailable: -1, issueCount: +1 },
                 numberOfFreeDays: freeDays,
-                isActive: true,
             }
         );
 

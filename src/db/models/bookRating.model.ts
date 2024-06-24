@@ -25,6 +25,16 @@ const bookRatingSchema: Schema = new Schema<IBookRating, BookRatingModel>(
             type: Date,
             default: Date.now, // Set default to current time
         },
+        isDeleted: {
+            type: Boolean,
+            allownull: false,
+            default: false,
+        },
+        deletedAt: {
+            type: Date,
+            allownull: true,
+            default: null,
+        },
     },
     {
         timestamps: true,

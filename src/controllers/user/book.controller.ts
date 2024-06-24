@@ -3,6 +3,7 @@ import { Book, BookHistory, BookRating, BookReview, User } from '../../db/models
 import { httpErrorMessageConstant, httpStatusConstant, messageConstant } from '../../constant';
 import { Controller } from '../../interfaces';
 import { responseHandlerUtils } from '../../utils';
+import { getRatingService, getReviewService } from '../../services/book';
 
 /**
  * @description Searches for active books by name, ID, or both (returns details & aggregates).
@@ -15,9 +16,9 @@ const searchBook: Controller = async (req: Request, res: Response, next: NextFun
         const limit = Number(pageSize) || 10;
         const skip = (pageNumber - 1) * limit;
 
-        const searchQuery: { isActive: boolean } & { $or?: { bookID?: String; name?: RegExp }[] } =
+        const searchQuery: { isDeleted: boolean } & { $or?: { bookID?: String; name?: RegExp }[] } =
             {
-                isActive: true,
+                isDeleted: false,
             };
 
         if (bookID || name) {
@@ -26,7 +27,7 @@ const searchBook: Controller = async (req: Request, res: Response, next: NextFun
             if (name) searchQuery.$or.push({ name: new RegExp(name as string, 'i') });
         }
 
-        const totalBooks = await Book.countDocuments({ isActive: true });
+        const totalBooks = await Book.countDocuments({ isDeleted: false });
 
         if (pageNumber > Math.ceil(totalBooks / limit)) {
             return responseHandlerUtils.responseHandler(res, {
@@ -125,10 +126,10 @@ const searchBook: Controller = async (req: Request, res: Response, next: NextFun
  */
 const bookDetails: Controller = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const totalBooks = await Book.countDocuments({ isActive: true });
+        const totalBooks = await Book.countDocuments({ isDeleted: false });
 
         const searchPipeline = [
-            { $match: { isActive: true } },
+            { $match: { isDeleted: false } },
             {
                 $lookup: {
                     from: 'bookgalleries',
@@ -394,6 +395,78 @@ const summaryAPI: Controller = async (req: Request, res: Response, next: NextFun
     }
 };
 
+/**
+ * @description Gets overall ratings summary of the specific book.
+ */
+const ratingsSummary: Controller = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { bookID } = req.params;
+
+        const ratingsSummary = await getRatingService.getRatings(Number(bookID));
+
+        if (!ratingsSummary) {
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.NOT_FOUND,
+                message: messageConstant.NO_RATINGS_FOUND,
+            });
+        }
+
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.OK,
+            data: ratingsSummary,
+        });
+    } catch (error) {
+        return next(error);
+    }
+};
+
+/**
+ * @description Gets overall reviews summary of the specific book.
+ */
+const reviewsSummary: Controller = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { bookID } = req.params;
+        const { page = 1, pageSize = 10 } = req.query;
+        const pageNumber = Number(page);
+        const limit = Number(pageSize);
+        const skip = (pageNumber - 1) * limit;
+
+        const totalReviews = await getReviewService.getReviewsCount(Number(bookID));
+        const totalPages = Math.ceil(totalReviews / limit);
+
+        if (pageNumber > totalPages) {
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.BAD_REQUEST,
+                message: messageConstant.INVALID_PAGE_NUMBER,
+            });
+        }
+
+        const reviews = await getReviewService.getReviews(Number(bookID), skip, limit);
+
+        if (!reviews || reviews.length === 0) {
+            return responseHandlerUtils.responseHandler(res, {
+                statusCode: httpStatusConstant.NOT_FOUND,
+                message: messageConstant.NO_REVIEWS_FOUND,
+            });
+        }
+
+        return responseHandlerUtils.responseHandler(res, {
+            statusCode: httpStatusConstant.OK,
+            data: {
+                reviews: reviews.bookReviews,
+                pagination: {
+                    page: pageNumber,
+                    pageSize: limit,
+                    totalPages,
+                },
+            },
+            message: httpErrorMessageConstant.SUCCESSFUL,
+        });
+    } catch (error) {
+        return next(error);
+    }
+};
+
 export default {
     searchBook,
     bookDetails,
@@ -401,4 +474,6 @@ export default {
     addRating,
     issueBookHistory,
     summaryAPI,
+    ratingsSummary,
+    reviewsSummary,
 };

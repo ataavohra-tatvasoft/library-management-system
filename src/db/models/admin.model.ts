@@ -42,10 +42,15 @@ const adminSchema: Schema = new Schema<IAdmin, AdminModel>(
             type: BigInt,
             allownull: true,
         },
-        isActive: {
+        isDeleted: {
             type: Boolean,
             allownull: false,
-            default: true,
+            default: false,
+        },
+        deletedAt: {
+            type: Date,
+            allownull: true,
+            default: null,
         },
     },
     {

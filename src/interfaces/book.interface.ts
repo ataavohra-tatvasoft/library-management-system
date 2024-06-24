@@ -10,5 +10,6 @@ export interface IBook {
     quantityAvailable: number;
     numberOfFreeDays: number;
     description: string;
-    isActive: boolean;
+    isDeleted: boolean;
+    deletedAt: Date;
 }

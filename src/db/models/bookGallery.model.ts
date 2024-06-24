@@ -19,8 +19,13 @@ const bookGallerySchema: Schema = new Schema<IBookGallery, BookGalleryModel>(
         },
         isDeleted: {
             type: Boolean,
-            required: true,
+            allownull: false,
             default: false,
+        },
+        deletedAt: {
+            type: Date,
+            allownull: true,
+            default: null,
         },
     },
     {

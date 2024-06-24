@@ -4,7 +4,7 @@ import { dbConfig, envConfig } from './src/config';
 import { messageConstant } from './src/constant';
 import routes from './src/routes';
 import { errorHandlerUtils, loggerUtils } from './src/utils';
-import { scheduleUpdateDueCharges } from './src/utils/nodeCron.utils';
+import { nodeCronUtils } from './src/utils';
 
 /**
  * Function to create and configure the Express app.
@@ -44,7 +44,7 @@ const startServer = async (app: Express): Promise<void> => {
         });
 
         // Schedule the cron job
-        scheduleUpdateDueCharges();
+        nodeCronUtils.scheduleUpdateDueCharges();
     } catch (error) {
         loggerUtils.logger.error('Error starting server: ', error);
         throw error;

@@ -74,7 +74,7 @@ const userList: Controller = async (req: Request, res: Response, next: NextFunct
         const skip = (pageNumber - 1) * limit;
 
         const userData = await User.find(
-            { isActive: true },
+            { isDeleted: false },
             {
                 _id: 0,
                 email: 1,
@@ -98,7 +98,7 @@ const userList: Controller = async (req: Request, res: Response, next: NextFunct
             });
         }
 
-        const total = await User.countDocuments({ isActive: true });
+        const total = await User.countDocuments({ isDeleted: false });
         if (!total) {
             return responseHandlerUtils.responseHandler(res, {
                 statusCode: httpStatusConstant.OK,
@@ -184,7 +184,7 @@ const softDeleteUser: Controller = async (req: Request, res: Response, next: Nex
     try {
         const { email } = req.params;
 
-        const userExists = await User.findOne({ email, isActive: true });
+        const userExists = await User.findOne({ email, isDeleted: false });
         if (!userExists) {
             return responseHandlerUtils.responseHandler(res, {
                 statusCode: httpStatusConstant.BAD_REQUEST,
@@ -194,7 +194,7 @@ const softDeleteUser: Controller = async (req: Request, res: Response, next: Nex
 
         const updatedUser = await User.findOneAndUpdate(
             { email },
-            { $set: { isActive: false } },
+            { $set: { isDeleted: true, deletedAt: Date.now() } },
             { new: true }
         );
 
