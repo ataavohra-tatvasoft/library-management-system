@@ -20,7 +20,7 @@ const validateAgeLimit = (dateOfBirth: string): boolean => {
   }
 }
 
-const numberOfFreeDays = (issueDate: Date, quantityAvailable: number): number | null => {
+const calculateNumberOfFreeDays = (issueDate: Date, quantityAvailable: number): number | null => {
   try {
     const DAY_IN_MILLISECONDS = 1000 * 60 * 60 * 24
     const today = new Date()
@@ -39,19 +39,17 @@ const numberOfFreeDays = (issueDate: Date, quantityAvailable: number): number | 
 }
 
 const generatePlaceholderbookID = (): string => {
-  try {
+  {
     const prefix = '999'
     const randomDigits = Math.floor(Math.random() * 10 ** 10)
       .toString()
       .padStart(10, '0')
     return `${prefix}${randomDigits}`
-  } catch (error) {
-    throw error
   }
 }
 
 export default {
   validateAgeLimit,
-  numberOfFreeDays,
+  calculateNumberOfFreeDays,
   generatePlaceholderbookID
 }

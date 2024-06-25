@@ -1,6 +1,6 @@
 import { Joi } from 'celebrate'
 
-const searchBook = {
+const searchBooks = {
   query: Joi.object().keys({
     page: Joi.number().integer().min(1).optional().default(1),
     pageSize: Joi.number().integer().min(1).optional().default(10),
@@ -9,7 +9,7 @@ const searchBook = {
   })
 }
 
-const addReview = {
+const addBookReview = {
   params: Joi.object().keys({
     email: Joi.string().email().required()
   }),
@@ -19,7 +19,7 @@ const addReview = {
   })
 }
 
-const addRating = {
+const addBookRating = {
   params: Joi.object().keys({
     email: Joi.string().email().required()
   }),
@@ -29,25 +29,25 @@ const addRating = {
   })
 }
 
-const issueBookHistory = {
+const getBookIssueHistory = {
   params: Joi.object().keys({
     email: Joi.string().required().trim()
   })
 }
 
-const summaryAPI = {
+const getLibrarySummary = {
   params: Joi.object().keys({
     email: Joi.string().email().required()
   })
 }
 
-const ratingsSummary = {
+const getBookRatingsSummary = {
   params: Joi.object().keys({
     bookID: Joi.string().required().min(13).max(13).trim()
   })
 }
 
-const reviewsSummary = {
+const getBookReviewsSummary = {
   params: Joi.object().keys({
     bookID: Joi.string().required().min(13).max(13).trim()
   }),
@@ -58,11 +58,11 @@ const reviewsSummary = {
 }
 
 export default {
-  searchBook,
-  addReview,
-  addRating,
-  issueBookHistory,
-  summaryAPI,
-  ratingsSummary,
-  reviewsSummary
+  searchBooks,
+  addBookReview,
+  addBookRating,
+  getBookIssueHistory,
+  getLibrarySummary,
+  getBookRatingsSummary,
+  getBookReviewsSummary
 }

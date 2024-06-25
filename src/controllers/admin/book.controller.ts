@@ -51,7 +51,7 @@ const addBook: Controller = async (req: Request, res: Response, next: NextFuncti
 /**
  * @description Retrieves a list of active books from the library.
  */
-const bookList: Controller = async (req: Request, res: Response, next: NextFunction) => {
+const listBooks: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
     let { page, pageSize } = req.query
 
@@ -59,8 +59,8 @@ const bookList: Controller = async (req: Request, res: Response, next: NextFunct
     const limit = Number(pageSize) || 10
     const skip = (pageNumber - 1) * limit
 
-    const totalBooks = await Book.countDocuments({ deletedAt: null })
-    const totalPages = Math.ceil(totalBooks / limit)
+    const totalBooksCount = await Book.countDocuments({ deletedAt: null })
+    const totalPages = Math.ceil(totalBooksCount / limit)
 
     if (pageNumber > totalPages) {
       return responseHandlerUtils.responseHandler(res, {
@@ -69,7 +69,7 @@ const bookList: Controller = async (req: Request, res: Response, next: NextFunct
       })
     }
 
-    const bookData = await Book.find(
+    const books = await Book.find(
       { deletedAt: null },
       {
         _id: 0,
@@ -84,7 +84,7 @@ const bookList: Controller = async (req: Request, res: Response, next: NextFunct
       .skip(skip)
       .limit(limit)
 
-    if (!bookData) {
+    if (!books) {
       return responseHandlerUtils.responseHandler(res, {
         statusCode: httpStatusConstant.BAD_REQUEST,
         message: messageConstant.ERROR_LISTING_BOOK
@@ -94,7 +94,7 @@ const bookList: Controller = async (req: Request, res: Response, next: NextFunct
     return responseHandlerUtils.responseHandler(res, {
       statusCode: httpStatusConstant.OK,
       data: {
-        bookData,
+        books,
         pagination: {
           page: pageNumber,
           pageSize: limit,
@@ -124,16 +124,16 @@ const updateBook: Controller = async (req: Request, res: Response, next: NextFun
       description
     } = req.body || {}
 
-    const bookExists = await Book.findOne({ bookID })
+    const existingBook = await Book.findOne({ bookID })
 
-    if (!bookExists) {
+    if (!existingBook) {
       return responseHandlerUtils.responseHandler(res, {
         statusCode: httpStatusConstant.NOT_FOUND,
         message: messageConstant.BOOK_NOT_FOUND
       })
     }
 
-    const updateData = {
+    const updatedBookData = {
       ...(name && { name }),
       ...(author && { author }),
       ...(charges && { charges: Number(charges) }),
@@ -143,7 +143,7 @@ const updateBook: Controller = async (req: Request, res: Response, next: NextFun
       ...(description && { description })
     }
 
-    const updatedBook = await Book.findOneAndUpdate({ bookID }, updateData, { new: true })
+    const updatedBook = await Book.findOneAndUpdate({ bookID }, updatedBookData, { new: true })
 
     if (!updatedBook) {
       return responseHandlerUtils.responseHandler(res, {
@@ -168,21 +168,21 @@ const softDeleteBook: Controller = async (req: Request, res: Response, next: Nex
   try {
     const { bookID } = req.params
 
-    const bookExists = await Book.findOne({ bookID, deletedAt: null })
-    if (!bookExists) {
+    const existingBook = await Book.findOne({ bookID, deletedAt: null })
+    if (!existingBook) {
       return responseHandlerUtils.responseHandler(res, {
         statusCode: httpStatusConstant.BAD_REQUEST,
         message: messageConstant.BOOK_NOT_EXISTS
       })
     }
 
-    const updatedBook = await Book.findOneAndUpdate(
+    const softDeletedBook = await Book.findOneAndUpdate(
       { bookID },
       { $set: { deletedAt: Date.now() } },
       { new: true }
     )
 
-    if (!updatedBook) {
+    if (!softDeletedBook) {
       return responseHandlerUtils.responseHandler(res, {
         statusCode: httpStatusConstant.NOT_FOUND,
         message: messageConstant.ERROR_DELETING_BOOK
@@ -205,8 +205,8 @@ const hardDeleteBook: Controller = async (req: Request, res: Response, next: Nex
   try {
     const { bookID } = req.params
 
-    const bookExists = await Book.findOne({ bookID })
-    if (!bookExists) {
+    const existingBook = await Book.findOne({ bookID })
+    if (!existingBook) {
       return responseHandlerUtils.responseHandler(res, {
         statusCode: httpStatusConstant.BAD_REQUEST,
         message: messageConstant.BOOK_NOT_EXISTS
@@ -237,8 +237,8 @@ const uploadBookPhoto: Controller = async (req: Request, res: Response, next: Ne
   try {
     const { bookID } = req.params
 
-    const exists = await Book.findOne({ bookID })
-    if (!exists) {
+    const bookExists = await Book.findOne({ bookID })
+    if (!bookExists) {
       return responseHandlerUtils.responseHandler(res, {
         statusCode: httpStatusConstant.NOT_FOUND,
         message: messageConstant.BOOK_NOT_FOUND
@@ -254,13 +254,13 @@ const uploadBookPhoto: Controller = async (req: Request, res: Response, next: Ne
 
     const newFileName = req.file.filename
 
-    const uploadFile = await BookGallery.create({
-      bookID: exists._id,
+    const uploadedPhoto = await BookGallery.create({
+      bookID: bookExists._id,
       imageName: newFileName,
       imagePath: req.file.path
     })
 
-    if (!uploadFile) {
+    if (!uploadedPhoto) {
       return responseHandlerUtils.responseHandler(res, {
         statusCode: httpStatusConstant.BAD_REQUEST,
         message: messageConstant.ERROR_UPLOAD_FILE
@@ -287,8 +287,8 @@ const uploadBookCoverPhoto: Controller = async (
   try {
     const { bookID } = req.params
 
-    const exists = await Book.findOne({ bookID })
-    if (!exists) {
+    const bookExists = await Book.findOne({ bookID })
+    if (!bookExists) {
       return responseHandlerUtils.responseHandler(res, {
         statusCode: httpStatusConstant.NOT_FOUND,
         message: messageConstant.BOOK_NOT_FOUND
@@ -302,15 +302,15 @@ const uploadBookCoverPhoto: Controller = async (
       })
     }
 
-    const existingFile = await BookGallery.findOne({
-      bookID: exists._id,
+    const existingCoverPhoto = await BookGallery.findOne({
+      bookID: bookExists._id,
       imageName: 'coverImage'
     })
 
-    if (existingFile) {
-      const updateCoverImage = await BookGallery.updateOne(
+    if (existingCoverPhoto) {
+      const updatedCoverPhoto = await BookGallery.updateOne(
         {
-          bookID: exists._id,
+          bookID: bookExists._id,
           imageName: 'coverImage'
         },
         {
@@ -318,20 +318,20 @@ const uploadBookCoverPhoto: Controller = async (
         }
       )
 
-      if (!updateCoverImage) {
+      if (!updatedCoverPhoto) {
         return responseHandlerUtils.responseHandler(res, {
           statusCode: httpStatusConstant.BAD_REQUEST,
           message: messageConstant.ERROR_UPLOAD_FILE
         })
       }
     } else {
-      const uploadFile = await BookGallery.create({
-        bookID: exists._id,
+      const uploadedCoverPhoto = await BookGallery.create({
+        bookID: bookExists._id,
         imageName: 'coverImage',
         imagePath: req.file.path
       })
 
-      if (!uploadFile) {
+      if (!uploadedCoverPhoto) {
         return responseHandlerUtils.responseHandler(res, {
           statusCode: httpStatusConstant.BAD_REQUEST,
           message: messageConstant.ERROR_UPLOAD_FILE
@@ -351,7 +351,7 @@ const uploadBookCoverPhoto: Controller = async (
 /**
  * @description Gets overall ratings summary of the specific book.
  */
-const ratingsSummary: Controller = async (req: Request, res: Response, next: NextFunction) => {
+const getRatingsSummary: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { bookID } = req.params
 
@@ -376,7 +376,7 @@ const ratingsSummary: Controller = async (req: Request, res: Response, next: Nex
 /**
  * @description Gets overall reviews summary of the specific book.
  */
-const reviewsSummary: Controller = async (req: Request, res: Response, next: NextFunction) => {
+const getReviewsSummary: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { bookID } = req.params
     const { page = 1, pageSize = 10 } = req.query
@@ -384,8 +384,8 @@ const reviewsSummary: Controller = async (req: Request, res: Response, next: Nex
     const limit = Number(pageSize)
     const skip = (pageNumber - 1) * limit
 
-    const totalReviews = await getReviewService.getReviewsCount(Number(bookID))
-    const totalPages = Math.ceil(totalReviews / limit)
+    const totalReviewsCount = await getReviewService.getReviewsCount(Number(bookID))
+    const totalPages = Math.ceil(totalReviewsCount / limit)
 
     if (pageNumber > totalPages) {
       return responseHandlerUtils.responseHandler(res, {
@@ -422,12 +422,12 @@ const reviewsSummary: Controller = async (req: Request, res: Response, next: Nex
 
 export default {
   addBook,
-  bookList,
+  listBooks,
   updateBook,
   softDeleteBook,
   hardDeleteBook,
   uploadBookPhoto,
   uploadBookCoverPhoto,
-  ratingsSummary,
-  reviewsSummary
+  getRatingsSummary,
+  getReviewsSummary
 }

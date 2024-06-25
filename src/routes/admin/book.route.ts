@@ -19,7 +19,7 @@ router.put(
   adminAuthMiddleware.authMiddleware,
   adminBookController.updateBook
 )
-router.get('/book-list', adminAuthMiddleware.authMiddleware, adminBookController.bookList)
+router.get('/book-list', adminAuthMiddleware.authMiddleware, adminBookController.listBooks)
 
 router.put(
   '/soft-delete-book/:bookID',
@@ -51,16 +51,16 @@ router.put(
 
 router.get(
   '/book-ratings-summary/:bookID',
-  celebrate(adminBookSchema.ratingsSummary),
+  celebrate(adminBookSchema.getRatingsSummary),
   adminAuthMiddleware.authMiddleware,
-  adminBookController.ratingsSummary
+  adminBookController.getRatingsSummary
 )
 
 router.get(
   '/book-reviews-summary/:bookID',
-  celebrate(adminBookSchema.reviewsSummary),
+  celebrate(adminBookSchema.getReviewsSummary),
   adminAuthMiddleware.authMiddleware,
-  adminBookController.reviewsSummary
+  adminBookController.getReviewsSummary
 )
 
 export default router

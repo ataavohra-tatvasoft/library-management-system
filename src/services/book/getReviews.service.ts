@@ -5,7 +5,7 @@ async function getReviews(
   skip: number,
   limit: number
 ): Promise<{ bookReviews: { username: string; review: any }[]; length: number }> {
-  try {
+  {
     if (isNaN(bookID)) {
       throw new Error('Invalid book ID format')
     }
@@ -34,13 +34,11 @@ async function getReviews(
     }))
 
     return { bookReviews, length: reviews.length }
-  } catch (error) {
-    throw error
   }
 }
 
 async function getReviewsCount(bookID: number): Promise<number> {
-  try {
+  {
     if (isNaN(bookID)) {
       throw new Error('Invalid book ID format')
     }
@@ -56,8 +54,6 @@ async function getReviewsCount(bookID: number): Promise<number> {
     }
 
     return reviews
-  } catch (error) {
-    throw error
   }
 }
 

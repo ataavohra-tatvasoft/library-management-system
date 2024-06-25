@@ -8,7 +8,7 @@ import { BookHistory } from '../../db/models/bookHistory.model'
 /**
  * @description Retrieves a list of unique issued books with details.
  */
-const issueBookList: Controller = async (req: Request, res: Response, next: NextFunction) => {
+const getIssuedBooksList: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
     let { page, pageSize } = req.query
 
@@ -16,7 +16,7 @@ const issueBookList: Controller = async (req: Request, res: Response, next: Next
     const limit = Number(pageSize) || 10
     const skip = (pageNumber - 1) * limit
 
-    const issuedBooksAggregation = [
+    const issuedBooksAggregationPipeline = [
       {
         $match: {
           books: { $elemMatch: { issueDate: { $ne: null } } }
@@ -61,16 +61,16 @@ const issueBookList: Controller = async (req: Request, res: Response, next: Next
       }
     ]
 
-    const books = await User.aggregate(issuedBooksAggregation).skip(skip).limit(limit)
-    if (!books || books.length === 0) {
+    const issuedBooks = await User.aggregate(issuedBooksAggregationPipeline).skip(skip).limit(limit)
+    if (!issuedBooks || issuedBooks.length === 0) {
       return responseHandlerUtils.responseHandler(res, {
         statusCode: httpStatusConstant.OK,
         message: messageConstant.NO_ISSUED_BOOK_FOUND
       })
     }
 
-    const totalBooks = await User.aggregate(issuedBooksAggregation)
-    const total = totalBooks.length
+    const totalIssuedBooks = await User.aggregate(issuedBooksAggregationPipeline)
+    const total = totalIssuedBooks.length
     const totalPages = Math.ceil(total / limit)
 
     if (pageNumber > totalPages) {
@@ -83,7 +83,7 @@ const issueBookList: Controller = async (req: Request, res: Response, next: Next
     return responseHandlerUtils.responseHandler(res, {
       statusCode: httpStatusConstant.OK,
       data: {
-        issuedBooks: books,
+        issuedBooks: issuedBooks,
         pagination: {
           page: pageNumber,
           pageSize: limit,
@@ -100,7 +100,7 @@ const issueBookList: Controller = async (req: Request, res: Response, next: Next
 /**
  * @description Issues a book to a user after validating availability and limits.
  */
-const issueBook: Controller = async (req: Request, res: Response, next: NextFunction) => {
+const issueBookToUser: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { bookID, email, issueDate } = req.body
 
@@ -122,8 +122,8 @@ const issueBook: Controller = async (req: Request, res: Response, next: NextFunc
       })
     }
 
-    for (const redundantBook of user.books) {
-      if (String(redundantBook.bookId) === String(book._id)) {
+    for (const issuedBook of user.books) {
+      if (String(issuedBook.bookId) === String(book._id)) {
         return responseHandlerUtils.responseHandler(res, {
           statusCode: httpStatusConstant.BAD_REQUEST,
           message: messageConstant.CANNOT_ISSUE_SAME_BOOK
@@ -167,7 +167,10 @@ const issueBook: Controller = async (req: Request, res: Response, next: NextFunc
       }
     }
 
-    const freeDays = helperFunctionsUtils.numberOfFreeDays(issueDate, book.quantityAvailable)
+    const numberOfFreeDays = helperFunctionsUtils.calculateNumberOfFreeDays(
+      issueDate,
+      book.quantityAvailable
+    )
 
     const userUpdate = await User.findOneAndUpdate(
       { email },
@@ -192,7 +195,7 @@ const issueBook: Controller = async (req: Request, res: Response, next: NextFunc
       { _id: book._id },
       {
         $inc: { quantityAvailable: -1, issueCount: +1 },
-        numberOfFreeDays: freeDays
+        numberOfFreeDays: numberOfFreeDays
       }
     )
 
@@ -228,7 +231,7 @@ const issueBook: Controller = async (req: Request, res: Response, next: NextFunc
 /**
  * @description Processes book return, calculates charges, and updates user records.
  */
-const submitBook: Controller = async (req: Request, res: Response, next: NextFunction) => {
+const submitBookForUser: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const DAY_IN_MILLISECONDS = 1000 * 60 * 60 * 24
     const { bookID, email, submitDate } = req.body
@@ -360,7 +363,7 @@ const submitBook: Controller = async (req: Request, res: Response, next: NextFun
 }
 
 export default {
-  issueBookList,
-  issueBook,
-  submitBook
+  getIssuedBooksList,
+  issueBookToUser,
+  submitBookForUser
 }

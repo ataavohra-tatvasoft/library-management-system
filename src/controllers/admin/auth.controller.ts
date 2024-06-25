@@ -24,8 +24,8 @@ const login: Controller = async (req: Request, res: Response, next: NextFunction
       })
     }
 
-    const isPasswordValid = await bcrypt.compare(password, admin.password)
-    if (!isPasswordValid) {
+    const isPasswordCorrect = await bcrypt.compare(password, admin.password)
+    if (!isPasswordCorrect) {
       return responseHandlerUtils.responseHandler(res, {
         statusCode: httpStatusConstant.UNAUTHORIZED,
         message: messageConstant.INVALID_PASSWORD
@@ -69,31 +69,35 @@ const login: Controller = async (req: Request, res: Response, next: NextFunction
 /**
  * @description Refreshes user access token upon valid refresh token verification.
  */
-const newAccessToken: Controller = async (req: Request, res: Response, next: NextFunction) => {
+const generateNewAccessToken: Controller = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const { token } = await authUtils.validateAuthorizationHeader(req.headers)
 
-    const radisClient = await authUtils.createRedisClient()
+    const redisClient = await authUtils.createRedisClient()
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex')
     const key = `blocked:refresh:tokens` // Customize key prefix (access or refresh)
 
-    const isBlocked = await radisClient.sIsMember(key, hashedToken)
-    if (isBlocked) {
+    const isTokenBlocked = await redisClient.sIsMember(key, hashedToken)
+    if (isTokenBlocked) {
       return responseHandlerUtils.responseHandler(res, {
         statusCode: httpStatusConstant.UNAUTHORIZED,
         message: httpErrorMessageConstant.TOKEN_BLACKLISTED
       })
     }
 
-    const verifiedToken = await authUtils.verifyRefreshToken(token)
-    if (verifiedToken.tokenType !== 'refresh') {
+    const validatedToken = await authUtils.verifyRefreshToken(token)
+    if (validatedToken.tokenType !== 'refresh') {
       return responseHandlerUtils.responseHandler(res, {
         statusCode: httpStatusConstant.INVALID_TOKEN,
         message: messageConstant.INVALID_TOKEN_TYPE
       })
     }
 
-    const admin = await Admin.findOne({ email: verifiedToken.email })
+    const admin = await Admin.findOne({ email: validatedToken.email })
     if (!admin) {
       return responseHandlerUtils.responseHandler(res, {
         statusCode: httpStatusConstant.NOT_FOUND,
@@ -239,7 +243,7 @@ const resetPassword: Controller = async (req: Request, res: Response, next: Next
 /**
  * @description Updates admin profile information.
  */
-const updateProfile: Controller = async (req: Request, res: Response, next: NextFunction) => {
+const updateAdminProfile: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email } = req.params
     const { password, firstname, lastname, dateOfBirth, mobileNumber, address, city, state } =
@@ -255,7 +259,7 @@ const updateProfile: Controller = async (req: Request, res: Response, next: Next
       })
     }
 
-    const updateData = {
+    const updatedAdminData = {
       ...(hashedPassword && { password: hashedPassword }),
       ...(firstname && { firstname }),
       ...(lastname && { lastname }),
@@ -267,7 +271,7 @@ const updateProfile: Controller = async (req: Request, res: Response, next: Next
     }
 
     // Update admin profile and return the updated document
-    const updatedProfile = await Admin.findOneAndUpdate({ email }, updateData, { new: true })
+    const updatedProfile = await Admin.findOneAndUpdate({ email }, updatedAdminData, { new: true })
 
     if (!updatedProfile) {
       return responseHandlerUtils.responseHandler(res, {
@@ -287,9 +291,9 @@ const updateProfile: Controller = async (req: Request, res: Response, next: Next
 
 export default {
   login,
-  newAccessToken,
+  generateNewAccessToken,
   logout,
   forgotPassword,
   resetPassword,
-  updateProfile
+  updateAdminProfile
 }

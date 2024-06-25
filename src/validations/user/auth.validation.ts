@@ -18,13 +18,14 @@ const resetPassword = {
     password: Joi.string()
       .min(5)
       .required()
+      // eslint-disable-next-line no-useless-escape
       .pattern(/^(?=.*[A-Z])(?=.*[!@#$%^&*()_+\-=?{|}\[\]:\'\";,.<>\/\\|\s]).+$/),
     confirmPassword: Joi.ref('password'),
     resetToken: Joi.string().required()
   })
 }
 
-const signup = {
+const registerNewUser = {
   body: Joi.object().keys({
     email: Joi.string().email({
       minDomainSegments: 2,
@@ -34,6 +35,7 @@ const signup = {
     password: Joi.string()
       .min(5)
       .required()
+      // eslint-disable-next-line no-useless-escape
       .pattern(/^(?=.*[A-Z])(?=.*[!@#$%^&*()_+\-=?{|}\[\]:\'\";,.<>\/\\|\s]).+$/),
     confirmPassword: Joi.ref('password'),
     // typeOfUser: Joi.string().valid('admin', 'user'),
@@ -49,7 +51,7 @@ const signup = {
   })
 }
 
-const updateProfile = {
+const updateUserProfile = {
   params: {
     email: Joi.string().required()
   },
@@ -58,6 +60,7 @@ const updateProfile = {
     password: Joi.string()
       .min(5)
       .optional()
+      // eslint-disable-next-line no-useless-escape
       .pattern(/^(?=.*[A-Z])(?=.*[!@#$%^&*()_+\-=?{|}\[\]:\'\";,.<>\/\\|\s]).+$/),
     confirmPassword: Joi.ref('password'),
     firstname: Joi.string().allow(''),
@@ -74,6 +77,6 @@ export default {
   login,
   forgotPassword,
   resetPassword,
-  signup,
-  updateProfile
+  registerNewUser,
+  updateUserProfile
 }

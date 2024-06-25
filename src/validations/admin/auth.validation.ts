@@ -18,13 +18,14 @@ const resetPassword = {
     password: Joi.string()
       .min(5)
       .required()
+      // eslint-disable-next-line no-useless-escape
       .pattern(/^(?=.*[A-Z])(?=.*[!@#$%^&*()_+\-=?{|}\[\]:\'\";,.<>\/\\|\s]).+$/),
     confirmPassword: Joi.ref('password'),
     resetToken: Joi.string().required()
   })
 }
 
-const updateProfile = {
+const updateAdminProfile = {
   params: {
     email: Joi.string().required()
   },
@@ -33,6 +34,7 @@ const updateProfile = {
     password: Joi.string()
       .min(5)
       .required()
+      // eslint-disable-next-line no-useless-escape
       .pattern(/^(?=.*[A-Z])(?=.*[!@#$%^&*()_+\-=?{|}\[\]:\'\";,.<>\/\\|\s]).+$/),
     confirmPassword: Joi.ref('password'),
     firstname: Joi.string().allow(''),
@@ -49,5 +51,5 @@ export default {
   login,
   forgotPassword,
   resetPassword,
-  updateProfile
+  updateAdminProfile
 }

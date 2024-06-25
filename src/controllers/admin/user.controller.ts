@@ -9,7 +9,7 @@ import { envConfig } from '../../config'
 /**
  * @description Registers a new user (validates age and hashes password).
  */
-const addUser: Controller = async (req: Request, res: Response, next: NextFunction) => {
+const registerUser: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const {
       email,
@@ -23,8 +23,8 @@ const addUser: Controller = async (req: Request, res: Response, next: NextFuncti
       state
     } = req.body
 
-    const ageLimitValid = helperFunctionsUtils.validateAgeLimit(dateOfBirth)
-    if (!ageLimitValid) {
+    const isAgeValid = helperFunctionsUtils.validateAgeLimit(dateOfBirth)
+    if (!isAgeValid) {
       return responseHandlerUtils.responseHandler(res, {
         statusCode: httpStatusConstant.BAD_REQUEST,
         message: messageConstant.INVALID_AGE
@@ -34,7 +34,7 @@ const addUser: Controller = async (req: Request, res: Response, next: NextFuncti
     const salt = await bcrypt.genSalt(Number(envConfig.saltRounds))
     const hashedPassword = password ? await bcrypt.hash(password, salt) : undefined
 
-    const createUserStatus = await User.create({
+    const newUser = await User.create({
       email,
       password: hashedPassword,
       firstname,
@@ -46,10 +46,10 @@ const addUser: Controller = async (req: Request, res: Response, next: NextFuncti
       state
     })
 
-    if (!createUserStatus) {
+    if (!newUser) {
       return responseHandlerUtils.responseHandler(res, {
         statusCode: httpStatusConstant.BAD_REQUEST,
-        message: messageConstant.ERROR_SIGNING_USER
+        message: messageConstant.ERROR_CREATING_USER
       })
     }
 
@@ -65,7 +65,7 @@ const addUser: Controller = async (req: Request, res: Response, next: NextFuncti
 /**
  * @description Retrieves a list of active users with essential details.
  */
-const userList: Controller = async (req: Request, res: Response, next: NextFunction) => {
+const getActiveUsersList: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
     let { page, pageSize } = req.query
 
@@ -73,7 +73,7 @@ const userList: Controller = async (req: Request, res: Response, next: NextFunct
     const limit = Number(pageSize) || 10
     const skip = (pageNumber - 1) * limit
 
-    const userData = await User.find(
+    const activeUsers = await User.find(
       { deletedAt: null },
       {
         _id: 0,
@@ -91,22 +91,22 @@ const userList: Controller = async (req: Request, res: Response, next: NextFunct
       .skip(skip)
       .limit(limit)
 
-    if (!userData) {
+    if (!activeUsers) {
       return responseHandlerUtils.responseHandler(res, {
         statusCode: httpStatusConstant.BAD_REQUEST,
-        message: messageConstant.ERROR_LISTING_USER
+        message: messageConstant.ERROR_LISTING_USERS
       })
     }
 
-    const total = await User.countDocuments({ deletedAt: null })
-    if (!total) {
+    const totalUsersCount = await User.countDocuments({ deletedAt: null })
+    if (!totalUsersCount) {
       return responseHandlerUtils.responseHandler(res, {
         statusCode: httpStatusConstant.OK,
         message: messageConstant.ERROR_COUNTING_USERS
       })
     }
 
-    const totalPages = Math.ceil(total / limit)
+    const totalPages = Math.ceil(totalUsersCount / limit)
     if (pageNumber > totalPages) {
       return responseHandlerUtils.responseHandler(res, {
         statusCode: httpStatusConstant.BAD_REQUEST,
@@ -117,7 +117,7 @@ const userList: Controller = async (req: Request, res: Response, next: NextFunct
     return responseHandlerUtils.responseHandler(res, {
       statusCode: httpStatusConstant.OK,
       data: {
-        userData,
+        activeUsers,
         pagination: {
           page: pageNumber,
           pageSize: limit,
@@ -134,22 +134,22 @@ const userList: Controller = async (req: Request, res: Response, next: NextFunct
 /**
  * @description Updates user information (optional password update).
  */
-const updateUser: Controller = async (req: Request, res: Response, next: NextFunction) => {
+const updateUserDetails: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email } = req.params
     const { password, firstname, lastname, dateOfBirth, mobileNumber, address, city, state } =
       req.body || {}
     const hashedPassword = password ? await bcrypt.hash(password, 10) : undefined
 
-    const userProfile = await User.findOne({ email })
-    if (!userProfile) {
+    const user = await User.findOne({ email })
+    if (!user) {
       return responseHandlerUtils.responseHandler(res, {
         statusCode: httpStatusConstant.NOT_FOUND,
         message: messageConstant.USER_NOT_FOUND
       })
     }
 
-    const updateData = {
+    const updatedData = {
       ...(hashedPassword && { password: hashedPassword }),
       ...(firstname && { firstname }),
       ...(lastname && { lastname }),
@@ -160,7 +160,7 @@ const updateUser: Controller = async (req: Request, res: Response, next: NextFun
       ...(state && { state })
     }
 
-    const updatedUser = await User.findOneAndUpdate({ email }, updateData, { new: true })
+    const updatedUser = await User.findOneAndUpdate({ email }, updatedData, { new: true })
     if (!updatedUser) {
       return responseHandlerUtils.responseHandler(res, {
         statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
@@ -180,12 +180,12 @@ const updateUser: Controller = async (req: Request, res: Response, next: NextFun
 /**
  * @description Deactivates a user account (soft delete).
  */
-const softDeleteUser: Controller = async (req: Request, res: Response, next: NextFunction) => {
+const deactivateUser: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email } = req.params
 
-    const userExists = await User.findOne({ email, deletedAt: null })
-    if (!userExists) {
+    const user = await User.findOne({ email, deletedAt: null })
+    if (!user) {
       return responseHandlerUtils.responseHandler(res, {
         statusCode: httpStatusConstant.BAD_REQUEST,
         message: messageConstant.USER_NOT_EXISTS
@@ -217,12 +217,16 @@ const softDeleteUser: Controller = async (req: Request, res: Response, next: Nex
 /**
  * @description Permanently removes a user from the system.
  */
-const hardDeleteUser: Controller = async (req: Request, res: Response, next: NextFunction) => {
+const deleteUserPermanently: Controller = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const { email } = req.params
 
-    const userExists = await User.findOne({ email })
-    if (!userExists) {
+    const user = await User.findOne({ email })
+    if (!user) {
       return responseHandlerUtils.responseHandler(res, {
         statusCode: httpStatusConstant.BAD_REQUEST,
         message: messageConstant.USER_NOT_EXISTS
@@ -247,9 +251,9 @@ const hardDeleteUser: Controller = async (req: Request, res: Response, next: Nex
 }
 
 export default {
-  addUser,
-  userList,
-  updateUser,
-  softDeleteUser,
-  hardDeleteUser
+  registerUser,
+  getActiveUsersList,
+  updateUserDetails,
+  deactivateUser,
+  deleteUserPermanently
 }

@@ -5,7 +5,7 @@ import { envConfig } from '../config'
 import { VerifiedToken } from '../interfaces'
 
 async function validateAuthorizationHeader(headers: any): Promise<{ token: string }> {
-  try {
+  {
     const authHeader = headers.authorization
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       throw new Error('Unauthorized')
@@ -13,8 +13,6 @@ async function validateAuthorizationHeader(headers: any): Promise<{ token: strin
 
     const token = authHeader.split(' ')[1]
     return { token }
-  } catch (error) {
-    throw error
   }
 }
 async function verifyAccessToken(token: string): Promise<VerifiedToken> {
@@ -46,7 +44,7 @@ async function verifyRefreshToken(token: string): Promise<VerifiedToken> {
   }
 }
 async function createRedisClient() {
-  try {
+  {
     const client = createClient({
       password: String(envConfig.redisPassword),
       socket: {
@@ -56,12 +54,10 @@ async function createRedisClient() {
     })
     await client.connect()
     return client
-  } catch (error) {
-    throw error
   }
 }
 async function blockToken(token: string, type: 'access' | 'refresh'): Promise<void> {
-  try {
+  {
     const client = await createRedisClient()
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex')
     const key = `blocked:${type}:tokens`
@@ -70,8 +66,6 @@ async function blockToken(token: string, type: 'access' | 'refresh'): Promise<vo
     await client.expire(key, 24 * 60 * 60)
 
     return Promise.resolve()
-  } catch (error) {
-    throw error
   }
 }
 

@@ -3,7 +3,7 @@ import { Book, BookRating } from '../../db/models'
 async function getRatings(
   bookID: number
 ): Promise<{ totalRatings: number; averageRating: number; ratingScale: string }> {
-  try {
+  {
     if (isNaN(bookID)) {
       throw new Error('Invalid book ID format')
     }
@@ -35,8 +35,6 @@ async function getRatings(
     }
 
     return { totalRatings, averageRating, ratingScale }
-  } catch (error) {
-    throw error
   }
 }
 

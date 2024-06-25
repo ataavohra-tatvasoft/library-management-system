@@ -15,6 +15,8 @@ export const messageConstant = {
   ERROR_UPDATING_USER: 'Error updating user ',
   ERROR_DELETING_USER: 'Error deleting user',
   ERROR_UPDATING_PROFILE: 'Error updating profile',
+  ERROR_CREATING_USER: 'Error creating user',
+  ERROR_LISTING_USERS: 'Error listing users',
   INVALID_AGE: 'Age must be 12 years old',
   INVALID_PASSWORD: 'Invalid Password',
   ERROR_LISTING_USER: 'Error listing user',

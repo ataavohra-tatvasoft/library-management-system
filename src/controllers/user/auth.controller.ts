@@ -85,15 +85,19 @@ const login: Controller = async (req: Request, res: Response, next: NextFunction
 /**
  * @description Refreshes user access token upon valid refresh token verification.
  */
-const newAccessToken: Controller = async (req: Request, res: Response, next: NextFunction) => {
+const generateNewAccessToken: Controller = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const { token } = await authUtils.validateAuthorizationHeader(req.headers)
 
-    const radisClient = await authUtils.createRedisClient()
+    const redisClient = await authUtils.createRedisClient()
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex')
-    const key = `blocked:refresh:tokens`
+    const blockedListKey = `blocked:refresh:tokens`
 
-    const isBlocked = await radisClient.sIsMember(key, hashedToken)
+    const isBlocked = await redisClient.sIsMember(blockedListKey, hashedToken)
     if (isBlocked) {
       return responseHandlerUtils.responseHandler(res, {
         statusCode: httpStatusConstant.UNAUTHORIZED,
@@ -102,7 +106,7 @@ const newAccessToken: Controller = async (req: Request, res: Response, next: Nex
     }
 
     const verifiedToken = await authUtils.verifyRefreshToken(token)
-    if (!(verifiedToken.tokenType == 'refresh')) {
+    if (!(verifiedToken.tokenType === 'refresh')) {
       return responseHandlerUtils.responseHandler(res, {
         statusCode: httpStatusConstant.INVALID_TOKEN,
         message: messageConstant.INVALID_TOKEN_TYPE
@@ -142,17 +146,15 @@ const newAccessToken: Controller = async (req: Request, res: Response, next: Nex
 }
 
 /**
- * @description Validates JWT token and logs out user.
+ * @description Logs out user by invalidating JWT tokens.
  */
 const logout: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { accessToken, refreshToken } = req.body
 
-    // Verify the JWT tokens
     await authUtils.verifyRefreshToken(refreshToken)
     await authUtils.verifyAccessToken(accessToken)
 
-    // Block the tokens
     await authUtils.blockToken(accessToken, 'access')
     await authUtils.blockToken(refreshToken, 'refresh')
 
@@ -253,9 +255,9 @@ const resetPassword: Controller = async (req: Request, res: Response, next: Next
 }
 
 /**
- * @description Registers a new user (validates age and hashes password).
+ * @description Registers a new user.
  */
-const signup: Controller = async (req: Request, res: Response, next: NextFunction) => {
+const registerNewUser: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const {
       email,
@@ -272,8 +274,8 @@ const signup: Controller = async (req: Request, res: Response, next: NextFunctio
     const salt = await bcrypt.genSalt(Number(envConfig.saltRounds))
     const hashedPassword = await bcrypt.hash(password, salt)
 
-    const ageLimitValid = helperFunctionsUtils.validateAgeLimit(dateOfBirth)
-    if (!ageLimitValid) {
+    const isAgeValid = helperFunctionsUtils.validateAgeLimit(dateOfBirth)
+    if (!isAgeValid) {
       return responseHandlerUtils.responseHandler(res, {
         statusCode: httpStatusConstant.BAD_REQUEST,
         message: messageConstant.INVALID_AGE
@@ -309,9 +311,9 @@ const signup: Controller = async (req: Request, res: Response, next: NextFunctio
 }
 
 /**
- * @description Updates user information (optional password update).
+ * @description Updates user profile information.
  */
-const updateProfile: Controller = async (req: Request, res: Response, next: NextFunction) => {
+const updateUserProfile: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email } = req.params
     const { password, firstname, lastname, dateOfBirth, mobileNumber, address, city, state } =
@@ -358,12 +360,16 @@ const updateProfile: Controller = async (req: Request, res: Response, next: Next
 /**
  * @description Uploads user profile photo.
  */
-const uploadProfilePhoto: Controller = async (req: Request, res: Response, next: NextFunction) => {
+const uploadUserProfilePhoto: Controller = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const { email } = req.params
 
-    const exists = await User.findOne({ email })
-    if (!exists) {
+    const userExists = await User.findOne({ email })
+    if (!userExists) {
       return responseHandlerUtils.responseHandler(res, {
         statusCode: httpStatusConstant.NOT_FOUND,
         message: messageConstant.USER_NOT_FOUND
@@ -405,11 +411,11 @@ const uploadProfilePhoto: Controller = async (req: Request, res: Response, next:
 
 export default {
   login,
-  newAccessToken,
+  generateNewAccessToken,
   logout,
   forgotPassword,
   resetPassword,
-  signup,
-  updateProfile,
-  uploadProfilePhoto
+  registerNewUser,
+  updateUserProfile,
+  uploadUserProfilePhoto
 }

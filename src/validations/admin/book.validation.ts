@@ -40,13 +40,13 @@ const deleteBook = {
   })
 }
 
-const ratingsSummary = {
+const getRatingsSummary = {
   params: Joi.object().keys({
     bookID: Joi.string().required().min(13).max(13).trim()
   })
 }
 
-const reviewsSummary = {
+const getReviewsSummary = {
   params: Joi.object().keys({
     bookID: Joi.string().required().min(13).max(13).trim()
   }),
@@ -61,6 +61,6 @@ export default {
   bookList,
   updateBook,
   deleteBook,
-  ratingsSummary,
-  reviewsSummary
+  getRatingsSummary,
+  getReviewsSummary
 }

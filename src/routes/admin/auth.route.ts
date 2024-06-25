@@ -7,7 +7,7 @@ import { adminAuthMiddleware } from '../../middlewares'
 const router: Router = express.Router()
 
 router.post('/login', celebrate(adminAuthSchema.login), adminAuthController.login)
-router.get('/get-access-token', adminAuthController.newAccessToken)
+router.get('/get-access-token', adminAuthController.generateNewAccessToken)
 router.post('/logout', adminAuthController.logout)
 router.post(
   '/forgot-password',
@@ -21,9 +21,9 @@ router.post(
 )
 router.put(
   '/update-profile/:email',
-  celebrate(adminAuthSchema.updateProfile),
+  celebrate(adminAuthSchema.updateAdminProfile),
   adminAuthMiddleware.authMiddleware,
-  adminAuthController.updateProfile
+  adminAuthController.updateAdminProfile
 )
 
 export default router

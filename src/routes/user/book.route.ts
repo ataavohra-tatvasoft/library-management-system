@@ -8,47 +8,47 @@ const router: Router = express.Router()
 
 router.get(
   '/search-book',
-  celebrate(userBookSchema.searchBook),
+  celebrate(userBookSchema.searchBooks),
   userAuthMiddleware.authMiddleware,
-  userBookController.searchBook
+  userBookController.searchBooks
 )
-router.get('/book-details', userAuthMiddleware.authMiddleware, userBookController.bookDetails)
+router.get('/book-details', userAuthMiddleware.authMiddleware, userBookController.getAllBookDetails)
 router.post(
   '/book/add-review/:email',
-  celebrate(userBookSchema.addReview),
+  celebrate(userBookSchema.addBookReview),
   userAuthMiddleware.authMiddleware,
-  userBookController.addReview
+  userBookController.addBookReview
 )
 router.post(
   '/book/add-rating/:email',
-  celebrate(userBookSchema.addRating),
+  celebrate(userBookSchema.addBookRating),
   userAuthMiddleware.authMiddleware,
-  userBookController.addRating
+  userBookController.addBookRating
 )
 router.get(
   '/book/issue-book-history/:email',
-  celebrate(userBookSchema.issueBookHistory),
+  celebrate(userBookSchema.getBookIssueHistory),
   userAuthMiddleware.authMiddleware,
-  userBookController.issueBookHistory
+  userBookController.getBookIssueHistory
 )
 router.get(
   '/summary/:email',
-  celebrate(userBookSchema.summaryAPI),
+  celebrate(userBookSchema.getLibrarySummary),
   userAuthMiddleware.authMiddleware,
-  userBookController.summaryAPI
+  userBookController.getLibrarySummary
 )
 router.get(
   '/book-ratings-summary/:bookID',
-  celebrate(userBookSchema.ratingsSummary),
+  celebrate(userBookSchema.getBookRatingsSummary),
   userAuthMiddleware.authMiddleware,
-  userBookController.ratingsSummary
+  userBookController.getBookRatingsSummary
 )
 
 router.get(
   '/book-reviews-summary/:bookID',
-  celebrate(userBookSchema.reviewsSummary),
+  celebrate(userBookSchema.getBookReviewsSummary),
   userAuthMiddleware.authMiddleware,
-  userBookController.reviewsSummary
+  userBookController.getBookReviewsSummary
 )
 
 export default router

@@ -10,7 +10,9 @@
         "experimentalDecorators": true /* Enable experimental support for legacy experimental decorators. */,
         "emitDecoratorMetadata": true /* Emit design-type metadata for decorated declarations in source files. */,
         "outDir": "build", // Output directory for compiled JavaScript files (optional)
-        "moduleResolution": "Node"
+        "moduleResolution": "Node",
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true
     },
     "ts-node": {
         "esm": true,

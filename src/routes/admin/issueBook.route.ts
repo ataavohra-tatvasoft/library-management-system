@@ -8,21 +8,21 @@ const router: Router = express.Router()
 
 router.get(
   '/issue-book-list',
-  celebrate(adminIssueBookSchema.issueBookList),
+  celebrate(adminIssueBookSchema.getIssuedBooksList),
   adminAuthMiddleware.authMiddleware,
-  adminIssueBookController.issueBookList
+  adminIssueBookController.getIssuedBooksList
 )
 router.put(
   '/issue-book',
-  celebrate(adminIssueBookSchema.issueBook),
+  celebrate(adminIssueBookSchema.issueBookToUser),
   adminAuthMiddleware.authMiddleware,
-  adminIssueBookController.issueBook
+  adminIssueBookController.issueBookToUser
 )
 router.put(
   '/submit-book',
-  celebrate(adminIssueBookSchema.submitBook),
+  celebrate(adminIssueBookSchema.submitBookForUser),
   adminAuthMiddleware.authMiddleware,
-  adminIssueBookController.submitBook
+  adminIssueBookController.submitBookForUser
 )
 
 export default router

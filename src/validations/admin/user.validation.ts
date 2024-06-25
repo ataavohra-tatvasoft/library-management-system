@@ -1,6 +1,6 @@
 import { Joi } from 'celebrate'
 
-const addUser = {
+const registerUser = {
   body: Joi.object().keys({
     email: Joi.string().email({
       minDomainSegments: 2,
@@ -10,6 +10,7 @@ const addUser = {
     password: Joi.string()
       .min(5)
       .optional()
+      // eslint-disable-next-line no-useless-escape
       .pattern(/^(?=.*[A-Z])(?=.*[!@#$%^&*()_+\-=?{|}\[\]:\'\";,.<>\/\\|\s]).+$/),
     confirmPassword: Joi.ref('password'),
     firstname: Joi.string().max(8).min(3).required(),
@@ -24,14 +25,14 @@ const addUser = {
   })
 }
 
-const userList = {
+const getActiveUsersList = {
   query: Joi.object().keys({
     page: Joi.number().integer().min(1).optional().default(1),
     pageSize: Joi.number().integer().min(1).optional().default(10)
   })
 }
 
-const updateUser = {
+const updateUserDetails = {
   params: {
     email: Joi.string().required()
   },
@@ -40,6 +41,7 @@ const updateUser = {
     password: Joi.string()
       .min(5)
       .optional()
+      // eslint-disable-next-line no-useless-escape
       .pattern(/^(?=.*[A-Z])(?=.*[!@#$%^&*()_+\-=?{|}\[\]:\'\";,.<>\/\\|\s]).+$/),
     confirmPassword: Joi.ref('password'),
     firstname: Joi.string().allow(''),
@@ -52,15 +54,15 @@ const updateUser = {
   })
 }
 
-const deleteUser = {
+const deactivateDeleteUser = {
   params: Joi.object().keys({
     email: Joi.string().required()
   })
 }
 
 export default {
-  addUser,
-  userList,
-  updateUser,
-  deleteUser
+  registerUser,
+  getActiveUsersList,
+  updateUserDetails,
+  deactivateDeleteUser
 }

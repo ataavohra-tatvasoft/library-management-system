@@ -178,6 +178,7 @@ const payCharges: Controller = async (req: Request, res: Response, next: NextFun
     })
 
     const confirmResult = await stripe.paymentIntents.confirm(paymentIntent.id, {
+      // eslint-disable-next-line camelcase
       payment_method: String(paymentCard.paymentMethodID)
     })
 

@@ -1,13 +1,13 @@
 import { Joi } from 'celebrate'
 
-const issueBookList = {
+const getIssuedBooksList = {
   query: Joi.object().keys({
     page: Joi.number().integer().min(1).optional().default(1),
     pageSize: Joi.number().integer().min(1).optional().default(10)
   })
 }
 
-const issueBook = {
+const issueBookToUser = {
   body: Joi.object().keys({
     bookID: Joi.string().required().min(13).max(13).trim().required(),
     email: Joi.string().email().required(),
@@ -15,7 +15,7 @@ const issueBook = {
   })
 }
 
-const submitBook = {
+const submitBookForUser = {
   body: Joi.object().keys({
     bookID: Joi.string().required().min(13).max(13).trim().required(),
     email: Joi.string().email().required(),
@@ -24,7 +24,7 @@ const submitBook = {
 }
 
 export default {
-  issueBookList,
-  issueBook,
-  submitBook
+  getIssuedBooksList,
+  issueBookToUser,
+  submitBookForUser
 }

@@ -8,34 +8,34 @@ const router: Router = express.Router()
 
 router.post(
   '/create-user',
-  celebrate(adminUserSchema.addUser),
+  celebrate(adminUserSchema.registerUser),
   adminAuthMiddleware.authMiddleware,
-  adminUserController.addUser
+  adminUserController.registerUser
 )
 
 router.get(
   '/user-list',
-  celebrate(adminUserSchema.userList),
+  celebrate(adminUserSchema.getActiveUsersList),
   adminAuthMiddleware.authMiddleware,
-  adminUserController.userList
+  adminUserController.getActiveUsersList
 )
 router.put(
   '/update-user/:email',
-  celebrate(adminUserSchema.updateUser),
+  celebrate(adminUserSchema.updateUserDetails),
   adminAuthMiddleware.authMiddleware,
-  adminUserController.updateUser
+  adminUserController.updateUserDetails
 )
 router.put(
   '/soft-delete-user/:email',
-  celebrate(adminUserSchema.deleteUser),
+  celebrate(adminUserSchema.deactivateDeleteUser),
   adminAuthMiddleware.authMiddleware,
-  adminUserController.softDeleteUser
+  adminUserController.deactivateUser
 )
 router.delete(
   '/hard-delete-user/:email',
-  celebrate(adminUserSchema.deleteUser),
+  celebrate(adminUserSchema.deactivateDeleteUser),
   adminAuthMiddleware.authMiddleware,
-  adminUserController.hardDeleteUser
+  adminUserController.deleteUserPermanently
 )
 
 export default router

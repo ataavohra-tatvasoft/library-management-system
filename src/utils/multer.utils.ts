@@ -18,7 +18,7 @@ const getUploadDirectory = (url: string): string => {
 
 // Function to generate a unique file name
 const generateUniqueFileName = (url: string, params: any, file: any): string => {
-  try {
+  {
     const extension = file.originalname.split('.').pop()
     const baseFileName = file.fieldname
     let uniqueName: string
@@ -34,14 +34,12 @@ const generateUniqueFileName = (url: string, params: any, file: any): string => 
     }
 
     return uniqueName
-  } catch (error) {
-    throw error
   }
 }
 
 // Function to delete existing profile photo (moved outside storage config)
 const deleteExistingProfilePhoto = async (directory: string, email: string) => {
-  try {
+  {
     const files = await fs.readdir(directory) // List files in the directory
     const profilePhotos = files.filter((file: any) =>
       file.startsWith(`user-${String(email)}-profilePhoto.`)
@@ -51,14 +49,12 @@ const deleteExistingProfilePhoto = async (directory: string, email: string) => {
       const filePath = path.join(directory, photo)
       await fs.unlink(filePath)
     }
-  } catch (error) {
-    throw error
   }
 }
 
 // Function to delete existing cover photo (moved outside storage config)
 const deleteExistingCoverPhoto = async (directory: string, bookID: string) => {
-  try {
+  {
     console.log(directory)
     const files = await fs.readdir(directory) // List files in the directory
     const coverPhotos = files.filter(
@@ -70,8 +66,6 @@ const deleteExistingCoverPhoto = async (directory: string, bookID: string) => {
       const filePath = path.join(directory, photo)
       await fs.unlink(filePath)
     }
-  } catch (error) {
-    throw error
   }
 }
 

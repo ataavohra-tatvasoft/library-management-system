@@ -1,4 +1,4 @@
-import dbConfig from './db.config';
-import envConfig from './env.config';
+import dbConfig from './db.config'
+import envConfig from './env.config'
 
-export { dbConfig, envConfig };
+export { dbConfig, envConfig }

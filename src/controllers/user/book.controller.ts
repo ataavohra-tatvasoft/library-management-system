@@ -8,7 +8,7 @@ import { getRatingService, getReviewService } from '../../services/book'
 /**
  * @description Searches for active books by name, ID, or both (returns details & aggregates).
  */
-const searchBook: Controller = async (req: Request, res: Response, next: NextFunction) => {
+const searchBooks: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { name, bookID, page, pageSize } = req.query
     const pageNumber = Number(page) || 1
@@ -16,7 +16,7 @@ const searchBook: Controller = async (req: Request, res: Response, next: NextFun
     const skip = (pageNumber - 1) * limit
 
     const searchQuery: { deletedAt: Date | null } & {
-      $or?: { bookID?: String; name?: RegExp }[]
+      $or?: { bookID?: string; name?: RegExp }[]
     } = {
       deletedAt: null
     }
@@ -124,9 +124,9 @@ const searchBook: Controller = async (req: Request, res: Response, next: NextFun
 }
 
 /**
- * @description Searches for active books and returns it's every detail.
+ * @description Retrieves detailed information for all active books.
  */
-const bookDetails: Controller = async (req: Request, res: Response, next: NextFunction) => {
+const getAllBookDetails: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const totalBooks = await Book.countDocuments({ deletedAt: null })
     if (!totalBooks) {
@@ -222,9 +222,9 @@ const bookDetails: Controller = async (req: Request, res: Response, next: NextFu
 }
 
 /**
- * @description Lets a user write a review for a book (prevents duplicates).
+ * @description Allows a user to write a review for a book (prevents duplicates).
  */
-const addReview: Controller = async (req: Request, res: Response, next: NextFunction) => {
+const addBookReview: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email } = req.params
     const { bookID, review } = req.body
@@ -272,7 +272,7 @@ const addReview: Controller = async (req: Request, res: Response, next: NextFunc
 /**
  * @description Allows a user to rate a book (prevents duplicates).
  */
-const addRating: Controller = async (req: Request, res: Response, next: NextFunction) => {
+const addBookRating: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email } = req.params
     const { bookID, rating } = req.body
@@ -294,7 +294,6 @@ const addRating: Controller = async (req: Request, res: Response, next: NextFunc
     }
 
     const existingRating = await BookRating.findOne({ userID: user._id, bookID: book._id })
-
     if (existingRating) {
       return responseHandlerUtils.responseHandler(res, {
         statusCode: httpStatusConstant.BAD_REQUEST,
@@ -322,7 +321,7 @@ const addRating: Controller = async (req: Request, res: Response, next: NextFunc
 /**
  * @description Retrieves detailed history of book issuance and returns (includes user info).
  */
-const issueBookHistory: Controller = async (req: Request, res: Response, next: NextFunction) => {
+const getBookIssueHistory: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email } = req.params
 
@@ -352,7 +351,6 @@ const issueBookHistory: Controller = async (req: Request, res: Response, next: N
       const usedDays = submitDate
         ? Math.ceil((submitDate.getTime() - issueDate.getTime()) / (1000 * 60 * 60 * 24))
         : null
-
       const totalAmount = submitDate ? (usedDays || 0) * history.bookID.charges : null
 
       return {
@@ -375,9 +373,9 @@ const issueBookHistory: Controller = async (req: Request, res: Response, next: N
 }
 
 /**
- * @description Provides overall library statistics (issued, submitted, charges etc.).
+ * @description Provides overall library statistics (issued, submitted, charges etc.) of a user.
  */
-const summaryAPI: Controller = async (req: Request, res: Response, next: NextFunction) => {
+const getLibrarySummary: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email } = req.params
     const user = await User.findOne({ email }, { _id: 1, paidAmount: 1, dueCharges: 1 })
@@ -393,12 +391,14 @@ const summaryAPI: Controller = async (req: Request, res: Response, next: NextFun
       userID: user._id,
       submitDate: { $exists: true, $ne: null }
     })
-    if (totalIssuedBooks && totalSubmittedBooks) {
+
+    if (totalIssuedBooks === undefined || totalSubmittedBooks === undefined) {
       return responseHandlerUtils.responseHandler(res, {
         statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
         message: messageConstant.ERROR_COUNTING_BOOK_HISTORY
       })
     }
+
     const totalNotSubmittedBooks = totalIssuedBooks - totalSubmittedBooks
 
     return responseHandlerUtils.responseHandler(res, {
@@ -417,9 +417,13 @@ const summaryAPI: Controller = async (req: Request, res: Response, next: NextFun
 }
 
 /**
- * @description Gets overall ratings summary of the specific book.
+ * @description Retrieves overall ratings summary of a specific book.
  */
-const ratingsSummary: Controller = async (req: Request, res: Response, next: NextFunction) => {
+const getBookRatingsSummary: Controller = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const { bookID } = req.params
 
@@ -441,9 +445,13 @@ const ratingsSummary: Controller = async (req: Request, res: Response, next: Nex
 }
 
 /**
- * @description Gets overall reviews summary of the specific book.
+ * @description Retrieves overall reviews summary of a specific book.
  */
-const reviewsSummary: Controller = async (req: Request, res: Response, next: NextFunction) => {
+const getBookReviewsSummary: Controller = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const { bookID } = req.params
     const { page = 1, pageSize = 10 } = req.query
@@ -488,12 +496,12 @@ const reviewsSummary: Controller = async (req: Request, res: Response, next: Nex
 }
 
 export default {
-  searchBook,
-  bookDetails,
-  addReview,
-  addRating,
-  issueBookHistory,
-  summaryAPI,
-  ratingsSummary,
-  reviewsSummary
+  searchBooks,
+  getAllBookDetails,
+  addBookReview,
+  addBookRating,
+  getBookIssueHistory,
+  getLibrarySummary,
+  getBookRatingsSummary,
+  getBookReviewsSummary
 }
