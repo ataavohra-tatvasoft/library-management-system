@@ -1,13 +1,18 @@
-import fs from 'fs';
-import path from 'path';
-import ejs from 'ejs';
+import fs from 'fs'
+import path from 'path'
+import ejs from 'ejs'
 
 const compileEmailTemplate = async (templateName: string, data: object) => {
-    {
-        const templatePath = path.join('public', 'templates', `${templateName}.ejs`);
-        const templateContent = await fs.promises.readFile(templatePath, 'utf8');
-        return ejs.render(templateContent, data, { async: true });
+  try {
+    const templatePath = path.join('public', 'templates', `${templateName}.ejs`)
+    const templateContent = await fs.promises.readFile(templatePath, 'utf8')
+    if (!templateContent) {
+      throw new Error('Error reading file')
     }
-};
+    return ejs.render(templateContent, data, { async: true })
+  } catch (error) {
+    throw error
+  }
+}
 
-export default { compileEmailTemplate };
+export default { compileEmailTemplate }

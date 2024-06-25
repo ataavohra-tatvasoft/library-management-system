@@ -1,32 +1,29 @@
-import express, { Router } from 'express';
-import { celebrate } from 'celebrate';
-import { adminAuthController } from '../../controllers';
-import { adminAuthSchema } from '../../validations';
-import { adminAuthMiddleware } from '../../middlewares';
+import express, { Router } from 'express'
+import { celebrate } from 'celebrate'
+import { adminAuthController } from '../../controllers'
+import { adminAuthSchema } from '../../validations'
+import { adminAuthMiddleware } from '../../middlewares'
 
-const router: Router = express.Router();
+const router: Router = express.Router()
 
-router.post('/login', celebrate(adminAuthSchema.login), adminAuthController.login);
-router.get('/get-access-token', adminAuthController.newAccessToken);
+router.post('/login', celebrate(adminAuthSchema.login), adminAuthController.login)
+router.get('/get-access-token', adminAuthController.newAccessToken)
+router.post('/logout', adminAuthController.logout)
 router.post(
-    '/logout',
-    adminAuthController.logout
-);
+  '/forgot-password',
+  celebrate(adminAuthSchema.forgotPassword),
+  adminAuthController.forgotPassword
+)
 router.post(
-    '/forgot-password',
-    celebrate(adminAuthSchema.forgotPassword),
-    adminAuthController.forgotPassword
-);
-router.post(
-    '/reset-password',
-    celebrate(adminAuthSchema.resetPassword),
-    adminAuthController.resetPassword
-);
+  '/reset-password',
+  celebrate(adminAuthSchema.resetPassword),
+  adminAuthController.resetPassword
+)
 router.put(
-    '/update-profile/:email',
-    celebrate(adminAuthSchema.updateProfile),
-    adminAuthMiddleware.authMiddleware,
-    adminAuthController.updateProfile
-);
+  '/update-profile/:email',
+  celebrate(adminAuthSchema.updateProfile),
+  adminAuthMiddleware.authMiddleware,
+  adminAuthController.updateProfile
+)
 
-export default router;
+export default router

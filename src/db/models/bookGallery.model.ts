@@ -1,39 +1,31 @@
-import { Model, Schema, model } from 'mongoose';
-import { IBookGallery } from '../../interfaces';
+import { Model, Schema, model } from 'mongoose'
+import { IBookGallery } from '../../interfaces'
 
-type BookGalleryModel = Model<IBookGallery>;
+type BookGalleryModel = Model<IBookGallery>
 const bookGallerySchema: Schema = new Schema<IBookGallery, BookGalleryModel>(
-    {
-        bookID: {
-            type: Schema.Types.ObjectId,
-            ref: 'books', // Reference to the Book model
-            required: true,
-        },
-        imagePath: {
-            type: String,
-            required: true,
-        },
-        imageName: {
-            type: String,
-            required: true,
-        },
-        isDeleted: {
-            type: Boolean,
-            allownull: false,
-            default: false,
-        },
-        deletedAt: {
-            type: Date,
-            allownull: true,
-            default: null,
-        },
+  {
+    bookID: {
+      type: Schema.Types.ObjectId,
+      ref: 'books', // Reference to the Book model
+      required: true
     },
-    {
-        timestamps: true,
+    imagePath: {
+      type: String,
+      required: true
+    },
+    imageName: {
+      type: String,
+      required: true
+    },
+    deletedAt: {
+      type: Date,
+      allownull: true,
+      default: null
     }
-);
+  },
+  {
+    timestamps: true
+  }
+)
 
-export const BookGallery = model<IBookGallery, BookGalleryModel>(
-    'bookgalleries',
-    bookGallerySchema
-);
+export const BookGallery = model<IBookGallery, BookGalleryModel>('bookgalleries', bookGallerySchema)

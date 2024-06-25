@@ -1,7 +1,6 @@
 export interface IBookGallery {
-    bookID: object; 
-    imagePath: string;
-    imageName: string; 
-    isDeleted: boolean;
-    deletedAt: Date;
-  }
+  bookID: object
+  imagePath: string
+  imageName: string
+  deletedAt: Date
+}

@@ -1,4 +1,4 @@
 export interface Config {
-    connectionString: string;
-    database: string;
-  }
+  connectionString: string
+  database: string
+}
