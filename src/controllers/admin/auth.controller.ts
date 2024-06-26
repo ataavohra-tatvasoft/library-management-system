@@ -67,7 +67,7 @@ const login: Controller = async (req: Request, res: Response, next: NextFunction
 }
 
 /**
- * @description Refreshes user access token upon valid refresh token verification.
+ * @description Refreshes admin access token upon valid refresh token verification.
  */
 const generateNewAccessToken: Controller = async (
   req: Request,

@@ -56,7 +56,40 @@ const fetchSheetData = async (spreadsheetId: string, range: string): Promise<any
   return response.data.values
 }
 
+const appendDataToSheet = async (auth: any, sheetID: string, values: any[][]) => {
+  const sheets = google.sheets({ version: 'v4', auth })
+  return await sheets.spreadsheets.values.append({
+    spreadsheetId: sheetID,
+    range: 'Sheet1!A1', // Adjust the range as needed
+    valueInputOption: 'USER_ENTERED',
+    requestBody: { values }
+  })
+}
+
+const updateColumnWidths = async (auth: any, sheetID: string, columnWidthUpdates: any[]) => {
+  const sheets = google.sheets({ version: 'v4', auth })
+  const requests = columnWidthUpdates.map((update) => ({
+    updateDimensionProperties: {
+      range: {
+        sheetId: 0,
+        dimension: 'COLUMNS',
+        startIndex: update.startIndex,
+        endIndex: update.endIndex
+      },
+      properties: { pixelSize: update.pixelSize },
+      fields: 'pixelSize'
+    }
+  }))
+
+  return await sheets.spreadsheets.batchUpdate({
+    spreadsheetId: sheetID,
+    requestBody: { requests }
+  })
+}
+
 export default {
   authorize,
-  fetchSheetData
+  fetchSheetData,
+  appendDataToSheet,
+  updateColumnWidths
 }

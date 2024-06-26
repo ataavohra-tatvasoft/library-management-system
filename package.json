@@ -11,7 +11,7 @@
     "build": "npx tsc",
     "dev": "npx tsx index.ts",
     "dev:watch": "nodemon --watch src --ext ts,json --exec \"npm run dev\"",
-    "seed": "npx tsx src/db/seeders/seeder.js"
+    "seed": "npx tsx src/db/seeders/seedData.seeder.ts"
   },
   "author": "",
   "license": "ISC",

@@ -5,7 +5,6 @@ import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '.
 import { databaseUtils, googleSheetUtils, responseHandlerUtils } from '../../utils'
 import { getRatingService, getReviewService } from '../../services/book'
 import { dbConfig } from '../../config'
-import { google } from 'googleapis'
 
 /**
  * @description Adds a new book to the library (checks for duplicates).
@@ -433,17 +432,17 @@ const importBookSpreadSheet: Controller = async (
   try {
     const { sheetID } = req.params
 
-    const data = await googleSheetUtils.fetchSheetData(String(sheetID), String('Sheet1!A2:L'))
+    const data = await googleSheetUtils.fetchSheetData(String(sheetID), String('Sheet1!A2:Z'))
 
-    const conn = await dbConfig.connectToDatabase()
-    if (!conn) {
+    const db = await dbConfig.connectToDatabase()
+    if (!db) {
       return responseHandlerUtils.responseHandler(res, {
         statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
         message: messageConstant.CONNECTION_ERROR
       })
     }
 
-    const collection = await databaseUtils.connectToCollection(conn, 'books')
+    const collection = await databaseUtils.connectToCollection(db.connection, 'books')
 
     const formattedData = data
       .map((row: any) => {
@@ -503,20 +502,17 @@ const exportDataToSpreadsheet: Controller = async (
       })
     }
 
-    // Connect to database and fetch book data
-    const conn = await dbConfig.connectToDatabase()
-    if (!conn) {
+    const db = await dbConfig.connectToDatabase()
+    if (!db) {
       return responseHandlerUtils.responseHandler(res, {
         statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
         message: messageConstant.CONNECTION_ERROR
       })
     }
 
-    const collection = await databaseUtils.connectToCollection(conn, 'books')
-    const data = await collection.find().toArray()
+    const data = await databaseUtils.fetchCollectionData(db.connection, 'books')
 
-    // Format book data for export
-    const formattedData = data.map((row) => [
+    const formattedData = data.map((row: any) => [
       row.bookID,
       row.name,
       row.author,
@@ -531,11 +527,8 @@ const exportDataToSpreadsheet: Controller = async (
       row.deletedAt
     ])
 
-    // Authenticate with Google Sheets API
     const auth = await googleSheetUtils.authorize()
-    const sheets = google.sheets({ version: 'v4', auth })
 
-    // Prepare data for export
     const values = [
       [
         'bookID',
@@ -554,13 +547,7 @@ const exportDataToSpreadsheet: Controller = async (
       ...formattedData
     ]
 
-    // Export data to Google Sheet
-    const exportStatus = await sheets.spreadsheets.values.append({
-      spreadsheetId: sheetID,
-      range: 'Sheet1!A1', // Adjust the range as needed
-      valueInputOption: 'USER_ENTERED',
-      requestBody: { values }
-    })
+    const exportStatus = await googleSheetUtils.appendDataToSheet(auth, sheetID, values)
 
     if (!exportStatus) {
       return responseHandlerUtils.responseHandler(res, {
@@ -569,52 +556,16 @@ const exportDataToSpreadsheet: Controller = async (
       })
     }
 
-    // Prepare column width update requests
     const columnWidthUpdates = [
-      {
-        range: { sheetId: 0, dimension: 'COLUMNS', startIndex: 0, endIndex: 1 },
-        properties: { pixelSize: 150 },
-        fields: 'pixelSize'
-      },
-      {
-        range: { sheetId: 0, dimension: 'COLUMNS', startIndex: 6, endIndex: 7 },
-        properties: { pixelSize: 200 },
-        fields: 'pixelSize'
-      },
-      {
-        range: { sheetId: 0, dimension: 'COLUMNS', startIndex: 7, endIndex: 8 },
-        properties: { pixelSize: 130 },
-        fields: 'pixelSize'
-      },
-      {
-        range: { sheetId: 0, dimension: 'COLUMNS', startIndex: 8, endIndex: 9 },
-        properties: { pixelSize: 130 },
-        fields: 'pixelSize'
-      },
-      {
-        range: { sheetId: 0, dimension: 'COLUMNS', startIndex: 9, endIndex: 10 },
-        properties: { pixelSize: 130 },
-        fields: 'pixelSize'
-      },
-      {
-        range: { sheetId: 0, dimension: 'COLUMNS', startIndex: 10, endIndex: 11 },
-        properties: { pixelSize: 300 },
-        fields: 'pixelSize'
-      }
+      { startIndex: 0, endIndex: 1, pixelSize: 150 },
+      { startIndex: 6, endIndex: 7, pixelSize: 200 },
+      { startIndex: 7, endIndex: 8, pixelSize: 130 },
+      { startIndex: 8, endIndex: 9, pixelSize: 130 },
+      { startIndex: 9, endIndex: 10, pixelSize: 130 },
+      { startIndex: 10, endIndex: 11, pixelSize: 300 }
     ]
 
-    // Create a single batch update request for column widths
-    const resource = {
-      requests: columnWidthUpdates.map((update) => ({
-        updateDimensionProperties: update
-      }))
-    }
-
-    // Update column widths in the sheet
-    await sheets.spreadsheets.batchUpdate({
-      spreadsheetId: sheetID,
-      requestBody: resource
-    })
+    await googleSheetUtils.updateColumnWidths(auth, sheetID, columnWidthUpdates)
 
     return responseHandlerUtils.responseHandler(res, {
       statusCode: httpStatusConstant.OK,

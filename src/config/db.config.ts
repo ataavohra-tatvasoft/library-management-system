@@ -12,7 +12,7 @@ async function connectToDatabase() {
       serverSelectionTimeoutMS: 30000
     })
 
-    return conn.connection // Return the connection object
+    return conn // Return the connection object
   } catch (error: any) {
     loggerUtils.logger.error(error.message)
     throw new Error(messageConstant.CONNECTION_ERROR)

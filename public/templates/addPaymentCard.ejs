@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Payment Card</title>
+    <script src="https://js.stripe.com/v3/"></script>
+</head>
+
+<body>
+    <h1>Add Payment Card</h1>
+    <form id="payment-form">
+        <div>
+            <label for="cardNumber">Card Number</label>
+            <input type="text" id="cardNumber" required>
+        </div>
+        <div>
+            <label for="cardBrand">Card Brand</label>
+            <input type="text" id="cardBrand" required>
+        </div>
+        <div>
+            <label for="expirationMonth">Expiration Month</label>
+            <input type="text" id="expirationMonth" required>
+        </div>
+        <div>
+            <label for="expirationYear">Expiration Year</label>
+            <input type="text" id="expirationYear" required>
+        </div>
+        <div>
+            <label for="cvv">CVV</label>
+            <input type="text" id="cvv" required>
+        </div>
+        <button type="submit">Add Card</button>
+    </form>
+
+    <script src="../scripts/addPaymentCard.js"></script>
+</body>
+
+</html>
