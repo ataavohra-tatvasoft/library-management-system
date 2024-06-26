@@ -2,8 +2,10 @@ import { Request, Response, NextFunction } from 'express'
 import { Book, BookGallery } from '../../db/models'
 import { Controller } from '../../interfaces'
 import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '../../constant'
-import { responseHandlerUtils } from '../../utils'
+import { databaseUtils, googleSheetUtils, responseHandlerUtils } from '../../utils'
 import { getRatingService, getReviewService } from '../../services/book'
+import { dbConfig } from '../../config'
+import { google } from 'googleapis'
 
 /**
  * @description Adds a new book to the library (checks for duplicates).
@@ -420,6 +422,209 @@ const getReviewsSummary: Controller = async (req: Request, res: Response, next: 
   }
 }
 
+/**
+ * @description Imports google spreadsheet data into database
+ */
+const importBookSpreadSheet: Controller = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { sheetID } = req.params
+
+    const data = await googleSheetUtils.fetchSheetData(String(sheetID), String('Sheet1!A2:L'))
+
+    const conn = await dbConfig.connectToDatabase()
+    if (!conn) {
+      return responseHandlerUtils.responseHandler(res, {
+        statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
+        message: messageConstant.CONNECTION_ERROR
+      })
+    }
+
+    const collection = await databaseUtils.connectToCollection(conn, 'books')
+
+    const formattedData = data
+      .map((row: any) => {
+        try {
+          return {
+            bookID: row[0],
+            name: row[1],
+            author: row[2],
+            charges: Number(row[3]),
+            issueCount: Number(row[4]),
+            submitCount: Number(row[5]),
+            publishedDate: new Date(row[6]),
+            subscriptionDays: Number(row[7]),
+            quantityAvailable: Number(row[8]),
+            numberOfFreeDays: Number(row[9]),
+            description: row[10],
+            deletedAt: row[11] == String(null) ? null : new Date(row[11])
+          }
+        } catch (error) {
+          console.error('Error formatting data row:', error)
+        }
+      })
+      .filter(Boolean)
+
+    const insertionStatus = await collection.insertMany(formattedData)
+    if (insertionStatus) {
+      return responseHandlerUtils.responseHandler(res, {
+        statusCode: httpStatusConstant.CREATED,
+        message: messageConstant.DATA_ADDED_SUCCESSFULLY
+      })
+    } else {
+      return responseHandlerUtils.responseHandler(res, {
+        statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
+        message: messageConstant.ERROR_INSERTING_DATA
+      })
+    }
+  } catch (error) {
+    return next(error)
+  }
+}
+
+/**
+ * @description Exports database collection into google spreadsheets
+ */
+const exportDataToSpreadsheet: Controller = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { sheetID } = req.params
+
+    if (!sheetID) {
+      return responseHandlerUtils.responseHandler(res, {
+        statusCode: httpStatusConstant.BAD_REQUEST,
+        message: messageConstant.MISSING_REQUIRED_PARAMETERS
+      })
+    }
+
+    // Connect to database and fetch book data
+    const conn = await dbConfig.connectToDatabase()
+    if (!conn) {
+      return responseHandlerUtils.responseHandler(res, {
+        statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
+        message: messageConstant.CONNECTION_ERROR
+      })
+    }
+
+    const collection = await databaseUtils.connectToCollection(conn, 'books')
+    const data = await collection.find().toArray()
+
+    // Format book data for export
+    const formattedData = data.map((row) => [
+      row.bookID,
+      row.name,
+      row.author,
+      row.charges,
+      row.issueCount,
+      row.submitCount,
+      row.publishedDate,
+      row.subscriptionDays,
+      row.quantityAvailable,
+      row.numberOfFreeDays,
+      row.description,
+      row.deletedAt
+    ])
+
+    // Authenticate with Google Sheets API
+    const auth = await googleSheetUtils.authorize()
+    const sheets = google.sheets({ version: 'v4', auth })
+
+    // Prepare data for export
+    const values = [
+      [
+        'bookID',
+        'name',
+        'author',
+        'charges',
+        'issueCount',
+        'submitCount',
+        'publishedDate',
+        'subscriptionDays',
+        'quantityAvailable',
+        'numberOfFreeDays',
+        'description',
+        'deletedAt'
+      ],
+      ...formattedData
+    ]
+
+    // Export data to Google Sheet
+    const exportStatus = await sheets.spreadsheets.values.append({
+      spreadsheetId: sheetID,
+      range: 'Sheet1!A1', // Adjust the range as needed
+      valueInputOption: 'USER_ENTERED',
+      requestBody: { values }
+    })
+
+    if (!exportStatus) {
+      return responseHandlerUtils.responseHandler(res, {
+        statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
+        message: messageConstant.ERROR_EXPORTING_DATA
+      })
+    }
+
+    // Prepare column width update requests
+    const columnWidthUpdates = [
+      {
+        range: { sheetId: 0, dimension: 'COLUMNS', startIndex: 0, endIndex: 1 },
+        properties: { pixelSize: 150 },
+        fields: 'pixelSize'
+      },
+      {
+        range: { sheetId: 0, dimension: 'COLUMNS', startIndex: 6, endIndex: 7 },
+        properties: { pixelSize: 200 },
+        fields: 'pixelSize'
+      },
+      {
+        range: { sheetId: 0, dimension: 'COLUMNS', startIndex: 7, endIndex: 8 },
+        properties: { pixelSize: 130 },
+        fields: 'pixelSize'
+      },
+      {
+        range: { sheetId: 0, dimension: 'COLUMNS', startIndex: 8, endIndex: 9 },
+        properties: { pixelSize: 130 },
+        fields: 'pixelSize'
+      },
+      {
+        range: { sheetId: 0, dimension: 'COLUMNS', startIndex: 9, endIndex: 10 },
+        properties: { pixelSize: 130 },
+        fields: 'pixelSize'
+      },
+      {
+        range: { sheetId: 0, dimension: 'COLUMNS', startIndex: 10, endIndex: 11 },
+        properties: { pixelSize: 300 },
+        fields: 'pixelSize'
+      }
+    ]
+
+    // Create a single batch update request for column widths
+    const resource = {
+      requests: columnWidthUpdates.map((update) => ({
+        updateDimensionProperties: update
+      }))
+    }
+
+    // Update column widths in the sheet
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId: sheetID,
+      requestBody: resource
+    })
+
+    return responseHandlerUtils.responseHandler(res, {
+      statusCode: httpStatusConstant.OK,
+      message: messageConstant.DATA_EXPORTED_SUCCESSFULLY
+    })
+  } catch (error) {
+    return next(error)
+  }
+}
+
 export default {
   addBook,
   listBooks,
@@ -429,5 +634,7 @@ export default {
   uploadBookPhoto,
   uploadBookCoverPhoto,
   getRatingsSummary,
-  getReviewsSummary
+  getReviewsSummary,
+  importBookSpreadSheet,
+  exportDataToSpreadsheet
 }

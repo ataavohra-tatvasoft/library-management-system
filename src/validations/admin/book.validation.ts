@@ -56,11 +56,18 @@ const getReviewsSummary = {
   })
 }
 
+const importExportBookSpreadSheet = {
+  params: Joi.object().keys({
+    sheetID: Joi.string().required().trim()
+  })
+}
+
 export default {
   addBook,
   bookList,
   updateBook,
   deleteBook,
   getRatingsSummary,
-  getReviewsSummary
+  getReviewsSummary,
+  importExportBookSpreadSheet
 }

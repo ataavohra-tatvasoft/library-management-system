@@ -9,11 +9,10 @@ async function connectToDatabase() {
       autoIndex: true,
       connectTimeoutMS: 100000,
       socketTimeoutMS: 100000,
-      serverSelectionTimeoutMS: 30000 // Increase timeout to 30 seconds
+      serverSelectionTimeoutMS: 30000
     })
 
-    loggerUtils.logger.info(`${messageConstant.DB_CONNECTED}`)
-    loggerUtils.logger.info(`Host: ${conn.connection.host}`)
+    return conn.connection // Return the connection object
   } catch (error: any) {
     loggerUtils.logger.error(error.message)
     throw new Error(messageConstant.CONNECTION_ERROR)

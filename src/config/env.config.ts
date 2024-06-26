@@ -19,5 +19,10 @@ export default {
   redisPassword: process.env.REDIS_PASSWORD, // eslint-disable-line no-undef
   redisHost: process.env.REDIS_HOST, // eslint-disable-line no-undef
   redisPort: process.env.REDIS_PORT, // eslint-disable-line no-undef
-  stripeApiKey: process.env.STRIPE_API_KEY // eslint-disable-line no-undef
+  stripeApiKey: process.env.STRIPE_API_KEY, // eslint-disable-line no-undef
+  googleClientID: process.env.GOOGLE_CLIENT_ID, // eslint-disable-line no-undef
+  googleClientSecret: process.env.GOOGLE_CLIENT_SECRET, // eslint-disable-line no-undef
+  googleTokenPath: process.env.GOOGLE_TOKEN_PATH, // eslint-disable-line no-undef
+  googleRedirectUri: process.env.GOOGLE_REDIRECT_URIS, // eslint-disable-line no-undef
+  googleRefreshToken: process.env.GOOGLE_REFRESH_TOKEN // eslint-disable-line no-undef
 }

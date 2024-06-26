@@ -63,4 +63,18 @@ router.get(
   adminBookController.getReviewsSummary
 )
 
+router.put(
+  '/spreadsheet-import-books/:sheetID',
+  celebrate(adminBookSchema.importExportBookSpreadSheet),
+  adminAuthMiddleware.authMiddleware,
+  adminBookController.importBookSpreadSheet
+)
+
+router.get(
+  '/spreadsheet-export-books/:sheetID',
+  celebrate(adminBookSchema.importExportBookSpreadSheet),
+  adminAuthMiddleware.authMiddleware,
+  adminBookController.exportDataToSpreadsheet
+)
+
 export default router

@@ -8,6 +8,8 @@ import errorHandlerUtils from './errorHandler'
 import multerUtils from './multer.utils'
 import nodeCronUtils from './nodeCron.utils'
 import paymentUtils from './payment.utils'
+import googleSheetUtils from './googleSheet.utils'
+import databaseUtils from './database.utils'
 
 export {
   authUtils,
@@ -19,5 +21,7 @@ export {
   errorHandlerUtils,
   multerUtils,
   nodeCronUtils,
-  paymentUtils
+  paymentUtils,
+  googleSheetUtils,
+  databaseUtils
 }

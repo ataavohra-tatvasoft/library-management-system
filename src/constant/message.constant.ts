@@ -2,6 +2,12 @@ export const messageConstant = {
   // Database Connection Messages
   CONNECTION_ERROR: 'Error while connecting to database',
   DB_CONNECTED: 'MongoDB database connected',
+  DATA_ADDED_SUCCESSFULLY: 'Data added successfully',
+  NO_DATA_FOUND: 'No data found',
+  ERROR_INSERTING_DATA: 'Error while inserting data ',
+  MISSING_REQUIRED_PARAMETERS: 'Missing required parameters',
+  DATA_EXPORTED_SUCCESSFULLY: 'Data exported successfully',
+  ERROR_EXPORTING_DATA: 'Error while exporting data',
 
   // Application Messages
   APP_STARTED: 'Application Running',
