@@ -57,6 +57,10 @@ const userSchema: Schema = new Schema<IUser, UserModel>(
       type: BigInt,
       allownull: true
     },
+    stripeCustomerID: {
+      type: String,
+      allownull: true
+    },
     deletedAt: {
       type: Date,
       allownull: true,

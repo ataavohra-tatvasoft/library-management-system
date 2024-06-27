@@ -5,17 +5,13 @@ type PaymentCardModel = Model<IPaymentCard>
 
 const paymentCardSchema: Schema = new Schema<IPaymentCard, PaymentCardModel>(
   {
-    cardID: {
-      type: Schema.Types.ObjectId,
-      required: true
-    },
     userID: {
       type: Schema.Types.ObjectId,
       ref: 'users',
       required: true
     },
     paymentMethodID: {
-      type: Number,
+      type: String,
       required: true
     },
     cardBrand: {
@@ -23,7 +19,7 @@ const paymentCardSchema: Schema = new Schema<IPaymentCard, PaymentCardModel>(
       required: true
     },
     lastFourDigits: {
-      type: Number,
+      type: String,
       unique: true,
       required: true
     },
@@ -32,6 +28,10 @@ const paymentCardSchema: Schema = new Schema<IPaymentCard, PaymentCardModel>(
       required: true
     },
     expirationYear: {
+      type: Number,
+      required: true
+    },
+    cvv: {
       type: Number,
       required: true
     },

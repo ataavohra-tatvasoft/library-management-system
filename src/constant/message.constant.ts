@@ -2,6 +2,8 @@ export const messageConstant = {
   // Database Connection Messages
   CONNECTION_ERROR: 'Error while connecting to database',
   DB_CONNECTED: 'MongoDB database connected',
+
+  //Import Export (Google sheet to database and vice versa) messages
   DATA_ADDED_SUCCESSFULLY: 'Data added successfully',
   NO_DATA_FOUND: 'No data found',
   ERROR_INSERTING_DATA: 'Error while inserting data ',
@@ -27,8 +29,9 @@ export const messageConstant = {
   INVALID_PASSWORD: 'Invalid Password',
   ERROR_LISTING_USER: 'Error listing user',
   ERROR_COUNTING_USERS: 'Error counting users',
+  NO_ACTIVE_USERS_FOUND: 'No active users found',
 
-  //Admin Messages
+  // Admin Messages
   ADMIN_NOT_FOUND: 'Admin not found ',
   ERROR_UPDATING_ADMIN: 'Error while updating admin',
 
@@ -51,6 +54,7 @@ export const messageConstant = {
   CANNOT_ISSUE_SAME_BOOK: 'User cannot issue the same book again',
   ERROR_COUNTING_BOOKS: 'Error while counting books',
   ERROR_LOGGING_HISTORY: 'Error logging history',
+  NO_BOOKS_FOUND: 'No books found',
 
   // Book Issue/Return Messages
   SUBMIT_INVALID: 'submit date is invalid, kindly check',
@@ -90,8 +94,12 @@ export const messageConstant = {
   PAYMENT_METHOD_NOT_FOUND: 'Payment method not found, kindly create new one',
   INVALID_CARD_CREDENTIALS: 'Invalid card credentials',
   ERROR_UPDATING_DUE_CHARGES_IN_USER: 'Error while updating due charges in user',
+  MINIMUM_CHARGE_INVALID: 'Minimum charge amount is ₹0.50.',
 
   // File Upload Messages
   FILE_NOT_UPLOADED: 'File not uploaded',
-  ERROR_UPLOAD_FILE: 'Error while uploading file'
+  ERROR_UPLOAD_FILE: 'Error while uploading file',
+
+  // Payment Template Messages
+  ERROR_ADD_PAYMENT_CARD_TEMPLATE: 'Error in add payment card template'
 }

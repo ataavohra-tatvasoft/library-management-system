@@ -85,10 +85,10 @@ const listBooks: Controller = async (req: Request, res: Response, next: NextFunc
       .skip(skip)
       .limit(limit)
 
-    if (!books) {
+    if (!books || books.length == 0) {
       return responseHandlerUtils.responseHandler(res, {
         statusCode: httpStatusConstant.BAD_REQUEST,
-        message: messageConstant.ERROR_LISTING_BOOK
+        message: messageConstant.NO_BOOKS_FOUND
       })
     }
 

@@ -6,7 +6,7 @@ import { VerifiedToken } from '../interfaces'
 
 async function validateAuthorizationHeader(headers: any): Promise<{ token: string }> {
   {
-    const authHeader = headers.authorization
+    const authHeader = headers.authorization || headers.Authorization
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       throw new Error('Unauthorized')
     }

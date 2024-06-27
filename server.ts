@@ -1,5 +1,7 @@
 import express, { Express } from 'express'
 import bodyParser from 'body-parser'
+import cors from 'cors'
+import path from 'path'
 import { dbConfig, envConfig } from './src/config'
 import { messageConstant } from './src/constant'
 import routes from './src/routes'
@@ -15,8 +17,10 @@ const createServer = async (): Promise<Express> => {
     app.set('view engine', 'ejs')
 
     // Middleware setup
+    app.use(express.static(path.join(__dirname, 'public/scripts')))
     app.use(bodyParser.urlencoded({ extended: false }))
     app.use(bodyParser.json())
+    app.use(cors())
 
     // Routes setup
     app.use(routes)

@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
 import { Book, User } from '../../db/models'
 import { helperFunctionsUtils, responseHandlerUtils } from '../../utils'
-import { Controller } from '../../interfaces'
+import { Controller, IUser } from '../../interfaces'
 import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '../../constant'
 import { BookHistory } from '../../db/models/bookHistory.model'
 
@@ -61,8 +61,10 @@ const getIssuedBooksList: Controller = async (req: Request, res: Response, next:
       }
     ]
 
-    const issuedBooks = await User.aggregate(issuedBooksAggregationPipeline).skip(skip).limit(limit)
-    if (!issuedBooks || issuedBooks.length === 0) {
+    const issuedBooks = await User.aggregate<IUser>(issuedBooksAggregationPipeline)
+      .skip(skip)
+      .limit(limit)
+    if (!issuedBooks?.length) {
       return responseHandlerUtils.responseHandler(res, {
         statusCode: httpStatusConstant.OK,
         message: messageConstant.NO_ISSUED_BOOK_FOUND
@@ -104,17 +106,14 @@ const issueBookToUser: Controller = async (req: Request, res: Response, next: Ne
   try {
     const { bookID, email, issueDate } = req.body
 
-    const [book, user] = await Promise.all([
-      Book.findOne({ bookID }),
-      User.findOne({ email }).populate('books.bookId')
-    ])
-
+    const book = await Book.findOne({ bookID })
     if (!book) {
       return responseHandlerUtils.responseHandler(res, {
         statusCode: httpStatusConstant.NOT_FOUND,
         message: messageConstant.BOOK_NOT_FOUND
       })
     }
+    const user = await User.findOne({ email }).populate('books')
     if (!user) {
       return responseHandlerUtils.responseHandler(res, {
         statusCode: httpStatusConstant.NOT_FOUND,

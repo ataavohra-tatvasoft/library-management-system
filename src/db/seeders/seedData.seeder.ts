@@ -7,6 +7,7 @@ import { seedBookRatings } from './bookRating.seeder'
 import { seedBookReviews } from './bookReview.seeder'
 import { loggerUtils } from '../../utils'
 import { BookHistory } from '../models'
+import { PaymentCard } from '../models/paymentCard.model'
 
 const seedData = async () => {
   try {
@@ -23,6 +24,9 @@ const seedData = async () => {
 
     await BookHistory.deleteMany()
     loggerUtils.logger.info('Deleted previous book history!')
+
+    await PaymentCard.deleteMany()
+    loggerUtils.logger.info('Deleted previous payment cards!')
 
     // eslint-disable-next-line no-undef
     process.exit(0)

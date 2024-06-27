@@ -4,9 +4,70 @@ import Stripe from 'stripe'
 import { User } from '../../db/models'
 import { httpErrorMessageConstant, httpStatusConstant, messageConstant } from '../../constant'
 import { Controller } from '../../interfaces'
-import { paymentUtils, responseHandlerUtils } from '../../utils'
+import { ejsCompilerUtils, paymentUtils, responseHandlerUtils, sendMailUtils } from '../../utils'
 import { envConfig } from '../../config'
 import { PaymentCard } from '../../db/models/paymentCard.model'
+
+/**
+ * @description get link for adding payment card
+ */
+const getAddCardLink: Controller = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { email } = req.params
+
+    const user = await User.findOne({ email })
+    if (!user) {
+      return responseHandlerUtils.responseHandler(res, {
+        statusCode: httpStatusConstant.NOT_FOUND,
+        message: messageConstant.USER_NOT_FOUND
+      })
+    }
+
+    const addCardLink = `http://${envConfig.serverHost}:${envConfig.serverPort}/user/template/add-payment-card/${email}`
+
+    const html = await ejsCompilerUtils.compileTemplate('getAddCardLink', {
+      link: addCardLink
+    })
+
+    await sendMailUtils.sendEmail({ to: email, subject: 'Add Payment Card Link', html })
+
+    return responseHandlerUtils.responseHandler(res, {
+      statusCode: httpStatusConstant.OK,
+      message: httpErrorMessageConstant.SUCCESSFUL
+    })
+  } catch (error) {
+    return next(error)
+  }
+}
+
+/**
+ * @description send add payment card page
+ */
+const addPaymentCardPage: Controller = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { email } = req.params
+
+    const user = await User.findOne({ email })
+    if (!user) {
+      return responseHandlerUtils.responseHandler(res, {
+        statusCode: httpStatusConstant.NOT_FOUND,
+        message: messageConstant.USER_NOT_FOUND
+      })
+    }
+
+    const data = {
+      email: user.email
+    }
+
+    const html = await ejsCompilerUtils.compileTemplate('addPaymentCard', data)
+
+    res.setHeader('Content-Type', 'text/html')
+    res.send(html)
+    return res.end()
+  } catch (error) {
+    return next(error)
+  }
+}
 
 /**
  * @description Adds payment card for user
@@ -41,10 +102,6 @@ const addPaymentCard: Controller = async (req: Request, res: Response, next: Nex
     }
 
     const paymentMethod = await paymentUtils.createStripePaymentMethod(customer, {
-      // cardNumber,
-      // expirationMonth,
-      // expirationYear,
-      // cvv,
       token
     })
     if (!paymentMethod) {
@@ -64,7 +121,8 @@ const addPaymentCard: Controller = async (req: Request, res: Response, next: Nex
       cardBrand,
       lastFourDigits: hashedLastFourDigits,
       expirationMonth,
-      expirationYear
+      expirationYear,
+      cvv
     })
     if (paymentCardExists) {
       isDefault = false
@@ -77,12 +135,21 @@ const addPaymentCard: Controller = async (req: Request, res: Response, next: Nex
       lastFourDigits: hashedLastFourDigits,
       expirationMonth,
       expirationYear,
+      cvv,
       isDefault
     })
     if (!newPaymentCard) {
       return responseHandlerUtils.responseHandler(res, {
         statusCode: httpStatusConstant.BAD_REQUEST,
         message: messageConstant.ERROR_WHILE_ADDING_PAYMENT_CARD
+      })
+    }
+
+    const updateUser = await User.updateOne({ email }, { $set: { stripeCustomerID: customer.id } })
+    if (!updateUser) {
+      return responseHandlerUtils.responseHandler(res, {
+        statusCode: httpStatusConstant.NOT_FOUND,
+        message: messageConstant.ERROR_UPDATING_USER
       })
     }
 
@@ -152,17 +219,19 @@ const payCharges: Controller = async (req: Request, res: Response, next: NextFun
         message: messageConstant.USER_NOT_FOUND
       })
     }
-
-    const lastFourDigits = cardNumber.slice(-4)
-
-    const hashedLastFourDigits = await bcrypt.hash(lastFourDigits, Number(envConfig.saltRounds))
+    if (Number(amount) < 50) {
+      return responseHandlerUtils.responseHandler(res, {
+        statusCode: httpStatusConstant.BAD_REQUEST,
+        message: messageConstant.MINIMUM_CHARGE_INVALID
+      })
+    }
 
     const paymentCard = await PaymentCard.findOne({
       userID: user._id,
       cardBrand,
-      lastFourDigits: hashedLastFourDigits,
       expirationMonth,
-      expirationYear
+      expirationYear,
+      cvv: Number(cvv)
     })
 
     if (!paymentCard) {
@@ -172,9 +241,26 @@ const payCharges: Controller = async (req: Request, res: Response, next: NextFun
       })
     }
 
+    const lastFourDigits = cardNumber.slice(-4)
+
+    const isPaymentCardValid = await bcrypt.compare(lastFourDigits, paymentCard.lastFourDigits)
+    if (!isPaymentCardValid) {
+      return responseHandlerUtils.responseHandler(res, {
+        statusCode: httpStatusConstant.UNAUTHORIZED,
+        message: messageConstant.INVALID_CARD_CREDENTIALS
+      })
+    }
+
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Number(amount),
-      currency: 'inr'
+      amount: Number(amount) * 100,
+      currency: 'inr',
+      // eslint-disable-next-line camelcase
+      automatic_payment_methods: {
+        enabled: true,
+        // eslint-disable-next-line camelcase
+        allow_redirects: 'never'
+      },
+      customer: user.stripeCustomerID
     })
 
     const confirmResult = await stripe.paymentIntents.confirm(paymentIntent.id, {
@@ -204,6 +290,8 @@ const payCharges: Controller = async (req: Request, res: Response, next: NextFun
 
 export default {
   addPaymentCard,
+  addPaymentCardPage,
   paymentCardsList,
-  payCharges
+  payCharges,
+  getAddCardLink
 }

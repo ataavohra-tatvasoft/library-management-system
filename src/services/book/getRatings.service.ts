@@ -14,7 +14,7 @@ async function getRatings(
     }
 
     const ratings = await BookRating.find({ bookID: book._id, deletedAt: null })
-    if (!ratings) {
+    if (!ratings || ratings.length == 0) {
       throw new Error('Book ratings not found!')
     }
     const totalRatings = ratings.length

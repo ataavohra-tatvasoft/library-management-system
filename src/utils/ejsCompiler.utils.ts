@@ -2,7 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import ejs from 'ejs'
 
-const compileEmailTemplate = async (templateName: string, data: object) => {
+const compileTemplate = async (templateName: string, data: object) => {
   {
     const templatePath = path.join('public', 'templates', `${templateName}.ejs`)
     const templateContent = await fs.promises.readFile(templatePath, 'utf8')
@@ -13,4 +13,4 @@ const compileEmailTemplate = async (templateName: string, data: object) => {
   }
 }
 
-export default { compileEmailTemplate }
+export default { compileTemplate }

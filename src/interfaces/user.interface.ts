@@ -17,6 +17,7 @@ export interface IUser {
   dueCharges: Number
   resetToken: string
   resetTokenExpiry: BigInt
+  stripeCustomerID: string
   deletedAt: Date
   books: INestedBook[]
 }

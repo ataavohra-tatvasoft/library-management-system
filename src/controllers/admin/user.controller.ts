@@ -91,10 +91,10 @@ const getActiveUsersList: Controller = async (req: Request, res: Response, next:
       .skip(skip)
       .limit(limit)
 
-    if (!activeUsers) {
+    if (!activeUsers || activeUsers.length === 0) {
       return responseHandlerUtils.responseHandler(res, {
         statusCode: httpStatusConstant.BAD_REQUEST,
-        message: messageConstant.ERROR_LISTING_USERS
+        message: messageConstant.NO_ACTIVE_USERS_FOUND
       })
     }
 

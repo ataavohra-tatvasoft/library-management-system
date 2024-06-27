@@ -1,13 +1,13 @@
 import { Schema } from 'mongoose'
 
 export interface IPaymentCard {
-  cardID: Schema.Types.ObjectId
   userID: Schema.Types.ObjectId
-  paymentMethodID: Number
+  paymentMethodID: string
   cardBrand: string
-  lastFourDigits: Number
+  lastFourDigits: string
   expirationMonth: Number
   expirationYear: Number
+  cvv: Number
   isDefault: boolean
   deletedAt: Date
 }

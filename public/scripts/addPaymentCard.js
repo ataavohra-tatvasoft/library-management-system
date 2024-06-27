@@ -1,58 +1,68 @@
-/* global document, alert, Stripe, fetch */
-document.getElementById('payment-form').addEventListener('submit', async (e) => {
-  e.preventDefault()
+/* eslint-disable no-undef */
+// global document, alert, Stripe, fetch
 
-  const cardNumber = document.getElementById('cardNumber').value
-  const cardBrand = document.getElementById('cardBrand').value
-  const expirationMonth = document.getElementById('expirationMonth').value
-  const expirationYear = document.getElementById('expirationYear').value
-  const cvv = document.getElementById('cvv').value
+document.addEventListener('DOMContentLoaded', () => {
+  const stripe = Stripe(
+    'pk_test_51PV91OI98oGzZ2rhhlIN1zSTzZ1CjyOjN48dks6cqt0u7Oeu4YOBv7E79JFTE6IMPJbGvUngfQm5OCOfBJB3b2uO00rZPlWkTm'
+  )
+  const elements = stripe.elements()
 
-  if (!cardNumber || !cardBrand || !expirationMonth || !expirationYear || !cvv) {
-    alert('Please fill in all fields.')
-    return
-  }
-
-  // Assuming you have Stripe initialized
-  const stripe = Stripe('your-publishable-key-here')
-
-  // Create a token using Stripe.js
-  const { token, error } = await stripe.createToken({
-    card: {
-      number: cardNumber,
-      exp_month: expirationMonth,
-      exp_year: expirationYear,
-      cvc: cvv
+  const cardElement = elements.create('card', {
+    style: {
+      base: {
+        color: '#32325d',
+        fontFamily: 'Arial, sans-serif',
+        fontSmoothing: 'antialiased',
+        fontSize: '16px',
+        '::placeholder': {
+          color: '#32325d'
+        }
+      },
+      invalid: {
+        fontFamily: 'Arial, sans-serif',
+        color: '#fa755a',
+        iconColor: '#fa755a'
+      }
     }
   })
 
-  if (error) {
-    alert('Error generating token: ' + error.message)
-    return
-  }
+  cardElement.mount('#card-element')
 
-  // Call your backend API to add the payment card
-  // eslint-disable-next-line no-undef
-  const response = await fetch(`/add-payment-card/${email}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      cardNumber,
-      cardBrand,
-      expirationMonth,
-      expirationYear,
-      cvv,
-      token: token.id
-    })
+  document.getElementById('payment-form').addEventListener('submit', async (e) => {
+    e.preventDefault()
+
+    const { token, error } = await stripe.createToken(cardElement)
+
+    if (error) {
+      alert('Error generating token: ' + error.message)
+      return
+    }
+
+    if (token) {
+      alert('Your token is: ' + token.id)
+    }
+
+    const email = '<%= email %>' // Replace with actual user email
+
+    const response = await fetch(
+      `http://your-server-host:your-server-port/user/add-payment-card/${email}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          token: token.id
+        })
+      }
+    )
+
+    const result = await response.json()
+
+    if (response.ok) {
+      alert('Payment card added successfully!')
+    } else {
+      alert('Error adding payment card: ' + result.message)
+    }
   })
-
-  const result = await response.json()
-
-  if (response.ok) {
-    alert('Payment card added successfully!')
-  } else {
-    alert('Error adding payment card: ' + result.message)
-  }
 })
