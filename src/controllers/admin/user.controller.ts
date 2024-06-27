@@ -5,6 +5,7 @@ import { Controller } from '../../interfaces'
 import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '../../constant'
 import { helperFunctionsUtils, responseHandlerUtils } from '../../utils'
 import { envConfig } from '../../config'
+import { HttpError } from '../../types/error'
 
 /**
  * @description Registers a new user (validates age and hashes password).
@@ -25,10 +26,7 @@ const registerUser: Controller = async (req: Request, res: Response, next: NextF
 
     const isAgeValid = helperFunctionsUtils.validateAgeLimit(dateOfBirth)
     if (!isAgeValid) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.BAD_REQUEST,
-        message: messageConstant.INVALID_AGE
-      })
+      throw new HttpError(messageConstant.INVALID_AGE, httpStatusConstant.BAD_REQUEST)
     }
 
     const salt = await bcrypt.genSalt(Number(envConfig.saltRounds))
@@ -47,10 +45,7 @@ const registerUser: Controller = async (req: Request, res: Response, next: NextF
     })
 
     if (!newUser) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.BAD_REQUEST,
-        message: messageConstant.ERROR_CREATING_USER
-      })
+      throw new HttpError(messageConstant.ERROR_CREATING_USER, httpStatusConstant.BAD_REQUEST)
     }
 
     return responseHandlerUtils.responseHandler(res, {
@@ -58,7 +53,7 @@ const registerUser: Controller = async (req: Request, res: Response, next: NextF
       message: httpErrorMessageConstant.SUCCESSFUL
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 
@@ -92,26 +87,17 @@ const getActiveUsersList: Controller = async (req: Request, res: Response, next:
       .limit(limit)
 
     if (!activeUsers || activeUsers.length === 0) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.BAD_REQUEST,
-        message: messageConstant.NO_ACTIVE_USERS_FOUND
-      })
+      throw new HttpError(messageConstant.NO_ACTIVE_USERS_FOUND, httpStatusConstant.BAD_REQUEST)
     }
 
     const totalUsersCount = await User.countDocuments({ deletedAt: null })
     if (!totalUsersCount) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.OK,
-        message: messageConstant.ERROR_COUNTING_USERS
-      })
+      throw new HttpError(messageConstant.ERROR_COUNTING_USERS, httpStatusConstant.OK)
     }
 
     const totalPages = Math.ceil(totalUsersCount / limit)
     if (pageNumber > totalPages) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.BAD_REQUEST,
-        message: messageConstant.INVALID_PAGE_NUMBER
-      })
+      throw new HttpError(messageConstant.INVALID_PAGE_NUMBER, httpStatusConstant.BAD_REQUEST)
     }
 
     return responseHandlerUtils.responseHandler(res, {
@@ -127,7 +113,7 @@ const getActiveUsersList: Controller = async (req: Request, res: Response, next:
       message: httpErrorMessageConstant.SUCCESSFUL
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 
@@ -143,10 +129,7 @@ const updateUserDetails: Controller = async (req: Request, res: Response, next: 
 
     const user = await User.findOne({ email })
     if (!user) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.NOT_FOUND,
-        message: messageConstant.USER_NOT_FOUND
-      })
+      throw new HttpError(messageConstant.USER_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
     const updatedData = {
@@ -162,10 +145,10 @@ const updateUserDetails: Controller = async (req: Request, res: Response, next: 
 
     const updatedUser = await User.findOneAndUpdate({ email }, updatedData, { new: true })
     if (!updatedUser) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
-        message: messageConstant.ERROR_UPDATING_USER
-      })
+      throw new HttpError(
+        messageConstant.ERROR_UPDATING_USER,
+        httpStatusConstant.INTERNAL_SERVER_ERROR
+      )
     }
 
     return responseHandlerUtils.responseHandler(res, {
@@ -173,7 +156,7 @@ const updateUserDetails: Controller = async (req: Request, res: Response, next: 
       message: httpErrorMessageConstant.SUCCESSFUL
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 
@@ -186,10 +169,7 @@ const deactivateUser: Controller = async (req: Request, res: Response, next: Nex
 
     const user = await User.findOne({ email, deletedAt: null })
     if (!user) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.BAD_REQUEST,
-        message: messageConstant.USER_NOT_EXISTS
-      })
+      throw new HttpError(messageConstant.USER_NOT_EXISTS, httpStatusConstant.BAD_REQUEST)
     }
 
     const updatedUser = await User.findOneAndUpdate(
@@ -199,10 +179,7 @@ const deactivateUser: Controller = async (req: Request, res: Response, next: Nex
     )
 
     if (!updatedUser) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.NOT_FOUND,
-        message: messageConstant.ERROR_DELETING_USER
-      })
+      throw new HttpError(messageConstant.ERROR_DELETING_USER, httpStatusConstant.NOT_FOUND)
     }
 
     return responseHandlerUtils.responseHandler(res, {
@@ -210,7 +187,7 @@ const deactivateUser: Controller = async (req: Request, res: Response, next: Nex
       message: messageConstant.USER_DELETED_SOFT
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 
@@ -227,18 +204,12 @@ const deleteUserPermanently: Controller = async (
 
     const user = await User.findOne({ email })
     if (!user) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.BAD_REQUEST,
-        message: messageConstant.USER_NOT_EXISTS
-      })
+      throw new HttpError(messageConstant.USER_NOT_EXISTS, httpStatusConstant.BAD_REQUEST)
     }
 
     const deletedUser = await User.deleteOne({ email })
     if (!deletedUser) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.NOT_FOUND,
-        message: messageConstant.ERROR_DELETING_USER
-      })
+      throw new HttpError(messageConstant.ERROR_DELETING_USER, httpStatusConstant.NOT_FOUND)
     }
 
     return responseHandlerUtils.responseHandler(res, {
@@ -246,7 +217,7 @@ const deleteUserPermanently: Controller = async (
       message: messageConstant.USER_DELETED_HARD
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 

@@ -8,28 +8,24 @@ import { authUtils, ejsCompilerUtils, sendMailUtils } from '../../utils'
 import { Controller } from '../../interfaces'
 import { envConfig } from '../../config'
 import responseHandlerUtils from '../../utils/responseHandler.utils'
+import { HttpError } from '../../types/error'
 
 /**
  * @description Authenticates admin using email/password and returns JWT token (if valid).
  */
+
 const login: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email, password } = req.body
 
     const admin = await Admin.findOne({ email, deletedAt: null })
     if (!admin) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.NOT_FOUND,
-        message: messageConstant.ADMIN_NOT_FOUND
-      })
+      throw new HttpError(messageConstant.ADMIN_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
     const isPasswordCorrect = await bcrypt.compare(password, admin.password)
     if (!isPasswordCorrect) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.UNAUTHORIZED,
-        message: messageConstant.INVALID_PASSWORD
-      })
+      throw new HttpError(messageConstant.INVALID_PASSWORD, httpStatusConstant.UNAUTHORIZED)
     }
 
     const accessToken = jwt.sign(
@@ -58,11 +54,14 @@ const login: Controller = async (req: Request, res: Response, next: NextFunction
 
     return responseHandlerUtils.responseHandler(res, {
       statusCode: httpStatusConstant.OK,
-      data: { accessToken, refreshToken },
+      data: {
+        accessToken,
+        refreshToken
+      },
       message: httpErrorMessageConstant.SUCCESSFUL
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 
@@ -79,30 +78,24 @@ const generateNewAccessToken: Controller = async (
 
     const redisClient = await authUtils.createRedisClient()
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex')
-    const key = `blocked:refresh:tokens` // Customize key prefix (access or refresh)
+    const key = `blocked:refresh:tokens`
 
     const isTokenBlocked = await redisClient.sIsMember(key, hashedToken)
     if (isTokenBlocked) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.UNAUTHORIZED,
-        message: httpErrorMessageConstant.TOKEN_BLACKLISTED
-      })
+      throw new HttpError(
+        httpErrorMessageConstant.TOKEN_BLACKLISTED,
+        httpStatusConstant.UNAUTHORIZED
+      )
     }
 
     const validatedToken = await authUtils.verifyRefreshToken(token)
     if (validatedToken.tokenType !== 'refresh') {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.INVALID_TOKEN,
-        message: messageConstant.INVALID_TOKEN_TYPE
-      })
+      throw new HttpError(messageConstant.INVALID_TOKEN_TYPE, httpStatusConstant.INVALID_TOKEN)
     }
 
     const admin = await Admin.findOne({ email: validatedToken.email })
     if (!admin) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.NOT_FOUND,
-        message: messageConstant.ADMIN_NOT_FOUND
-      })
+      throw new HttpError(messageConstant.ADMIN_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
     const newAccessToken = jwt.sign(
@@ -113,7 +106,7 @@ const generateNewAccessToken: Controller = async (
       },
       String(envConfig.jwtSecretKey),
       {
-        expiresIn: envConfig.accessTokenExpiresIn
+        expiresIn: String(envConfig.accessTokenExpiresIn)
       }
     )
 
@@ -123,7 +116,7 @@ const generateNewAccessToken: Controller = async (
       message: httpErrorMessageConstant.SUCCESSFUL
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 
@@ -160,10 +153,7 @@ const forgotPassword: Controller = async (req: Request, res: Response, next: Nex
 
     const admin = await Admin.findOne({ email, deletedAt: null })
     if (!admin) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.NOT_FOUND,
-        message: messageConstant.ADMIN_NOT_FOUND
-      })
+      throw new HttpError(messageConstant.ADMIN_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
     const resetToken = crypto.createHash('sha256').update(email).digest('hex')
@@ -174,13 +164,14 @@ const forgotPassword: Controller = async (req: Request, res: Response, next: Nex
       { resetToken, resetTokenExpiry: expireTime }
     )
     if (!updateAdmin) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
-        message: messageConstant.ERROR_UPDATING_ADMIN
-      })
+      throw new HttpError(
+        messageConstant.ERROR_UPDATING_ADMIN,
+        httpStatusConstant.INTERNAL_SERVER_ERROR
+      )
     }
+
     const data = { link: envConfig.resetPassLink }
-    const html = await ejsCompilerUtils.compileTemplate('resetPassword', data)
+    const html = await ejsCompilerUtils.compileTemplate('resetPassword', data) // Assuming you have a template named 'resetPassword'
 
     await sendMailUtils.sendEmail({ to: email, subject: 'Reset Password Link', html })
 
@@ -189,7 +180,7 @@ const forgotPassword: Controller = async (req: Request, res: Response, next: Nex
       message: httpErrorMessageConstant.SUCCESSFUL
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 
@@ -207,10 +198,7 @@ const resetPassword: Controller = async (req: Request, res: Response, next: Next
     })
 
     if (!admin) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.NOT_FOUND,
-        message: messageConstant.INVALID_RESET_TOKEN
-      })
+      throw new HttpError(messageConstant.INVALID_RESET_TOKEN, httpStatusConstant.NOT_FOUND)
     }
 
     const salt = await bcrypt.genSalt(Number(envConfig.saltRounds))
@@ -225,10 +213,10 @@ const resetPassword: Controller = async (req: Request, res: Response, next: Next
       }
     )
     if (!updateAdmin) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
-        message: messageConstant.ERROR_UPDATING_ADMIN
-      })
+      throw new HttpError(
+        messageConstant.ERROR_UPDATING_ADMIN,
+        httpStatusConstant.INTERNAL_SERVER_ERROR
+      )
     }
 
     return responseHandlerUtils.responseHandler(res, {
@@ -236,7 +224,7 @@ const resetPassword: Controller = async (req: Request, res: Response, next: Next
       message: httpErrorMessageConstant.SUCCESSFUL
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 
@@ -253,10 +241,7 @@ const updateAdminProfile: Controller = async (req: Request, res: Response, next:
     const adminProfile = await Admin.findOne({ email })
 
     if (!adminProfile) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.NOT_FOUND,
-        message: messageConstant.ADMIN_NOT_FOUND
-      })
+      throw new HttpError(messageConstant.ADMIN_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
     const updatedAdminData = {
@@ -270,14 +255,13 @@ const updateAdminProfile: Controller = async (req: Request, res: Response, next:
       ...(state && { state })
     }
 
-    // Update admin profile and return the updated document
     const updatedProfile = await Admin.findOneAndUpdate({ email }, updatedAdminData, { new: true })
 
     if (!updatedProfile) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
-        message: messageConstant.ERROR_UPDATING_PROFILE
-      })
+      throw new HttpError(
+        messageConstant.ERROR_UPDATING_PROFILE,
+        httpStatusConstant.INTERNAL_SERVER_ERROR
+      )
     }
 
     return responseHandlerUtils.responseHandler(res, {
@@ -285,7 +269,7 @@ const updateAdminProfile: Controller = async (req: Request, res: Response, next:
       message: httpErrorMessageConstant.SUCCESSFUL
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 

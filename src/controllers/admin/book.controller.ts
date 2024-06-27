@@ -5,6 +5,7 @@ import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '.
 import { databaseUtils, googleSheetUtils, responseHandlerUtils } from '../../utils'
 import { getRatingService, getReviewService } from '../../services/book'
 import { dbConfig } from '../../config'
+import { HttpError } from '../../types/error'
 
 /**
  * @description Adds a new book to the library (checks for duplicates).
@@ -17,10 +18,7 @@ const addBook: Controller = async (req: Request, res: Response, next: NextFuncti
 
     const existingBook = await Book.findOne({ bookID })
     if (existingBook) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.BAD_REQUEST,
-        message: messageConstant.BOOK_ALREADY_EXISTS
-      })
+      throw new HttpError(messageConstant.BOOK_ALREADY_EXISTS, httpStatusConstant.BAD_REQUEST)
     }
 
     const newBook = await Book.create({
@@ -34,10 +32,7 @@ const addBook: Controller = async (req: Request, res: Response, next: NextFuncti
     })
 
     if (!newBook) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.BAD_REQUEST,
-        message: messageConstant.ERROR_CREATING_BOOK
-      })
+      throw new HttpError(messageConstant.ERROR_CREATING_BOOK, httpStatusConstant.BAD_REQUEST)
     }
 
     return responseHandlerUtils.responseHandler(res, {
@@ -45,7 +40,7 @@ const addBook: Controller = async (req: Request, res: Response, next: NextFuncti
       message: httpErrorMessageConstant.SUCCESSFUL
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 
@@ -64,10 +59,7 @@ const listBooks: Controller = async (req: Request, res: Response, next: NextFunc
     const totalPages = Math.ceil(totalBooksCount / limit)
 
     if (pageNumber > totalPages) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.BAD_REQUEST,
-        message: messageConstant.INVALID_PAGE_NUMBER
-      })
+      throw new HttpError(messageConstant.INVALID_PAGE_NUMBER, httpStatusConstant.BAD_REQUEST)
     }
 
     const books = await Book.find(
@@ -77,7 +69,7 @@ const listBooks: Controller = async (req: Request, res: Response, next: NextFunc
         bookID: 1,
         name: 1,
         author: 1,
-        numberOfFreeDays: 1,
+        subscriptionDays: 1,
         charges: 1,
         description: 1
       }
@@ -85,11 +77,8 @@ const listBooks: Controller = async (req: Request, res: Response, next: NextFunc
       .skip(skip)
       .limit(limit)
 
-    if (!books || books.length == 0) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.BAD_REQUEST,
-        message: messageConstant.NO_BOOKS_FOUND
-      })
+    if (!books || books.length === 0) {
+      throw new HttpError(messageConstant.NO_BOOKS_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
     return responseHandlerUtils.responseHandler(res, {
@@ -105,7 +94,7 @@ const listBooks: Controller = async (req: Request, res: Response, next: NextFunc
       message: httpErrorMessageConstant.SUCCESSFUL
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 
@@ -128,10 +117,7 @@ const updateBook: Controller = async (req: Request, res: Response, next: NextFun
     const existingBook = await Book.findOne({ bookID })
 
     if (!existingBook) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.NOT_FOUND,
-        message: messageConstant.BOOK_NOT_FOUND
-      })
+      throw new HttpError(messageConstant.BOOK_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
     const updatedBookData = {
@@ -147,10 +133,10 @@ const updateBook: Controller = async (req: Request, res: Response, next: NextFun
     const updatedBook = await Book.findOneAndUpdate({ bookID }, updatedBookData, { new: true })
 
     if (!updatedBook) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
-        message: messageConstant.ERROR_UPDATING_BOOK
-      })
+      throw new HttpError(
+        messageConstant.ERROR_UPDATING_BOOK,
+        httpStatusConstant.INTERNAL_SERVER_ERROR
+      )
     }
 
     return responseHandlerUtils.responseHandler(res, {
@@ -158,7 +144,7 @@ const updateBook: Controller = async (req: Request, res: Response, next: NextFun
       message: httpErrorMessageConstant.SUCCESSFUL
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 
@@ -171,10 +157,7 @@ const softDeleteBook: Controller = async (req: Request, res: Response, next: Nex
 
     const existingBook = await Book.findOne({ bookID, deletedAt: null })
     if (!existingBook) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.BAD_REQUEST,
-        message: messageConstant.BOOK_NOT_EXISTS
-      })
+      throw new HttpError(messageConstant.BOOK_NOT_EXISTS, httpStatusConstant.BAD_REQUEST)
     }
 
     const softDeletedBook = await Book.findOneAndUpdate(
@@ -184,10 +167,7 @@ const softDeleteBook: Controller = async (req: Request, res: Response, next: Nex
     )
 
     if (!softDeletedBook) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.NOT_FOUND,
-        message: messageConstant.ERROR_DELETING_BOOK
-      })
+      throw new HttpError(messageConstant.ERROR_DELETING_BOOK, httpStatusConstant.NOT_FOUND)
     }
 
     return responseHandlerUtils.responseHandler(res, {
@@ -195,7 +175,7 @@ const softDeleteBook: Controller = async (req: Request, res: Response, next: Nex
       message: messageConstant.BOOK_DELETED_SOFT
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 
@@ -208,18 +188,12 @@ const hardDeleteBook: Controller = async (req: Request, res: Response, next: Nex
 
     const existingBook = await Book.findOne({ bookID })
     if (!existingBook) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.BAD_REQUEST,
-        message: messageConstant.BOOK_NOT_EXISTS
-      })
+      throw new HttpError(messageConstant.BOOK_NOT_EXISTS, httpStatusConstant.BAD_REQUEST)
     }
 
     const deletedBook = await Book.deleteOne({ bookID })
     if (!deletedBook) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.NOT_FOUND,
-        message: messageConstant.ERROR_DELETING_BOOK
-      })
+      throw new HttpError(messageConstant.ERROR_DELETING_BOOK, httpStatusConstant.NOT_FOUND)
     }
 
     return responseHandlerUtils.responseHandler(res, {
@@ -227,7 +201,7 @@ const hardDeleteBook: Controller = async (req: Request, res: Response, next: Nex
       message: messageConstant.BOOK_DELETED_HARD
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 
@@ -240,17 +214,11 @@ const uploadBookPhoto: Controller = async (req: Request, res: Response, next: Ne
 
     const bookExists = await Book.findOne({ bookID })
     if (!bookExists) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.NOT_FOUND,
-        message: messageConstant.BOOK_NOT_FOUND
-      })
+      throw new HttpError(messageConstant.BOOK_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
     if (!req.file) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.BAD_REQUEST,
-        message: messageConstant.FILE_NOT_UPLOADED
-      })
+      throw new HttpError(messageConstant.FILE_NOT_UPLOADED, httpStatusConstant.BAD_REQUEST)
     }
 
     const newFileName = req.file.filename
@@ -262,10 +230,7 @@ const uploadBookPhoto: Controller = async (req: Request, res: Response, next: Ne
     })
 
     if (!uploadedPhoto) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.BAD_REQUEST,
-        message: messageConstant.ERROR_UPLOAD_FILE
-      })
+      throw new HttpError(messageConstant.ERROR_UPLOAD_FILE, httpStatusConstant.BAD_REQUEST)
     }
 
     return responseHandlerUtils.responseHandler(res, {
@@ -273,7 +238,7 @@ const uploadBookPhoto: Controller = async (req: Request, res: Response, next: Ne
       message: httpErrorMessageConstant.SUCCESSFUL
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 
@@ -290,17 +255,11 @@ const uploadBookCoverPhoto: Controller = async (
 
     const bookExists = await Book.findOne({ bookID })
     if (!bookExists) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.NOT_FOUND,
-        message: messageConstant.BOOK_NOT_FOUND
-      })
+      throw new HttpError(messageConstant.BOOK_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
     if (!req.file) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.BAD_REQUEST,
-        message: messageConstant.FILE_NOT_UPLOADED
-      })
+      throw new HttpError(messageConstant.FILE_NOT_UPLOADED, httpStatusConstant.BAD_REQUEST)
     }
 
     const existingCoverPhoto = await BookGallery.findOne({
@@ -320,10 +279,7 @@ const uploadBookCoverPhoto: Controller = async (
       )
 
       if (!updatedCoverPhoto) {
-        return responseHandlerUtils.responseHandler(res, {
-          statusCode: httpStatusConstant.BAD_REQUEST,
-          message: messageConstant.ERROR_UPLOAD_FILE
-        })
+        throw new HttpError(messageConstant.ERROR_UPLOAD_FILE, httpStatusConstant.BAD_REQUEST)
       }
     } else {
       const uploadedCoverPhoto = await BookGallery.create({
@@ -333,10 +289,7 @@ const uploadBookCoverPhoto: Controller = async (
       })
 
       if (!uploadedCoverPhoto) {
-        return responseHandlerUtils.responseHandler(res, {
-          statusCode: httpStatusConstant.BAD_REQUEST,
-          message: messageConstant.ERROR_UPLOAD_FILE
-        })
+        throw new HttpError(messageConstant.ERROR_UPLOAD_FILE, httpStatusConstant.BAD_REQUEST)
       }
     }
 
@@ -345,7 +298,7 @@ const uploadBookCoverPhoto: Controller = async (
       message: httpErrorMessageConstant.SUCCESSFUL
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 
@@ -359,10 +312,7 @@ const getRatingsSummary: Controller = async (req: Request, res: Response, next: 
     const ratingsSummary = await getRatingService.getRatings(Number(bookID))
 
     if (!ratingsSummary) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.NOT_FOUND,
-        message: messageConstant.NO_RATINGS_FOUND
-      })
+      throw new HttpError(messageConstant.NO_RATINGS_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
     return responseHandlerUtils.responseHandler(res, {
@@ -370,7 +320,7 @@ const getRatingsSummary: Controller = async (req: Request, res: Response, next: 
       data: ratingsSummary
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 
@@ -381,43 +331,23 @@ const getReviewsSummary: Controller = async (req: Request, res: Response, next: 
   try {
     const { bookID } = req.params
     const { page = 1, pageSize = 10 } = req.query
-    const pageNumber = Number(page)
-    const limit = Number(pageSize)
-    const skip = (pageNumber - 1) * limit
 
-    const totalReviewsCount = await getReviewService.getReviewsCount(Number(bookID))
-    const totalPages = Math.ceil(totalReviewsCount / limit)
+    const reviewsSummary = await getReviewService.getReviews(
+      Number(bookID),
+      Number(page),
+      Number(pageSize)
+    )
 
-    if (pageNumber > totalPages) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.BAD_REQUEST,
-        message: messageConstant.INVALID_PAGE_NUMBER
-      })
-    }
-
-    const reviews = await getReviewService.getReviews(Number(bookID), skip, limit)
-
-    if (!reviews || reviews.length === 0) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.NOT_FOUND,
-        message: messageConstant.NO_REVIEWS_FOUND
-      })
+    if (!reviewsSummary) {
+      throw new HttpError(messageConstant.NO_REVIEWS_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
     return responseHandlerUtils.responseHandler(res, {
       statusCode: httpStatusConstant.OK,
-      data: {
-        reviews: reviews.bookReviews,
-        pagination: {
-          page: pageNumber,
-          pageSize: limit,
-          totalPages
-        }
-      },
-      message: httpErrorMessageConstant.SUCCESSFUL
+      data: reviewsSummary
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 
@@ -436,10 +366,10 @@ const importBookSpreadSheet: Controller = async (
 
     const db = await dbConfig.connectToDatabase()
     if (!db) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
-        message: messageConstant.CONNECTION_ERROR
-      })
+      throw new HttpError(
+        messageConstant.CONNECTION_ERROR,
+        httpStatusConstant.INTERNAL_SERVER_ERROR
+      )
     }
 
     const collection = await databaseUtils.connectToCollection(db.connection, 'books')
@@ -474,10 +404,10 @@ const importBookSpreadSheet: Controller = async (
         message: messageConstant.DATA_ADDED_SUCCESSFULLY
       })
     } else {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
-        message: messageConstant.ERROR_INSERTING_DATA
-      })
+      throw new HttpError(
+        messageConstant.ERROR_INSERTING_DATA,
+        httpStatusConstant.INTERNAL_SERVER_ERROR
+      )
     }
   } catch (error) {
     return next(error)
@@ -496,18 +426,18 @@ const exportDataToSpreadsheet: Controller = async (
     const { sheetID } = req.params
 
     if (!sheetID) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.BAD_REQUEST,
-        message: messageConstant.MISSING_REQUIRED_PARAMETERS
-      })
+      throw new HttpError(
+        messageConstant.MISSING_REQUIRED_PARAMETERS,
+        httpStatusConstant.BAD_REQUEST
+      )
     }
 
     const db = await dbConfig.connectToDatabase()
     if (!db) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
-        message: messageConstant.CONNECTION_ERROR
-      })
+      throw new HttpError(
+        messageConstant.CONNECTION_ERROR,
+        httpStatusConstant.INTERNAL_SERVER_ERROR
+      )
     }
 
     const data = await databaseUtils.fetchCollectionData(db.connection, 'books')
@@ -550,10 +480,10 @@ const exportDataToSpreadsheet: Controller = async (
     const exportStatus = await googleSheetUtils.appendDataToSheet(auth, sheetID, values)
 
     if (!exportStatus) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
-        message: messageConstant.ERROR_EXPORTING_DATA
-      })
+      throw new HttpError(
+        messageConstant.ERROR_EXPORTING_DATA,
+        httpStatusConstant.INTERNAL_SERVER_ERROR
+      )
     }
 
     const columnWidthUpdates = [

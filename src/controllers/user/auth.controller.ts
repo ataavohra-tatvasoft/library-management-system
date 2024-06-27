@@ -13,6 +13,7 @@ import {
   sendMailUtils
 } from '../../utils'
 import { envConfig } from '../../config'
+import { HttpError } from '../../types/error'
 
 /**
  * @description Authenticates user and generates JWT token upon successful login.
@@ -23,18 +24,12 @@ const login: Controller = async (req: Request, res: Response, next: NextFunction
 
     const user = await User.findOne({ email, deletedAt: null })
     if (!user) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.NOT_FOUND,
-        message: messageConstant.USER_NOT_FOUND
-      })
+      throw new HttpError(messageConstant.USER_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password)
     if (!isPasswordValid) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.UNAUTHORIZED,
-        message: messageConstant.INVALID_PASSWORD
-      })
+      throw new HttpError(messageConstant.INVALID_PASSWORD, httpStatusConstant.UNAUTHORIZED)
     }
 
     const accessToken = jwt.sign(
@@ -63,10 +58,10 @@ const login: Controller = async (req: Request, res: Response, next: NextFunction
 
     const updateUser = await User.updateOne({ email: user.email }, { refreshToken })
     if (!updateUser) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
-        message: messageConstant.ERROR_UPDATING_USER
-      })
+      throw new HttpError(
+        messageConstant.ERROR_UPDATING_USER,
+        httpStatusConstant.INTERNAL_SERVER_ERROR
+      )
     }
 
     return responseHandlerUtils.responseHandler(res, {
@@ -99,26 +94,20 @@ const generateNewAccessToken: Controller = async (
 
     const isBlocked = await redisClient.sIsMember(blockedListKey, hashedToken)
     if (isBlocked) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.UNAUTHORIZED,
-        message: httpErrorMessageConstant.TOKEN_BLACKLISTED
-      })
+      throw new HttpError(
+        httpErrorMessageConstant.TOKEN_BLACKLISTED,
+        httpStatusConstant.UNAUTHORIZED
+      )
     }
 
     const verifiedToken = await authUtils.verifyRefreshToken(token)
     if (!(verifiedToken.tokenType === 'refresh')) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.INVALID_TOKEN,
-        message: messageConstant.INVALID_TOKEN_TYPE
-      })
+      throw new HttpError(messageConstant.INVALID_TOKEN_TYPE, httpStatusConstant.INVALID_TOKEN)
     }
 
     const user = await User.findOne({ email: verifiedToken.email })
     if (!user) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.NOT_FOUND,
-        message: messageConstant.USER_NOT_FOUND
-      })
+      throw new HttpError(messageConstant.USER_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
     const newAccessToken = jwt.sign(
@@ -176,10 +165,7 @@ const forgotPassword: Controller = async (req: Request, res: Response, next: Nex
 
     const user = await User.findOne({ email, deletedAt: null })
     if (!user) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.NOT_FOUND,
-        message: messageConstant.USER_NOT_FOUND
-      })
+      throw new HttpError(messageConstant.USER_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
     const resetToken = crypto.createHash('sha256').update(email).digest('hex')
@@ -187,10 +173,10 @@ const forgotPassword: Controller = async (req: Request, res: Response, next: Nex
 
     const updateUser = await User.updateOne({ email }, { resetToken, resetTokenExpiry: expireTime })
     if (!updateUser) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
-        message: messageConstant.ERROR_UPDATING_USER
-      })
+      throw new HttpError(
+        messageConstant.ERROR_UPDATING_USER,
+        httpStatusConstant.INTERNAL_SERVER_ERROR
+      )
     }
 
     const data = { link: envConfig.resetPassLink }
@@ -221,10 +207,7 @@ const resetPassword: Controller = async (req: Request, res: Response, next: Next
     })
 
     if (!user) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.NOT_FOUND,
-        message: messageConstant.INVALID_RESET_TOKEN
-      })
+      throw new HttpError(messageConstant.INVALID_RESET_TOKEN, httpStatusConstant.NOT_FOUND)
     }
 
     const salt = await bcrypt.genSalt(Number(envConfig.saltRounds))
@@ -239,10 +222,10 @@ const resetPassword: Controller = async (req: Request, res: Response, next: Next
       }
     )
     if (!updateUser) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
-        message: messageConstant.ERROR_UPDATING_USER
-      })
+      throw new HttpError(
+        messageConstant.ERROR_UPDATING_USER,
+        httpStatusConstant.INTERNAL_SERVER_ERROR
+      )
     }
 
     return responseHandlerUtils.responseHandler(res, {
@@ -276,10 +259,7 @@ const registerNewUser: Controller = async (req: Request, res: Response, next: Ne
 
     const isAgeValid = helperFunctionsUtils.validateAgeLimit(dateOfBirth)
     if (!isAgeValid) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.BAD_REQUEST,
-        message: messageConstant.INVALID_AGE
-      })
+      throw new HttpError(messageConstant.INVALID_AGE, httpStatusConstant.BAD_REQUEST)
     }
 
     const signupStatus = await User.create({
@@ -295,10 +275,7 @@ const registerNewUser: Controller = async (req: Request, res: Response, next: Ne
     })
 
     if (!signupStatus) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.BAD_REQUEST,
-        message: messageConstant.ERROR_SIGNING_USER
-      })
+      throw new HttpError(messageConstant.ERROR_SIGNING_USER, httpStatusConstant.BAD_REQUEST)
     }
 
     return responseHandlerUtils.responseHandler(res, {
@@ -323,10 +300,7 @@ const updateUserProfile: Controller = async (req: Request, res: Response, next: 
 
     const userProfile = await User.findOne({ email })
     if (!userProfile) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.NOT_FOUND,
-        message: messageConstant.USER_NOT_FOUND
-      })
+      throw new HttpError(messageConstant.USER_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
     const updateData = {
@@ -342,10 +316,10 @@ const updateUserProfile: Controller = async (req: Request, res: Response, next: 
 
     const updatedUser = await User.findOneAndUpdate({ email }, updateData, { new: true })
     if (!updatedUser) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
-        message: messageConstant.ERROR_UPDATING_USER
-      })
+      throw new HttpError(
+        messageConstant.ERROR_UPDATING_USER,
+        httpStatusConstant.INTERNAL_SERVER_ERROR
+      )
     }
 
     return responseHandlerUtils.responseHandler(res, {
@@ -370,17 +344,11 @@ const uploadUserProfilePhoto: Controller = async (
 
     const userExists = await User.findOne({ email })
     if (!userExists) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.NOT_FOUND,
-        message: messageConstant.USER_NOT_FOUND
-      })
+      throw new HttpError(messageConstant.USER_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
     if (!req.file) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.BAD_REQUEST,
-        message: messageConstant.FILE_NOT_UPLOADED
-      })
+      throw new HttpError(messageConstant.FILE_NOT_UPLOADED, httpStatusConstant.BAD_REQUEST)
     }
 
     const profilePhotoPath = req.file.path
@@ -394,10 +362,7 @@ const uploadUserProfilePhoto: Controller = async (
     )
 
     if (!uploadFile) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.BAD_REQUEST,
-        message: messageConstant.ERROR_UPLOAD_FILE
-      })
+      throw new HttpError(messageConstant.ERROR_UPLOAD_FILE, httpStatusConstant.BAD_REQUEST)
     }
 
     return responseHandlerUtils.responseHandler(res, {

@@ -1,6 +1,6 @@
 import { Response } from 'express'
 import { CelebrateError, isCelebrateError } from 'celebrate'
-import loggerUtils from './logger.utils'
+import { loggerUtils } from '../utils'
 import { httpErrorMessageConstant, httpStatusConstant } from '../constant'
 
 interface ResponseHandlerOptions {
@@ -18,7 +18,6 @@ async function responseHandler(res: Response, options: ResponseHandlerOptions) {
       code: statusCode,
       message
     }
-
     if (isCelebrateError(error)) {
       const celebrateError = error as CelebrateError
       const errorDetails: any[] = []
@@ -36,8 +35,11 @@ async function responseHandler(res: Response, options: ResponseHandlerOptions) {
         formattedResponse.data = data
       }
       if (error !== null && error !== undefined && typeof error == 'object') {
-        formattedResponse.error = { message: error.message, object: error }
-        loggerUtils.logger.error(formattedResponse.error)
+        formattedResponse.error = {
+          errorMessage: error.message,
+          errorObject: error
+        }
+        loggerUtils.logger.error(error.message)
       }
     }
 

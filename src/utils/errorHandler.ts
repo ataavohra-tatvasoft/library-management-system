@@ -1,10 +1,13 @@
-import { Request, Response } from 'express'
+import { Request, Response, NextFunction } from 'express'
 import responseHandlerUtils from './responseHandler.utils'
 import { httpStatusConstant } from '../constant'
 
-const errorHandler = (error: any, req: Request, res: Response) => {
+// eslint-disable-next-line no-unused-vars
+const errorHandler = (error: any, req: Request, res: Response, next: NextFunction) => {
+  const statusCode = error.statusCode || httpStatusConstant.INTERNAL_SERVER_ERROR
   return responseHandlerUtils.responseHandler(res, {
-    statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
+    statusCode,
+    message: error.message,
     error
   })
 }

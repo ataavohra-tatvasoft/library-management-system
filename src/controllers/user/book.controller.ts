@@ -4,6 +4,7 @@ import { httpErrorMessageConstant, httpStatusConstant, messageConstant } from '.
 import { Controller } from '../../interfaces'
 import { responseHandlerUtils } from '../../utils'
 import { getRatingService, getReviewService } from '../../services/book'
+import { HttpError } from '../../types/error'
 
 /**
  * @description Searches for active books by name, ID, or both (returns details & aggregates).
@@ -29,17 +30,14 @@ const searchBooks: Controller = async (req: Request, res: Response, next: NextFu
 
     const totalBooks = await Book.countDocuments({ deletedAt: null })
     if (!totalBooks) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
-        message: messageConstant.ERROR_COUNTING_BOOKS
-      })
+      throw new HttpError(
+        messageConstant.ERROR_COUNTING_BOOKS,
+        httpStatusConstant.INTERNAL_SERVER_ERROR
+      )
     }
 
     if (pageNumber > Math.ceil(totalBooks / limit)) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.BAD_REQUEST,
-        message: messageConstant.INVALID_PAGE_NUMBER
-      })
+      throw new HttpError(messageConstant.INVALID_PAGE_NUMBER, httpStatusConstant.BAD_REQUEST)
     }
 
     const searchPipeline = [
@@ -101,10 +99,7 @@ const searchBooks: Controller = async (req: Request, res: Response, next: NextFu
 
     const searchedBooks = await Book.aggregate(searchPipeline)
     if (!searchedBooks.length) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.NOT_FOUND,
-        message: messageConstant.BOOK_NOT_FOUND
-      })
+      throw new HttpError(messageConstant.BOOK_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
     return responseHandlerUtils.responseHandler(res, {
@@ -130,10 +125,10 @@ const getAllBookDetails: Controller = async (req: Request, res: Response, next: 
   try {
     const totalBooks = await Book.countDocuments({ deletedAt: null })
     if (!totalBooks) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
-        message: messageConstant.ERROR_COUNTING_BOOKS
-      })
+      throw new HttpError(
+        messageConstant.ERROR_COUNTING_BOOKS,
+        httpStatusConstant.INTERNAL_SERVER_ERROR
+      )
     }
 
     const searchPipeline = [
@@ -203,10 +198,7 @@ const getAllBookDetails: Controller = async (req: Request, res: Response, next: 
 
     const books = await Book.aggregate(searchPipeline)
     if (!books.length) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.NOT_FOUND,
-        message: messageConstant.BOOK_NOT_FOUND
-      })
+      throw new HttpError(messageConstant.BOOK_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
     return responseHandlerUtils.responseHandler(res, {
@@ -231,34 +223,25 @@ const addBookReview: Controller = async (req: Request, res: Response, next: Next
 
     const user = await User.findOne({ email })
     if (!user) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.NOT_FOUND,
-        message: messageConstant.USER_NOT_FOUND
-      })
+      throw new HttpError(messageConstant.USER_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
     const book = await Book.findOne({ bookID })
     if (!book) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.NOT_FOUND,
-        message: messageConstant.BOOK_NOT_FOUND
-      })
+      throw new HttpError(messageConstant.BOOK_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
     const existingReview = await BookReview.findOne({ userID: user._id, bookID: book._id })
     if (existingReview) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.BAD_REQUEST,
-        message: messageConstant.REVIEW_ALREADY_EXIST
-      })
+      throw new HttpError(messageConstant.REVIEW_ALREADY_EXIST, httpStatusConstant.BAD_REQUEST)
     }
 
     const newReview = await BookReview.create({ userID: user._id, bookID: book._id, review })
     if (!newReview) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
-        message: messageConstant.ERROR_CREATING_BOOK_REVIEW
-      })
+      throw new HttpError(
+        messageConstant.ERROR_CREATING_BOOK_REVIEW,
+        httpStatusConstant.INTERNAL_SERVER_ERROR
+      )
     }
     return responseHandlerUtils.responseHandler(res, {
       statusCode: httpStatusConstant.OK,
@@ -279,34 +262,25 @@ const addBookRating: Controller = async (req: Request, res: Response, next: Next
 
     const user = await User.findOne({ email })
     if (!user) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.NOT_FOUND,
-        message: messageConstant.USER_NOT_FOUND
-      })
+      throw new HttpError(messageConstant.USER_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
     const book = await Book.findOne({ bookID })
     if (!book) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.NOT_FOUND,
-        message: messageConstant.BOOK_NOT_FOUND
-      })
+      throw new HttpError(messageConstant.BOOK_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
     const existingRating = await BookRating.findOne({ userID: user._id, bookID: book._id })
     if (existingRating) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.BAD_REQUEST,
-        message: messageConstant.RATING_ALREADY_EXIST
-      })
+      throw new HttpError(messageConstant.RATING_ALREADY_EXIST, httpStatusConstant.BAD_REQUEST)
     }
 
     const newRating = await BookRating.create({ userID: user._id, bookID: book._id, rating })
     if (!newRating) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
-        message: messageConstant.ERROR_CREATING_BOOK_RATING
-      })
+      throw new HttpError(
+        messageConstant.ERROR_CREATING_BOOK_RATING,
+        httpStatusConstant.INTERNAL_SERVER_ERROR
+      )
     }
 
     return responseHandlerUtils.responseHandler(res, {
@@ -327,10 +301,7 @@ const getBookIssueHistory: Controller = async (req: Request, res: Response, next
 
     const user = await User.findOne({ email })
     if (!user) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.NOT_FOUND,
-        message: messageConstant.USER_NOT_FOUND
-      })
+      throw new HttpError(messageConstant.USER_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
     const bookHistories = await BookHistory.find({ userID: user._id }).populate({
@@ -339,10 +310,7 @@ const getBookIssueHistory: Controller = async (req: Request, res: Response, next
     })
 
     if (!bookHistories || bookHistories.length === 0) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.NOT_FOUND,
-        message: messageConstant.BOOK_HISTORY_NOT_FOUND
-      })
+      throw new HttpError(messageConstant.BOOK_HISTORY_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
     const formattedHistories = bookHistories.map((history: any) => {
@@ -380,10 +348,7 @@ const getLibrarySummary: Controller = async (req: Request, res: Response, next: 
     const { email } = req.params
     const user = await User.findOne({ email }, { _id: 1, paidAmount: 1, dueCharges: 1 })
     if (!user) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.NOT_FOUND,
-        message: messageConstant.USER_NOT_FOUND
-      })
+      throw new HttpError(messageConstant.USER_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
     const totalIssuedBooks = await BookHistory.countDocuments({ userID: user._id })
@@ -393,10 +358,10 @@ const getLibrarySummary: Controller = async (req: Request, res: Response, next: 
     })
 
     if (totalIssuedBooks === undefined || totalSubmittedBooks === undefined) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.INTERNAL_SERVER_ERROR,
-        message: messageConstant.ERROR_COUNTING_BOOK_HISTORY
-      })
+      throw new HttpError(
+        messageConstant.ERROR_COUNTING_BOOK_HISTORY,
+        httpStatusConstant.INTERNAL_SERVER_ERROR
+      )
     }
 
     const totalNotSubmittedBooks = totalIssuedBooks - totalSubmittedBooks
@@ -429,10 +394,7 @@ const getBookRatingsSummary: Controller = async (
 
     const ratingsSummary = await getRatingService.getRatings(Number(bookID))
     if (!ratingsSummary) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.NOT_FOUND,
-        message: messageConstant.NO_RATINGS_FOUND
-      })
+      throw new HttpError(messageConstant.NO_RATINGS_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
     return responseHandlerUtils.responseHandler(res, {
@@ -463,19 +425,13 @@ const getBookReviewsSummary: Controller = async (
     const totalPages = Math.ceil(totalReviews / limit)
 
     if (pageNumber > totalPages) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.BAD_REQUEST,
-        message: messageConstant.INVALID_PAGE_NUMBER
-      })
+      throw new HttpError(messageConstant.INVALID_PAGE_NUMBER, httpStatusConstant.BAD_REQUEST)
     }
 
     const reviews = await getReviewService.getReviews(Number(bookID), skip, limit)
 
     if (!reviews || reviews.length === 0) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.NOT_FOUND,
-        message: messageConstant.NO_REVIEWS_FOUND
-      })
+      throw new HttpError(messageConstant.NO_REVIEWS_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
     return responseHandlerUtils.responseHandler(res, {

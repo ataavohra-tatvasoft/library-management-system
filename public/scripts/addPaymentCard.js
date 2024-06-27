@@ -38,24 +38,19 @@ document.addEventListener('DOMContentLoaded', () => {
       return
     }
 
-    if (token) {
-      alert('Your token is: ' + token.id)
-    }
+    // if (token) {
+    //   alert('Your token is: ' + token.id)
+    // }
 
-    const email = '<%= email %>' // Replace with actual user email
-
-    const response = await fetch(
-      `http://your-server-host:your-server-port/user/add-payment-card/${email}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          token: token.id
-        })
-      }
-    )
+    const response = await fetch(`<% =link %>`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        token: token.id
+      })
+    })
 
     const result = await response.json()
 

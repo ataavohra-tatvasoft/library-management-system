@@ -1,9 +1,10 @@
 import { Request, Response, NextFunction } from 'express'
 import { Book, User } from '../../db/models'
 import { helperFunctionsUtils, responseHandlerUtils } from '../../utils'
-import { Controller, IUser } from '../../interfaces'
+import { Controller } from '../../interfaces'
 import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '../../constant'
 import { BookHistory } from '../../db/models/bookHistory.model'
+import { HttpError } from '../../types/error'
 
 /**
  * @description Retrieves a list of unique issued books with details.
@@ -61,14 +62,9 @@ const getIssuedBooksList: Controller = async (req: Request, res: Response, next:
       }
     ]
 
-    const issuedBooks = await User.aggregate<IUser>(issuedBooksAggregationPipeline)
-      .skip(skip)
-      .limit(limit)
+    const issuedBooks = await User.aggregate(issuedBooksAggregationPipeline).skip(skip).limit(limit)
     if (!issuedBooks?.length) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.OK,
-        message: messageConstant.NO_ISSUED_BOOK_FOUND
-      })
+      throw new HttpError(messageConstant.NO_ISSUED_BOOK_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
     const totalIssuedBooks = await User.aggregate(issuedBooksAggregationPipeline)
@@ -76,10 +72,7 @@ const getIssuedBooksList: Controller = async (req: Request, res: Response, next:
     const totalPages = Math.ceil(total / limit)
 
     if (pageNumber > totalPages) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.BAD_REQUEST,
-        message: messageConstant.INVALID_PAGE_NUMBER
-      })
+      throw new HttpError(messageConstant.INVALID_PAGE_NUMBER, httpStatusConstant.BAD_REQUEST)
     }
 
     return responseHandlerUtils.responseHandler(res, {
@@ -95,7 +88,7 @@ const getIssuedBooksList: Controller = async (req: Request, res: Response, next:
       message: httpErrorMessageConstant.SUCCESSFUL
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 
@@ -108,47 +101,30 @@ const issueBookToUser: Controller = async (req: Request, res: Response, next: Ne
 
     const book = await Book.findOne({ bookID })
     if (!book) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.NOT_FOUND,
-        message: messageConstant.BOOK_NOT_FOUND
-      })
+      throw new HttpError(messageConstant.BOOK_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
+
     const user = await User.findOne({ email }).populate('books')
     if (!user) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.NOT_FOUND,
-        message: messageConstant.USER_NOT_FOUND
-      })
+      throw new HttpError(messageConstant.USER_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
     for (const issuedBook of user.books) {
       if (String(issuedBook.bookId) === String(book._id)) {
-        return responseHandlerUtils.responseHandler(res, {
-          statusCode: httpStatusConstant.BAD_REQUEST,
-          message: messageConstant.CANNOT_ISSUE_SAME_BOOK
-        })
+        throw new HttpError(messageConstant.CANNOT_ISSUE_SAME_BOOK, httpStatusConstant.BAD_REQUEST)
       }
     }
 
     if (book.quantityAvailable <= 0) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.BAD_REQUEST,
-        message: messageConstant.BOOK_OUT_OF_STOCK
-      })
+      throw new HttpError(messageConstant.BOOK_OUT_OF_STOCK, httpStatusConstant.BAD_REQUEST)
     }
 
     if (user.books.length >= 5) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.BAD_REQUEST,
-        message: messageConstant.BOOK_LIMIT_EXCEEDED
-      })
+      throw new HttpError(messageConstant.BOOK_LIMIT_EXCEEDED, httpStatusConstant.BAD_REQUEST)
     }
 
     if (user.dueCharges && Number(user.dueCharges) > 500) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.BAD_REQUEST,
-        message: messageConstant.OUTSTANDING_DUE_CHARGES
-      })
+      throw new HttpError(messageConstant.OUTSTANDING_DUE_CHARGES, httpStatusConstant.BAD_REQUEST)
     }
 
     if (issueDate) {
@@ -159,10 +135,7 @@ const issueBookToUser: Controller = async (req: Request, res: Response, next: Ne
       providedIssueDate.setHours(0, 0, 0, 0)
 
       if (providedIssueDate.getTime() < currentDate.getTime()) {
-        return responseHandlerUtils.responseHandler(res, {
-          statusCode: httpStatusConstant.BAD_REQUEST,
-          message: messageConstant.ISSUE_DATE_INVALID
-        })
+        throw new HttpError(messageConstant.ISSUE_DATE_INVALID, httpStatusConstant.BAD_REQUEST)
       }
     }
 
@@ -184,10 +157,7 @@ const issueBookToUser: Controller = async (req: Request, res: Response, next: Ne
     )
 
     if (!userUpdate) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.BAD_REQUEST,
-        message: messageConstant.ERROR_ASSIGNING_BOOK
-      })
+      throw new HttpError(messageConstant.ERROR_ASSIGNING_BOOK, httpStatusConstant.BAD_REQUEST)
     }
 
     const bookUpdate = await Book.updateOne(
@@ -199,10 +169,7 @@ const issueBookToUser: Controller = async (req: Request, res: Response, next: Ne
     )
 
     if (!bookUpdate.modifiedCount) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.BAD_REQUEST,
-        message: messageConstant.ERROR_UPDATING_BOOK
-      })
+      throw new HttpError(messageConstant.ERROR_UPDATING_BOOK, httpStatusConstant.BAD_REQUEST)
     }
 
     const logHistory = await BookHistory.create({
@@ -212,10 +179,7 @@ const issueBookToUser: Controller = async (req: Request, res: Response, next: Ne
     })
 
     if (!logHistory) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.BAD_REQUEST,
-        message: messageConstant.ERROR_LOGGING_HISTORY
-      })
+      throw new HttpError(messageConstant.ERROR_LOGGING_HISTORY, httpStatusConstant.BAD_REQUEST)
     }
 
     return responseHandlerUtils.responseHandler(res, {
@@ -223,7 +187,7 @@ const issueBookToUser: Controller = async (req: Request, res: Response, next: Ne
       message: httpErrorMessageConstant.SUCCESSFUL
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 
@@ -238,16 +202,11 @@ const submitBookForUser: Controller = async (req: Request, res: Response, next: 
     const [book, user] = await Promise.all([Book.findOne({ bookID }), User.findOne({ email })])
 
     if (!book) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.BAD_REQUEST,
-        message: messageConstant.BOOK_NOT_FOUND
-      })
+      throw new HttpError(messageConstant.BOOK_NOT_FOUND, httpStatusConstant.BAD_REQUEST)
     }
+
     if (!user) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.BAD_REQUEST,
-        message: messageConstant.USER_NOT_FOUND
-      })
+      throw new HttpError(messageConstant.USER_NOT_FOUND, httpStatusConstant.BAD_REQUEST)
     }
 
     const submitDateObject = new Date(submitDate)
@@ -259,23 +218,7 @@ const submitBookForUser: Controller = async (req: Request, res: Response, next: 
     )
 
     if (!issuedBook) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.BAD_REQUEST,
-        message: messageConstant.BOOK_NOT_ISSUED
-      })
-    }
-
-    const submitDateCheck = user.books.find(
-      (issuedBookEntry) =>
-        String(issuedBookEntry.bookId) === String(book._id) &&
-        issuedBookEntry.issueDate <= submitDateObject
-    )
-
-    if (!submitDateCheck) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.BAD_REQUEST,
-        message: messageConstant.INVALID_SUBMIT_DATE
-      })
+      throw new HttpError(messageConstant.BOOK_NOT_ISSUED, httpStatusConstant.BAD_REQUEST)
     }
 
     const subscriptionEndDate = new Date(
@@ -291,10 +234,10 @@ const submitBookForUser: Controller = async (req: Request, res: Response, next: 
     if (dueCharges > 0) {
       const userUpdateStatus = await User.updateOne({ email }, { $inc: { dueCharges: dueCharges } })
       if (!userUpdateStatus.modifiedCount) {
-        return responseHandlerUtils.responseHandler(res, {
-          statusCode: httpStatusConstant.BAD_REQUEST,
-          message: messageConstant.ERROR_UPDATING_DUE_CHARGES_IN_USER
-        })
+        throw new HttpError(
+          messageConstant.ERROR_UPDATING_DUE_CHARGES_IN_USER,
+          httpStatusConstant.BAD_REQUEST
+        )
       }
     } else {
       console.log('Due charges are already 0 for user:', user.firstname + ' ' + user.lastname)
@@ -309,10 +252,7 @@ const submitBookForUser: Controller = async (req: Request, res: Response, next: 
     )
 
     if (!deletedBook) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.BAD_REQUEST,
-        message: messageConstant.ERROR_DELETING_BOOK
-      })
+      throw new HttpError(messageConstant.ERROR_DELETING_BOOK, httpStatusConstant.BAD_REQUEST)
     }
 
     const bookUpdateStatus = await Book.updateOne(
@@ -323,10 +263,7 @@ const submitBookForUser: Controller = async (req: Request, res: Response, next: 
     )
 
     if (!bookUpdateStatus.modifiedCount) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.BAD_REQUEST,
-        message: messageConstant.ERROR_UPDATING_BOOK
-      })
+      throw new HttpError(messageConstant.ERROR_UPDATING_BOOK, httpStatusConstant.BAD_REQUEST)
     }
 
     const logHistory = await BookHistory.updateOne(
@@ -341,10 +278,7 @@ const submitBookForUser: Controller = async (req: Request, res: Response, next: 
     )
 
     if (!logHistory) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.BAD_REQUEST,
-        message: messageConstant.ERROR_LOGGING_HISTORY
-      })
+      throw new HttpError(messageConstant.ERROR_LOGGING_HISTORY, httpStatusConstant.BAD_REQUEST)
     }
 
     const totalCharge = await User.findOne({ email }, { _id: 0, dueCharges: 1 })
@@ -357,7 +291,7 @@ const submitBookForUser: Controller = async (req: Request, res: Response, next: 
       message: httpErrorMessageConstant.SUCCESSFUL
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 
