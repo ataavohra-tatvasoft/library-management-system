@@ -10,9 +10,6 @@ const searchBooks = {
 }
 
 const addBookReview = {
-  params: Joi.object().keys({
-    email: Joi.string().email().required()
-  }),
   body: Joi.object().keys({
     bookID: Joi.string().required().trim(),
     review: Joi.string().required().min(3).max(500).trim()
@@ -20,36 +17,21 @@ const addBookReview = {
 }
 
 const addBookRating = {
-  params: Joi.object().keys({
-    email: Joi.string().email().required()
-  }),
   body: Joi.object().keys({
     bookID: Joi.string().required().trim(),
     rating: Joi.number().required().min(1).max(5)
   })
 }
 
-const getBookIssueHistory = {
-  params: Joi.object().keys({
-    email: Joi.string().required().trim()
-  })
-}
-
-const getLibrarySummary = {
-  params: Joi.object().keys({
-    email: Joi.string().email().required()
-  })
-}
-
 const getBookRatingsSummary = {
   params: Joi.object().keys({
-    bookID: Joi.string().required().min(13).max(13).trim()
+    bookID: Joi.number().min(13).required()
   })
 }
 
 const getBookReviewsSummary = {
   params: Joi.object().keys({
-    bookID: Joi.string().required().min(13).max(13).trim()
+    bookID: Joi.number().min(13).required()
   }),
   query: Joi.object().keys({
     page: Joi.string().min(1).optional().default(1),
@@ -61,8 +43,6 @@ export default {
   searchBooks,
   addBookReview,
   addBookRating,
-  getBookIssueHistory,
-  getLibrarySummary,
   getBookRatingsSummary,
   getBookReviewsSummary
 }

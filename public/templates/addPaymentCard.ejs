@@ -1,145 +1,150 @@
 <!doctype html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Add Payment Card</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+      }
 
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Add Payment Card</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f4f4f4;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-    }
+      .container {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        width: 400px;
+      }
 
-    .container {
-      background-color: white;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-      padding: 20px;
-      width: 400px;
-    }
+      h1 {
+        text-align: center;
+        margin-bottom: 20px;
+        color: #4caf50;
+      }
 
-    h1 {
-      text-align: center;
-      margin-bottom: 20px;
-      color: #4caf50;
-    }
+      .form-group {
+        margin-bottom: 15px;
+      }
 
-    .form-group {
-      margin-bottom: 15px;
-    }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+        color: #333;
+      }
 
-    label {
-      display: block;
-      margin-bottom: 5px;
-      font-weight: bold;
-      color: #333;
-    }
+      #card-element {
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        background-color: #fff;
+      }
 
-    #card-element {
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      background-color: #fff;
-    }
+      button {
+        width: 100%;
+        background-color: #4caf50;
+        color: white;
+        padding: 10px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+      }
 
-    button {
-      width: 100%;
-      background-color: #4caf50;
-      color: white;
-      padding: 10px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 16px;
-    }
+      button:hover {
+        background-color: #45a049;
+      }
+    </style>
+    <script src="https://js.stripe.com/v3/"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Add Payment Card</h1>
+      <form id="payment-form">
+        <div class="form-group">
+          <label for="card-element">Card Details</label>
+          <div id="card-element"></div>
+        </div>
+        <button type="submit">Add Card</button>
+      </form>
+    </div>
+    <script>
+      document.addEventListener('DOMContentLoaded', async () => {
+        const stripe = Stripe('<%= publicKey %>')
+        const elements = stripe.elements()
 
-    button:hover {
-      background-color: #45a049;
-    }
-  </style>
-  <script src="https://js.stripe.com/v3/"></script>
-</head>
-
-<body>
-  <div class="container">
-    <h1>Add Payment Card</h1>
-    <form id="payment-form">
-      <div class="form-group">
-        <label for="card-element">Card Details</label>
-        <div id="card-element"></div>
-      </div>
-      <button type="submit">Add Card</button>
-    </form>
-  </div>
-  <script src="/addPaymentCard.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', async () => {
-      const stripe = Stripe('<%= publicKey %>');
-      const elements = stripe.elements();
-
-      const cardElement = elements.create('card', {
-        style: {
-          base: {
-            color: '#32325d',
-            fontFamily: 'Arial, sans-serif',
-            fontSmoothing: 'antialiased',
-            fontSize: '16px',
-            '::placeholder': {
-              color: '#32325d'
+        const cardElement = elements.create('card', {
+          style: {
+            base: {
+              color: '#32325d',
+              fontFamily: 'Arial, sans-serif',
+              fontSmoothing: 'antialiased',
+              fontSize: '16px',
+              '::placeholder': {
+                color: '#32325d'
+              }
+            },
+            invalid: {
+              fontFamily: 'Arial, sans-serif',
+              color: '#fa755a',
+              iconColor: '#fa755a'
             }
-          },
-          invalid: {
-            fontFamily: 'Arial, sans-serif',
-            color: '#fa755a',
-            iconColor: '#fa755a'
           }
-        }
-      });
+        })
 
-      cardElement.mount('#card-element');
+        cardElement.mount('#card-element')
 
-      const paymentForm = document.getElementById('payment-form');
+        const paymentForm = document.getElementById('payment-form')
 
-      paymentForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
+        paymentForm.addEventListener('submit', async (e) => {
+          e.preventDefault()
 
-        const { token, error } = await stripe.createToken(cardElement);
+          const { token, error } = await stripe.createToken(cardElement)
 
-        if (error) {
-          alert('Error generating token: ' + error.message);
-          return;
-        }
+          if (error) {
+            alert('Error generating token: ' + error.message)
+            return
+          }
 
-        const formData = new FormData();
-        formData.append('cardNumber', String(token.card.number)); // Last 4 digits of the card number
-        formData.append('cardBrand', String(token.card.brand)); // Card brand (Visa, MasterCard, etc.)
-        formData.append('expirationMonth', Number(token.card.exp_month)); // Expiration month (numeric)
-        formData.append('expirationYear', Number(token.card.exp_year)); // Expiration year (numeric)
-        formData.append('cvv', String(token.card.cvc)); // CVV
+          const data = {
+            cardNumber: String(token.card.id),
+            cardBrand: String(token.card.brand),
+            expirationMonth: Number(token.card.exp_month),
+            expirationYear: Number(token.card.exp_year),
+            cvv: String(token.card.cvc),
+            token: String(token.id)
+          }
 
-        formData.append('token', token.id); // Token ID
+          console.log(token)
 
-        const response = await fetch('<%= link %>', {
-          method: 'POST',
-          body: formData
-        });
+          // const response = await axios.post(
+          //   'http://localhost:2700/user/add-payment-card/user@mailinator.com',
+          //   data
+          // )
 
-        const result = await response.json();
+          const response = await fetch(
+            'http://localhost:2700/user/add-payment-card/user@mailinator.com',
+            {
+              method: 'POST',
+              body: data
+            }
+          )
 
-        if (response.ok) {
-          alert('Payment card added successfully!');
-        } else {
-          alert('Error adding payment card: ' + result.message);
-        }
-      });
-    });
-  </script>
-</body>
-
+          if (response) {
+            alert('Payment card added successfully!')
+          } else {
+            alert('Error adding payment card: ' + response.data.message)
+          }
+        })
+      })
+    </script>
+  </body>
 </html>

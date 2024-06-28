@@ -7,30 +7,24 @@ import { userAuthMiddleware } from '../../middlewares'
 const router: Router = express.Router()
 
 router.get(
-  '/get-add-card-link/:email',
-  celebrate(userPaymentSchema.getAddCardLink),
+  '/get-add-card-link',
   userAuthMiddleware.authMiddleware,
   userPaymentController.getAddCardLink
 )
-router.get(
-  '/template/add-payment-card/:email',
-  // celebrate(userPaymentSchema.addPaymentCardPage),
-  userPaymentController.addPaymentCardPage
-)
+router.get('/template/add-payment-card/:email', userPaymentController.addPaymentCardPage)
 router.post(
   '/add-payment-card/:email',
   celebrate(userPaymentSchema.addPaymentCard),
-  userAuthMiddleware.authMiddleware,
+  // userAuthMiddleware.authMiddleware,
   userPaymentController.addPaymentCard
 )
 router.get(
-  '/payment-card-list/:email',
-  celebrate(userPaymentSchema.paymentCardsList),
+  '/payment-card-list',
   userAuthMiddleware.authMiddleware,
   userPaymentController.paymentCardsList
 )
 router.put(
-  '/pay-charges/:email',
+  '/pay-charges',
   celebrate(userPaymentSchema.payCharges),
   userAuthMiddleware.authMiddleware,
   userPaymentController.payCharges

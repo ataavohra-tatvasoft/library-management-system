@@ -8,7 +8,7 @@ import { authUtils, ejsCompilerUtils, sendMailUtils } from '../../utils'
 import { Controller } from '../../interfaces'
 import { envConfig } from '../../config'
 import responseHandlerUtils from '../../utils/responseHandler.utils'
-import { HttpError } from '../../types/error'
+import { HttpError } from '../../libs'
 
 /**
  * @description Authenticates admin using email/password and returns JWT token (if valid).
@@ -94,14 +94,11 @@ const generateNewAccessToken: Controller = async (
     }
 
     const admin = await Admin.findOne({ email: validatedToken.email })
-    if (!admin) {
-      throw new HttpError(messageConstant.ADMIN_NOT_FOUND, httpStatusConstant.NOT_FOUND)
-    }
 
     const newAccessToken = jwt.sign(
       {
-        _id: admin._id,
-        email: admin.email,
+        _id: admin?._id,
+        email: admin?.email,
         tokenType: 'access'
       },
       String(envConfig.jwtSecretKey),
@@ -233,16 +230,12 @@ const resetPassword: Controller = async (req: Request, res: Response, next: Next
  */
 const updateAdminProfile: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { email } = req.params
+    const { token } = await authUtils.validateAuthorizationHeader(req.headers)
+    const verifiedToken = await authUtils.verifyAccessToken(token)
+
     const { password, firstname, lastname, dateOfBirth, mobileNumber, address, city, state } =
       req.body || {}
     const hashedPassword = password ? await bcrypt.hash(password, 10) : undefined
-
-    const adminProfile = await Admin.findOne({ email })
-
-    if (!adminProfile) {
-      throw new HttpError(messageConstant.ADMIN_NOT_FOUND, httpStatusConstant.NOT_FOUND)
-    }
 
     const updatedAdminData = {
       ...(hashedPassword && { password: hashedPassword }),
@@ -255,7 +248,11 @@ const updateAdminProfile: Controller = async (req: Request, res: Response, next:
       ...(state && { state })
     }
 
-    const updatedProfile = await Admin.findOneAndUpdate({ email }, updatedAdminData, { new: true })
+    const updatedProfile = await Admin.findOneAndUpdate(
+      { email: verifiedToken.email },
+      updatedAdminData,
+      { new: true }
+    )
 
     if (!updatedProfile) {
       throw new HttpError(

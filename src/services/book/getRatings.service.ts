@@ -1,21 +1,19 @@
+import { httpStatusConstant, messageConstant } from '../../constant'
 import { Book, BookRating } from '../../db/models'
+import { HttpError } from '../../libs'
 
 async function getRatings(
   bookID: number
 ): Promise<{ totalRatings: number; averageRating: number; ratingScale: string }> {
   {
-    if (isNaN(bookID)) {
-      throw new Error('Invalid book ID format')
-    }
-
     const book = await Book.findOne({ bookID, deletedAt: null })
     if (!book) {
-      throw new Error('Book not found!')
+      throw new HttpError(messageConstant.BOOK_NOT_FOUND, httpStatusConstant.BAD_REQUEST)
     }
 
     const ratings = await BookRating.find({ bookID: book._id, deletedAt: null })
-    if (!ratings || ratings.length == 0) {
-      throw new Error('Book ratings not found!')
+    if (!ratings?.length) {
+      throw new HttpError(messageConstant.NO_RATINGS_FOUND, httpStatusConstant.NOT_FOUND)
     }
     const totalRatings = ratings.length
     const averageRating =

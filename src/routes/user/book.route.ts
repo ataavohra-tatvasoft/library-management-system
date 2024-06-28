@@ -14,29 +14,23 @@ router.get(
 )
 router.get('/book-details', userAuthMiddleware.authMiddleware, userBookController.getAllBookDetails)
 router.post(
-  '/book/add-review/:email',
+  '/book/add-review',
   celebrate(userBookSchema.addBookReview),
   userAuthMiddleware.authMiddleware,
   userBookController.addBookReview
 )
 router.post(
-  '/book/add-rating/:email',
+  '/book/add-rating',
   celebrate(userBookSchema.addBookRating),
   userAuthMiddleware.authMiddleware,
   userBookController.addBookRating
 )
 router.get(
-  '/book/issue-book-history/:email',
-  celebrate(userBookSchema.getBookIssueHistory),
+  '/book/issue-book-history',
   userAuthMiddleware.authMiddleware,
   userBookController.getBookIssueHistory
 )
-router.get(
-  '/summary/:email',
-  celebrate(userBookSchema.getLibrarySummary),
-  userAuthMiddleware.authMiddleware,
-  userBookController.getLibrarySummary
-)
+router.get('/summary', userAuthMiddleware.authMiddleware, userBookController.getLibrarySummary)
 router.get(
   '/book-ratings-summary/:bookID',
   celebrate(userBookSchema.getBookRatingsSummary),

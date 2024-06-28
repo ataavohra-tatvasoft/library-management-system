@@ -2,6 +2,8 @@ import { OAuth2Client } from 'google-auth-library'
 import { google } from 'googleapis'
 import { envConfig } from '../config'
 import axios from 'axios'
+import { HttpError } from '../libs'
+import { httpStatusConstant, messageConstant } from '../constant'
 
 const authorize = async (): Promise<OAuth2Client> => {
   const oAuth2Client = new OAuth2Client(
@@ -22,7 +24,10 @@ const authorize = async (): Promise<OAuth2Client> => {
   })
 
   if (!responseTokens) {
-    throw new Error('Error fetching tokens')
+    throw new HttpError(
+      messageConstant.ERROR_FETCHING_TOKEN,
+      httpStatusConstant.INTERNAL_SERVER_ERROR
+    )
   }
   const tokens = {
     // eslint-disable-next-line camelcase
@@ -56,7 +61,7 @@ const fetchSheetData = async (spreadsheetId: string, range: string): Promise<any
   return response.data.values
 }
 
-const appendDataToSheet = async (auth: any, sheetID: string, values: any[][]) => {
+const appendDataToSheet = async (auth: OAuth2Client, sheetID: string, values: any[][]) => {
   const sheets = google.sheets({ version: 'v4', auth })
   return await sheets.spreadsheets.values.append({
     spreadsheetId: sheetID,
@@ -66,7 +71,15 @@ const appendDataToSheet = async (auth: any, sheetID: string, values: any[][]) =>
   })
 }
 
-const updateColumnWidths = async (auth: any, sheetID: string, columnWidthUpdates: any[]) => {
+const updateColumnWidths = async (
+  auth: OAuth2Client,
+  sheetID: string,
+  columnWidthUpdates: {
+    startIndex: number
+    endIndex: number
+    pixelSize: number
+  }[]
+) => {
   const sheets = google.sheets({ version: 'v4', auth })
   const requests = columnWidthUpdates.map((update) => ({
     updateDimensionProperties: {

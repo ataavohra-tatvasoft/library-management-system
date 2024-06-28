@@ -13,7 +13,7 @@ import {
   sendMailUtils
 } from '../../utils'
 import { envConfig } from '../../config'
-import { HttpError } from '../../types/error'
+import { HttpError } from '../../libs'
 
 /**
  * @description Authenticates user and generates JWT token upon successful login.
@@ -56,14 +56,6 @@ const login: Controller = async (req: Request, res: Response, next: NextFunction
       }
     )
 
-    const updateUser = await User.updateOne({ email: user.email }, { refreshToken })
-    if (!updateUser) {
-      throw new HttpError(
-        messageConstant.ERROR_UPDATING_USER,
-        httpStatusConstant.INTERNAL_SERVER_ERROR
-      )
-    }
-
     return responseHandlerUtils.responseHandler(res, {
       statusCode: httpStatusConstant.OK,
       data: {
@@ -100,20 +92,17 @@ const generateNewAccessToken: Controller = async (
       )
     }
 
-    const verifiedToken = await authUtils.verifyRefreshToken(token)
-    if (!(verifiedToken.tokenType === 'refresh')) {
+    const validatedToken = await authUtils.verifyRefreshToken(token)
+    if (!(validatedToken.tokenType === 'refresh')) {
       throw new HttpError(messageConstant.INVALID_TOKEN_TYPE, httpStatusConstant.INVALID_TOKEN)
     }
 
-    const user = await User.findOne({ email: verifiedToken.email })
-    if (!user) {
-      throw new HttpError(messageConstant.USER_NOT_FOUND, httpStatusConstant.NOT_FOUND)
-    }
+    const user = await User.findOne({ email: validatedToken.email })
 
     const newAccessToken = jwt.sign(
       {
-        _id: user._id,
-        email: user.email,
+        _id: user?._id,
+        email: user?.email,
         tokenType: 'access'
       },
       String(envConfig.jwtSecretKey),
@@ -292,16 +281,12 @@ const registerNewUser: Controller = async (req: Request, res: Response, next: Ne
  */
 const updateUserProfile: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { email } = req.params
+    const { token } = await authUtils.validateAuthorizationHeader(req.headers)
+    const verifiedToken = await authUtils.verifyAccessToken(token)
     const { password, firstname, lastname, dateOfBirth, mobileNumber, address, city, state } =
       req.body || {}
 
     const hashedPassword = password ? await bcrypt.hash(password, 10) : undefined
-
-    const userProfile = await User.findOne({ email })
-    if (!userProfile) {
-      throw new HttpError(messageConstant.USER_NOT_FOUND, httpStatusConstant.NOT_FOUND)
-    }
 
     const updateData = {
       ...(hashedPassword && { password: hashedPassword }),
@@ -314,7 +299,9 @@ const updateUserProfile: Controller = async (req: Request, res: Response, next: 
       ...(state && { state })
     }
 
-    const updatedUser = await User.findOneAndUpdate({ email }, updateData, { new: true })
+    const updatedUser = await User.findOneAndUpdate({ email: verifiedToken?.email }, updateData, {
+      new: true
+    })
     if (!updatedUser) {
       throw new HttpError(
         messageConstant.ERROR_UPDATING_USER,
@@ -340,12 +327,8 @@ const uploadUserProfilePhoto: Controller = async (
   next: NextFunction
 ) => {
   try {
-    const { email } = req.params
-
-    const userExists = await User.findOne({ email })
-    if (!userExists) {
-      throw new HttpError(messageConstant.USER_NOT_FOUND, httpStatusConstant.NOT_FOUND)
-    }
+    const { token } = await authUtils.validateAuthorizationHeader(req.headers)
+    const verifiedToken = await authUtils.verifyAccessToken(token)
 
     if (!req.file) {
       throw new HttpError(messageConstant.FILE_NOT_UPLOADED, httpStatusConstant.BAD_REQUEST)
@@ -354,7 +337,7 @@ const uploadUserProfilePhoto: Controller = async (
     const profilePhotoPath = req.file.path
 
     const uploadFile = await User.findOneAndUpdate(
-      { email },
+      { email: verifiedToken?.email },
       {
         profilePhoto: profilePhotoPath
       },

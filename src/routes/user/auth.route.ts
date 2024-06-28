@@ -26,13 +26,13 @@ router.post(
   userAuthController.registerNewUser
 )
 router.put(
-  '/update-profile/:email',
+  '/update-profile',
   celebrate(userAuthSchema.updateUserProfile),
   userAuthMiddleware.authMiddleware,
   userAuthController.updateUserProfile
 )
 router.put(
-  '/upload-profile-photo/:email',
+  '/upload-profile-photo',
   upload.single('profilePhoto'),
   userAuthMiddleware.authMiddleware,
   userAuthController.uploadUserProfilePhoto

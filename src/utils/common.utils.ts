@@ -1,20 +1,22 @@
 import moment from 'moment'
 import loggerUtils from './logger.utils'
+import { HttpError } from '../libs'
+import { httpStatusConstant, messageConstant } from '../constant'
 
 const validateAgeLimit = (dateOfBirth: string): boolean => {
   try {
     const isValidDate = moment(dateOfBirth, true).isValid()
     if (!isValidDate) {
-      throw new Error('dateOfBirth must be a valid date format')
+      throw new HttpError(messageConstant.INVALID_DATE_FORMAT, httpStatusConstant.BAD_REQUEST)
     }
 
     const minAllowedDate = moment().subtract(12, 'years').startOf('day')
     if (moment(dateOfBirth) > minAllowedDate) {
-      throw new Error('Age must be 12 years old!')
+      throw new HttpError(messageConstant.INVALID_AGE, httpStatusConstant.BAD_REQUEST)
     }
 
     return true
-  } catch (error: any) {
+  } catch (error) {
     loggerUtils.logger.error('Error validating age limit:', error)
     return false
   }
@@ -32,7 +34,7 @@ const calculateNumberOfFreeDays = (issueDate: Date, quantityAvailable: number): 
     } else {
       return null
     }
-  } catch (error: any) {
+  } catch (error) {
     loggerUtils.logger.error('Error calculating number of free days:', error)
     throw error
   }

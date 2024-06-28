@@ -1,10 +1,11 @@
 import { BookReview } from '../models'
 import { loggerUtils } from '../../utils'
+import { IAdmin, IBook, IUser } from '../../interfaces'
 
 export const seedBookReviews = async (
-  insertedBooks: any[],
-  insertedUsers: any[],
-  insertedAdmins: any[]
+  insertedBooks: IBook[],
+  insertedUsers: IUser[],
+  insertedAdmins: IAdmin[]
 ) => {
   await BookReview.deleteMany({})
   loggerUtils.logger.info('Deleted all reviews!')

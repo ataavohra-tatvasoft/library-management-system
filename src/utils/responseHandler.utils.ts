@@ -2,6 +2,7 @@ import { Response } from 'express'
 import { CelebrateError, isCelebrateError } from 'celebrate'
 import { loggerUtils } from '../utils'
 import { httpErrorMessageConstant, httpStatusConstant } from '../constant'
+import { CelebrateErrorDetails, formattedResponse } from '../interfaces'
 
 interface ResponseHandlerOptions {
   statusCode: number
@@ -14,13 +15,13 @@ async function responseHandler(res: Response, options: ResponseHandlerOptions) {
   const { statusCode, data, message, error } = options
 
   try {
-    const formattedResponse: any = {
+    const formattedResponse: formattedResponse = {
       code: statusCode,
       message
     }
     if (isCelebrateError(error)) {
       const celebrateError = error as CelebrateError
-      const errorDetails: any[] = []
+      const errorDetails: CelebrateErrorDetails[] = []
 
       celebrateError.details.forEach((value, key) => {
         errorDetails.push({
@@ -42,7 +43,6 @@ async function responseHandler(res: Response, options: ResponseHandlerOptions) {
         loggerUtils.logger.error(error.message)
       }
     }
-
     return res.status(statusCode).json(formattedResponse)
   } catch (error) {
     loggerUtils.logger.error('Response Handler Error:', error)

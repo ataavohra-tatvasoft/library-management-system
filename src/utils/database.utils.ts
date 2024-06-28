@@ -1,16 +1,19 @@
 import mongoose from 'mongoose'
-import { loggerUtils } from '../utils'
+import { httpStatusConstant, messageConstant } from '../constant'
+import { HttpError } from '../libs'
 
 const connectToCollection = async (
   db: mongoose.Connection,
   collectionName: string
-): Promise<mongoose.Collection<any>> => {
+): Promise<mongoose.Collection<mongoose.mongo.BSON.Document>> => {
   try {
     const collection = db.collection(collectionName) as mongoose.Collection
     return collection
-  } catch (error: any) {
-    loggerUtils.logger.error(error.message)
-    throw new Error('Error while connection with collection')
+  } catch (error) {
+    throw new HttpError(
+      messageConstant.COLLECTION_CONNECTION_ERROR,
+      httpStatusConstant.INTERNAL_SERVER_ERROR
+    )
   }
 }
 

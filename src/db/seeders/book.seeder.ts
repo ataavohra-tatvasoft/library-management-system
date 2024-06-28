@@ -1,5 +1,6 @@
 import { Book } from '../models'
 import { helperFunctionsUtils, loggerUtils } from '../../utils'
+import { IBook } from '../../interfaces'
 
 export const seedBooks = async () => {
   await Book.deleteMany({})
@@ -86,7 +87,7 @@ export const seedBooks = async () => {
     }
   ]
 
-  const insertedBooks = await Book.insertMany(books)
+  const insertedBooks: IBook[] = await Book.insertMany(books)
   loggerUtils.logger.info('Inserted new books!')
   return insertedBooks
 }

@@ -1,6 +1,8 @@
 import cron from 'node-cron'
 import { User, Book } from '../db/models' // Adjust the import based on your project structure
 import loggerUtils from './logger.utils'
+import { httpStatusConstant, messageConstant } from '../constant'
+import { HttpError } from '../libs'
 
 const DAY_IN_MILLISECONDS = 1000 * 60 * 60 * 24
 
@@ -43,7 +45,10 @@ const updateDueCharges = async () => {
             { $inc: { dueCharges: dueCharges } }
           )
           if (!userUpdate) {
-            throw new Error('Error updating user')
+            throw new HttpError(
+              messageConstant.ERROR_UPDATING_USER,
+              httpStatusConstant.INTERNAL_SERVER_ERROR
+            )
           }
         }
       }

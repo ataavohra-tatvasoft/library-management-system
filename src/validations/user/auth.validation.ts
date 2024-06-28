@@ -38,7 +38,6 @@ const registerNewUser = {
       // eslint-disable-next-line no-useless-escape
       .pattern(/^(?=.*[A-Z])(?=.*[!@#$%^&*()_+\-=?{|}\[\]:\'\";,.<>\/\\|\s]).+$/),
     confirmPassword: Joi.ref('password'),
-    // typeOfUser: Joi.string().valid('admin', 'user'),
     firstname: Joi.string().max(8).min(3).required(),
     lastname: Joi.string().max(8).min(3).required(),
     dateOfBirth: Joi.string().required(),
@@ -52,10 +51,6 @@ const registerNewUser = {
 }
 
 const updateUserProfile = {
-  params: {
-    email: Joi.string().required()
-  },
-
   body: Joi.object().keys({
     password: Joi.string()
       .min(5)

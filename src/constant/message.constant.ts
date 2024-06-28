@@ -2,6 +2,7 @@ export const messageConstant = {
   // Database Connection Messages
   CONNECTION_ERROR: 'Error while connecting to database',
   DB_CONNECTED: 'MongoDB database connected',
+  COLLECTION_CONNECTION_ERROR: 'Error while connecting to database for collection',
 
   //Import Export (Google sheet to database and vice versa) messages
   DATA_ADDED_SUCCESSFULLY: 'Data added successfully',
@@ -10,6 +11,7 @@ export const messageConstant = {
   MISSING_REQUIRED_PARAMETERS: 'Missing required parameters',
   DATA_EXPORTED_SUCCESSFULLY: 'Data exported successfully',
   ERROR_EXPORTING_DATA: 'Error while exporting data',
+  ERROR_FETCHING_TOKEN: 'Error fetching tokens',
 
   // Application Messages
   APP_STARTED: 'Application Running',
@@ -81,6 +83,7 @@ export const messageConstant = {
   INVALID_TOKEN_TYPE: 'Invalid token type',
   INVALID_RESET_TOKEN: 'Invalid reset token',
   INVALID_SUBMIT_DATE: 'Invalid submit date',
+  REFRESH_TOKEN_EXPIRED: 'Refresh token expired, kindly login again',
 
   // Payment Messages
   MISSING_PAYMENT_METHOD: 'Missing payment method',
@@ -99,7 +102,11 @@ export const messageConstant = {
   // File Upload Messages
   FILE_NOT_UPLOADED: 'File not uploaded',
   ERROR_UPLOAD_FILE: 'Error while uploading file',
+  ERROR_READING_FILE: 'Error while reading file',
 
   // Payment Template Messages
-  ERROR_ADD_PAYMENT_CARD_TEMPLATE: 'Error in add payment card template'
+  ERROR_ADD_PAYMENT_CARD_TEMPLATE: 'Error in add payment card template',
+
+  //Multer messages
+  INVALID_UPLOAD_ROUTE: 'Invalid upload route'
 }

@@ -20,7 +20,7 @@ router.post(
   adminAuthController.resetPassword
 )
 router.put(
-  '/update-profile/:email',
+  '/update-profile',
   celebrate(adminAuthSchema.updateAdminProfile),
   adminAuthMiddleware.authMiddleware,
   adminAuthController.updateAdminProfile

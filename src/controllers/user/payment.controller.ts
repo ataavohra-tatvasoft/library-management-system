@@ -4,30 +4,36 @@ import Stripe from 'stripe'
 import { User } from '../../db/models'
 import { httpErrorMessageConstant, httpStatusConstant, messageConstant } from '../../constant'
 import { Controller } from '../../interfaces'
-import { ejsCompilerUtils, paymentUtils, responseHandlerUtils, sendMailUtils } from '../../utils'
+import {
+  authUtils,
+  ejsCompilerUtils,
+  paymentUtils,
+  responseHandlerUtils,
+  sendMailUtils
+} from '../../utils'
 import { envConfig } from '../../config'
 import { PaymentCard } from '../../db/models/paymentCard.model'
-import { HttpError } from '../../types/error'
+import { HttpError } from '../../libs'
 
 /**
  * @description get link for adding payment card
  */
 const getAddCardLink: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { email } = req.params
+    const { token } = await authUtils.validateAuthorizationHeader(req.headers)
+    const verifiedToken = await authUtils.verifyAccessToken(token)
 
-    const user = await User.findOne({ email })
-    if (!user) {
-      throw new HttpError(messageConstant.USER_NOT_FOUND, httpStatusConstant.NOT_FOUND)
-    }
-
-    const addCardLink = `http://${envConfig.serverHost}:${envConfig.serverPort}/user/template/add-payment-card/${email}`
+    const addCardLink = `http://${envConfig.serverHost}:${envConfig.serverPort}/user/template/add-payment-card/${verifiedToken?.email}`
 
     const html = await ejsCompilerUtils.compileTemplate('getAddCardLink', {
       link: addCardLink
     })
 
-    await sendMailUtils.sendEmail({ to: email, subject: 'Add Payment Card Link', html })
+    await sendMailUtils.sendEmail({
+      to: verifiedToken?.email,
+      subject: 'Add Payment Card Link',
+      html
+    })
 
     return responseHandlerUtils.responseHandler(res, {
       statusCode: httpStatusConstant.OK,
@@ -72,8 +78,9 @@ const addPaymentCardPage: Controller = async (req: Request, res: Response, next:
  */
 const addPaymentCard: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { cardNumber, cardBrand, expirationMonth, expirationYear, cvv, token } = req.body
     const { email } = req.params
+    console.log(email)
+    const { cardNumber, cardBrand, expirationMonth, expirationYear, cvv, token } = req.body
     let isDefault = true
 
     if (!cardNumber || !cardBrand || !expirationMonth || !expirationYear || !cvv) {
@@ -85,7 +92,7 @@ const addPaymentCard: Controller = async (req: Request, res: Response, next: Nex
 
     const user = await User.findOne({ email })
     if (!user) {
-      throw new HttpError(messageConstant.USER_NOT_FOUND, httpStatusConstant.NOT_FOUND)
+      throw new HttpError(messageConstant.USER_NOT_FOUND, httpStatusConstant.BAD_REQUEST)
     }
 
     const customer = await paymentUtils.createStripeCustomer(user)
@@ -108,7 +115,7 @@ const addPaymentCard: Controller = async (req: Request, res: Response, next: Nex
     const hashedLastFourDigits = await bcrypt.hash(lastFourDigits, Number(envConfig.saltRounds))
 
     const paymentCardExists = await PaymentCard.findOne({
-      userID: user._id,
+      userID: user?._id,
       paymentMethodID: paymentMethod.id,
       cardBrand,
       lastFourDigits: hashedLastFourDigits,
@@ -121,7 +128,7 @@ const addPaymentCard: Controller = async (req: Request, res: Response, next: Nex
     }
 
     const newPaymentCard = await PaymentCard.create({
-      userID: user._id,
+      userID: user?._id,
       paymentMethodID: paymentMethod.id,
       cardBrand,
       lastFourDigits: hashedLastFourDigits,
@@ -137,7 +144,10 @@ const addPaymentCard: Controller = async (req: Request, res: Response, next: Nex
       )
     }
 
-    const updateUser = await User.updateOne({ email }, { $set: { stripeCustomerID: customer.id } })
+    const updateUser = await User.updateOne(
+      { email: user?.email },
+      { $set: { stripeCustomerID: customer.id } }
+    )
     if (!updateUser) {
       throw new HttpError(messageConstant.ERROR_UPDATING_USER, httpStatusConstant.NOT_FOUND)
     }
@@ -156,16 +166,12 @@ const addPaymentCard: Controller = async (req: Request, res: Response, next: Nex
  */
 const paymentCardsList: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { email } = req.params
+    const { token } = await authUtils.validateAuthorizationHeader(req.headers)
+    const verifiedToken = await authUtils.verifyAccessToken(token)
 
-    const user = await User.findOne({ email })
-    if (!user) {
-      throw new HttpError(messageConstant.USER_NOT_FOUND, httpStatusConstant.NOT_FOUND)
-    }
-
-    const paymentCardLists = await PaymentCard.find({ userID: user._id, deletedAt: null })
-    if (!paymentCardLists) {
-      throw new HttpError(messageConstant.NO_PAYMENT_CARDS_FOUND, httpStatusConstant.CREATED)
+    const paymentCardLists = await PaymentCard.find({ userID: verifiedToken?._id, deletedAt: null })
+    if (!paymentCardLists?.length) {
+      throw new HttpError(messageConstant.NO_PAYMENT_CARDS_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
     return responseHandlerUtils.responseHandler(res, {
@@ -185,8 +191,10 @@ const paymentCardsList: Controller = async (req: Request, res: Response, next: N
  */
 const payCharges: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const { token } = await authUtils.validateAuthorizationHeader(req.headers)
+    const verifiedToken = await authUtils.verifyAccessToken(token)
+
     const { amount, cardNumber, cardBrand, expirationMonth, expirationYear, cvv } = req.body
-    const { email } = req.params
     const stripe = new Stripe(String(envConfig.stripeApiKey))
 
     if (!cardNumber || !cardBrand || !expirationMonth || !expirationYear || !cvv) {
@@ -195,22 +203,19 @@ const payCharges: Controller = async (req: Request, res: Response, next: NextFun
         httpStatusConstant.BAD_REQUEST
       )
     }
-    const user = await User.findOne({ email })
-    if (!user) {
-      throw new HttpError(messageConstant.USER_NOT_FOUND, httpStatusConstant.NOT_FOUND)
-    }
+    const user = await User.findById({ _id: verifiedToken?._id })
+
     if (Number(amount) < 50) {
       throw new HttpError(messageConstant.MINIMUM_CHARGE_INVALID, httpStatusConstant.BAD_REQUEST)
     }
 
     const paymentCard = await PaymentCard.findOne({
-      userID: user._id,
+      userID: user?._id,
       cardBrand,
       expirationMonth,
       expirationYear,
       cvv: Number(cvv)
     })
-
     if (!paymentCard) {
       throw new HttpError(messageConstant.NO_PAYMENT_CARDS_FOUND, httpStatusConstant.BAD_REQUEST)
     }
@@ -231,17 +236,16 @@ const payCharges: Controller = async (req: Request, res: Response, next: NextFun
         // eslint-disable-next-line camelcase
         allow_redirects: 'never'
       },
-      customer: user.stripeCustomerID
+      customer: user?.stripeCustomerID
     })
 
     const confirmResult = await stripe.paymentIntents.confirm(paymentIntent.id, {
       // eslint-disable-next-line camelcase
       payment_method: String(paymentCard.paymentMethodID)
     })
-
     if (confirmResult.status === 'succeeded') {
-      const updatedDueCharges: number = Number(user.dueCharges) - Number(amount)
-      await User.updateOne({ email }, { $set: { dueCharges: updatedDueCharges } })
+      const updatedDueCharges: number = Number(user?.dueCharges) - Number(amount)
+      await User.updateOne({ _id: user?._id }, { $set: { dueCharges: updatedDueCharges } })
 
       return responseHandlerUtils.responseHandler(res, {
         statusCode: httpStatusConstant.OK,

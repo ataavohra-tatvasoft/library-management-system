@@ -1,10 +1,10 @@
 import { Request, Response, NextFunction } from 'express'
 import { Book, BookHistory, BookRating, BookReview, User } from '../../db/models'
 import { httpErrorMessageConstant, httpStatusConstant, messageConstant } from '../../constant'
-import { Controller } from '../../interfaces'
-import { responseHandlerUtils } from '../../utils'
+import { Controller, PopulatedBookHistory } from '../../interfaces'
+import { authUtils, responseHandlerUtils } from '../../utils'
 import { getRatingService, getReviewService } from '../../services/book'
-import { HttpError } from '../../types/error'
+import { HttpError } from '../../libs'
 
 /**
  * @description Searches for active books by name, ID, or both (returns details & aggregates).
@@ -98,7 +98,7 @@ const searchBooks: Controller = async (req: Request, res: Response, next: NextFu
     ]
 
     const searchedBooks = await Book.aggregate(searchPipeline)
-    if (!searchedBooks.length) {
+    if (!searchedBooks?.length) {
       throw new HttpError(messageConstant.BOOK_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
@@ -218,25 +218,26 @@ const getAllBookDetails: Controller = async (req: Request, res: Response, next: 
  */
 const addBookReview: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { email } = req.params
-    const { bookID, review } = req.body
+    const { token } = await authUtils.validateAuthorizationHeader(req.headers)
+    const verifiedToken = await authUtils.verifyAccessToken(token)
 
-    const user = await User.findOne({ email })
-    if (!user) {
-      throw new HttpError(messageConstant.USER_NOT_FOUND, httpStatusConstant.NOT_FOUND)
-    }
+    const { bookID, review } = req.body
 
     const book = await Book.findOne({ bookID })
     if (!book) {
       throw new HttpError(messageConstant.BOOK_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
-    const existingReview = await BookReview.findOne({ userID: user._id, bookID: book._id })
+    const existingReview = await BookReview.findOne({ userID: verifiedToken._id, bookID: book._id })
     if (existingReview) {
       throw new HttpError(messageConstant.REVIEW_ALREADY_EXIST, httpStatusConstant.BAD_REQUEST)
     }
 
-    const newReview = await BookReview.create({ userID: user._id, bookID: book._id, review })
+    const newReview = await BookReview.create({
+      userID: verifiedToken._id,
+      bookID: book._id,
+      review
+    })
     if (!newReview) {
       throw new HttpError(
         messageConstant.ERROR_CREATING_BOOK_REVIEW,
@@ -257,25 +258,25 @@ const addBookReview: Controller = async (req: Request, res: Response, next: Next
  */
 const addBookRating: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { email } = req.params
+    const { token } = await authUtils.validateAuthorizationHeader(req.headers)
+    const verifiedToken = await authUtils.verifyAccessToken(token)
     const { bookID, rating } = req.body
-
-    const user = await User.findOne({ email })
-    if (!user) {
-      throw new HttpError(messageConstant.USER_NOT_FOUND, httpStatusConstant.NOT_FOUND)
-    }
 
     const book = await Book.findOne({ bookID })
     if (!book) {
       throw new HttpError(messageConstant.BOOK_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
-    const existingRating = await BookRating.findOne({ userID: user._id, bookID: book._id })
+    const existingRating = await BookRating.findOne({ userID: verifiedToken._id, bookID: book._id })
     if (existingRating) {
       throw new HttpError(messageConstant.RATING_ALREADY_EXIST, httpStatusConstant.BAD_REQUEST)
     }
 
-    const newRating = await BookRating.create({ userID: user._id, bookID: book._id, rating })
+    const newRating = await BookRating.create({
+      userID: verifiedToken._id,
+      bookID: book._id,
+      rating
+    })
     if (!newRating) {
       throw new HttpError(
         messageConstant.ERROR_CREATING_BOOK_RATING,
@@ -297,23 +298,19 @@ const addBookRating: Controller = async (req: Request, res: Response, next: Next
  */
 const getBookIssueHistory: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { email } = req.params
+    const { token } = await authUtils.validateAuthorizationHeader(req.headers)
+    const verifiedToken = await authUtils.verifyAccessToken(token)
 
-    const user = await User.findOne({ email })
-    if (!user) {
-      throw new HttpError(messageConstant.USER_NOT_FOUND, httpStatusConstant.NOT_FOUND)
-    }
-
-    const bookHistories = await BookHistory.find({ userID: user._id }).populate({
+    const bookHistories = (await BookHistory.find({ userID: verifiedToken?._id }).populate({
       path: 'userID bookID',
       select: 'email firstname lastname bookID name charges'
-    })
+    })) as unknown as PopulatedBookHistory[]
 
-    if (!bookHistories || bookHistories.length === 0) {
+    if (!bookHistories?.length) {
       throw new HttpError(messageConstant.BOOK_HISTORY_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
-    const formattedHistories = bookHistories.map((history: any) => {
+    const formattedHistories = bookHistories.map((history) => {
       const issueDate = new Date(history.issueDate)
       const submitDate = history.submitDate ? new Date(history.submitDate) : null
       const usedDays = submitDate
@@ -345,15 +342,14 @@ const getBookIssueHistory: Controller = async (req: Request, res: Response, next
  */
 const getLibrarySummary: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { email } = req.params
-    const user = await User.findOne({ email }, { _id: 1, paidAmount: 1, dueCharges: 1 })
-    if (!user) {
-      throw new HttpError(messageConstant.USER_NOT_FOUND, httpStatusConstant.NOT_FOUND)
-    }
+    const { token } = await authUtils.validateAuthorizationHeader(req.headers)
+    const verifiedToken = await authUtils.verifyAccessToken(token)
 
-    const totalIssuedBooks = await BookHistory.countDocuments({ userID: user._id })
+    const user = await User.findById({ _id: verifiedToken._id })
+
+    const totalIssuedBooks = await BookHistory.countDocuments({ userID: user?._id })
     const totalSubmittedBooks = await BookHistory.countDocuments({
-      userID: user._id,
+      userID: user?._id,
       submitDate: { $exists: true, $ne: null }
     })
 
@@ -372,8 +368,8 @@ const getLibrarySummary: Controller = async (req: Request, res: Response, next: 
         totalIssuedBooks,
         totalSubmittedBooks,
         totalNotSubmittedBooks,
-        totalPaidAmount: user.paidAmount,
-        totalDueCharges: user.dueCharges
+        totalPaidAmount: user?.paidAmount,
+        totalDueCharges: user?.dueCharges
       }
     })
   } catch (error) {
@@ -430,7 +426,7 @@ const getBookReviewsSummary: Controller = async (
 
     const reviews = await getReviewService.getReviews(Number(bookID), skip, limit)
 
-    if (!reviews || reviews.length === 0) {
+    if (!reviews?.length) {
       throw new HttpError(messageConstant.NO_REVIEWS_FOUND, httpStatusConstant.NOT_FOUND)
     }
 

@@ -1,11 +1,5 @@
 import { Joi } from 'celebrate'
 
-const getAddCardLink = {
-  params: Joi.object().keys({
-    email: Joi.string().email().required()
-  })
-}
-
 const addPaymentCard = {
   params: Joi.object().keys({
     email: Joi.string().email().required()
@@ -20,16 +14,7 @@ const addPaymentCard = {
   })
 }
 
-const paymentCardsList = {
-  params: Joi.object().keys({
-    email: Joi.string().email().required()
-  })
-}
-
 const payCharges = {
-  params: Joi.object().keys({
-    email: Joi.string().email().required()
-  }),
   body: Joi.object().keys({
     amount: Joi.number().required().min(1),
     cardNumber: Joi.string().required().trim(),
@@ -41,8 +26,6 @@ const payCharges = {
 }
 
 export default {
-  getAddCardLink,
   addPaymentCard,
-  paymentCardsList,
   payCharges
 }

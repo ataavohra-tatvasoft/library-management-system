@@ -1,4 +1,7 @@
+import { ObjectId } from 'mongoose'
+
 export interface IBook {
+  _id?: ObjectId
   bookID: string
   name: string
   author: string

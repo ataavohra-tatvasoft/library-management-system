@@ -4,7 +4,7 @@ import { helperFunctionsUtils, responseHandlerUtils } from '../../utils'
 import { Controller } from '../../interfaces'
 import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '../../constant'
 import { BookHistory } from '../../db/models/bookHistory.model'
-import { HttpError } from '../../types/error'
+import { HttpError } from '../../libs'
 
 /**
  * @description Retrieves a list of unique issued books with details.

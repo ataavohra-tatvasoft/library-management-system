@@ -26,10 +26,6 @@ const resetPassword = {
 }
 
 const updateAdminProfile = {
-  params: {
-    email: Joi.string().required()
-  },
-
   body: Joi.object().keys({
     password: Joi.string()
       .min(5)

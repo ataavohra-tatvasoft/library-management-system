@@ -5,7 +5,7 @@ import { Controller } from '../../interfaces'
 import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '../../constant'
 import { helperFunctionsUtils, responseHandlerUtils } from '../../utils'
 import { envConfig } from '../../config'
-import { HttpError } from '../../types/error'
+import { HttpError } from '../../libs'
 
 /**
  * @description Registers a new user (validates age and hashes password).
@@ -86,7 +86,7 @@ const getActiveUsersList: Controller = async (req: Request, res: Response, next:
       .skip(skip)
       .limit(limit)
 
-    if (!activeUsers || activeUsers.length === 0) {
+    if (!activeUsers?.length) {
       throw new HttpError(messageConstant.NO_ACTIVE_USERS_FOUND, httpStatusConstant.BAD_REQUEST)
     }
 

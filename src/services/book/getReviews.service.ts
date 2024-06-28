@@ -1,4 +1,6 @@
+import { httpStatusConstant, messageConstant } from '../../constant'
 import { Book, BookReview } from '../../db/models'
+import { HttpError } from '../../libs'
 
 async function getReviews(
   bookID: number,
@@ -6,13 +8,9 @@ async function getReviews(
   limit: number
 ): Promise<{ bookReviews: { username: string; review: any }[]; length: number }> {
   {
-    if (isNaN(bookID)) {
-      throw new Error('Invalid book ID format')
-    }
-
     const book = await Book.findOne({ bookID, deletedAt: null })
     if (!book) {
-      throw new Error('Book not found!')
+      throw new HttpError(messageConstant.BOOK_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
     const reviews = await BookReview.find({ bookID: book._id, deletedAt: null })
@@ -23,7 +21,7 @@ async function getReviews(
         select: 'email firstname lastname'
       })
     if (!reviews) {
-      throw new Error('Reviews not found')
+      throw new HttpError(messageConstant.NO_REVIEWS_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
     reviews.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
@@ -39,18 +37,14 @@ async function getReviews(
 
 async function getReviewsCount(bookID: number): Promise<number> {
   {
-    if (isNaN(bookID)) {
-      throw new Error('Invalid book ID format')
-    }
-
     const book = await Book.findOne({ bookID, deletedAt: null })
     if (!book) {
-      throw new Error('Book not found!')
+      throw new HttpError(messageConstant.BOOK_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
     const reviews = await BookReview.countDocuments({ bookID: book._id, deletedAt: null })
     if (!reviews) {
-      throw new Error('Reviews not found!')
+      throw new HttpError(messageConstant.NO_REVIEWS_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
     return reviews

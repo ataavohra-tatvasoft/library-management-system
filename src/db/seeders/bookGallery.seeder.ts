@@ -1,7 +1,8 @@
 import { BookGallery } from '../models'
 import { loggerUtils } from '../../utils'
+import { IBook } from '../../interfaces'
 
-export const seedBookGalleries = async (insertedBooks: any[]) => {
+export const seedBookGalleries = async (insertedBooks: IBook[]) => {
   await BookGallery.deleteMany({})
   loggerUtils.logger.info('Deleted all book gallery entries!')
 

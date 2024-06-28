@@ -3,12 +3,16 @@ import crypto from 'crypto'
 import jwt from 'jsonwebtoken'
 import { envConfig } from '../config'
 import { VerifiedToken } from '../interfaces'
+import { HttpError } from '../libs'
+import { httpErrorMessageConstant, httpStatusConstant, messageConstant } from '../constant'
 
-async function validateAuthorizationHeader(headers: any): Promise<{ token: string }> {
+async function validateAuthorizationHeader(headers: {
+  [key: string]: any
+}): Promise<{ token: string }> {
   {
     const authHeader = headers.authorization || headers.Authorization
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new Error('Unauthorized')
+      throw new HttpError(httpErrorMessageConstant.UNAUTHORIZED, httpStatusConstant.UNAUTHORIZED)
     }
 
     const token = authHeader.split(' ')[1]
@@ -18,12 +22,15 @@ async function validateAuthorizationHeader(headers: any): Promise<{ token: strin
 async function verifyAccessToken(token: string): Promise<VerifiedToken> {
   try {
     return jwt.verify(token, envConfig.jwtSecretKey as string) as VerifiedToken
-  } catch (error: any) {
+  } catch (error) {
     if (error instanceof jwt.JsonWebTokenError) {
       if (error.name === 'TokenExpiredError') {
-        throw new Error('Access Token Expired')
+        throw new HttpError(
+          httpErrorMessageConstant.ACCESS_TOKEN_EXPIRED,
+          httpStatusConstant.INVALID_TOKEN
+        )
       } else {
-        throw new Error('Invalid Access Token')
+        throw new HttpError(messageConstant.INVALID_ACCESS_TOKEN, httpStatusConstant.INVALID_TOKEN)
       }
     }
     throw error
@@ -32,12 +39,12 @@ async function verifyAccessToken(token: string): Promise<VerifiedToken> {
 async function verifyRefreshToken(token: string): Promise<VerifiedToken> {
   try {
     return jwt.verify(token, envConfig.jwtSecretKey as string) as VerifiedToken
-  } catch (error: any) {
+  } catch (error) {
     if (error instanceof jwt.JsonWebTokenError) {
       if (error.name === 'TokenExpiredError') {
-        throw new Error('Refresh Token Expired, kindly login again.')
+        throw new HttpError(messageConstant.REFRESH_TOKEN_EXPIRED, httpStatusConstant.INVALID_TOKEN)
       } else {
-        throw new Error('Invalid Refresh Token')
+        throw new HttpError(messageConstant.INVALID_REFRESH_TOKEN, httpStatusConstant.INVALID_TOKEN)
       }
     }
     throw error

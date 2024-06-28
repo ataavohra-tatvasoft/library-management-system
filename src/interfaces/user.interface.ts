@@ -1,6 +1,8 @@
+import { ObjectId } from 'mongoose'
 import { INestedBook } from './nestedBook.interface'
 
 export interface IUser {
+  _id?: ObjectId
   email: string
   password: string
   isAuthToken: boolean

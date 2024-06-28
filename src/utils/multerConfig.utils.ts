@@ -13,24 +13,23 @@ const fileStorage: StorageEngine = multer.diskStorage({
       cb(error as Error, '')
     }
   },
-  filename: async (req, file, cb) => {
+  filename: async (req: Request<{ email: string; bookID: string }>, file, cb) => {
     try {
       const uniqueName = multerUtils.generateUniqueFileName(req.url, req.params, file)
       const uploadDirectory = multerUtils.getUploadDirectory(req.url)
       let finalFileName = uniqueName
 
-      // If the upload is for a profile photo, delete the existing one
       if (req.url.includes('/upload-profile-photo')) {
         await multerUtils.deleteExistingProfilePhoto(uploadDirectory, req.params.email)
         finalFileName = uniqueName
+      } else if (req.url.includes('/upload-book-cover-photo')) {
+        await multerUtils.deleteExistingCoverPhoto(uploadDirectory, req.params.bookID)
+        finalFileName = `bookID-${req.params.bookID}-coverImage.${file.originalname.split('.').pop()}`
       } else {
         let counter = 1
         while (existsSync(path.join(uploadDirectory, finalFileName))) {
           if (req.url.includes('/upload-book-photo')) {
             finalFileName = `bookID-${req.params.bookID}-${file.fieldname}-${counter}.${file.originalname.split('.').pop()}`
-          } else if (req.url.includes('/upload-book-cover-photo')) {
-            await multerUtils.deleteExistingCoverPhoto(uploadDirectory, req.params.bookID)
-            finalFileName = `bookID-${req.params.bookID}-coverImage.${file.originalname.split('.').pop()}`
           } else {
             finalFileName = `${file.fieldname}-${counter}.${file.originalname.split('.').pop()}`
           }

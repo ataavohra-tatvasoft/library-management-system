@@ -2,6 +2,8 @@ import mongoose from 'mongoose'
 import { messageConstant } from '../constant/message.constant'
 import { loggerUtils } from '../utils'
 import { envConfig } from '../config'
+import { httpStatusConstant } from '../constant'
+import { HttpError } from '../libs'
 
 async function connectToDatabase() {
   try {
@@ -15,7 +17,7 @@ async function connectToDatabase() {
     return conn
   } catch (error) {
     loggerUtils.logger.error(error)
-    throw new Error(messageConstant.CONNECTION_ERROR)
+    throw new HttpError(messageConstant.CONNECTION_ERROR, httpStatusConstant.INTERNAL_SERVER_ERROR)
   }
 }
 

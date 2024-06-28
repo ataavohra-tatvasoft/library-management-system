@@ -5,7 +5,7 @@ import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '.
 import { databaseUtils, googleSheetUtils, responseHandlerUtils } from '../../utils'
 import { getRatingService, getReviewService } from '../../services/book'
 import { dbConfig } from '../../config'
-import { HttpError } from '../../types/error'
+import { HttpError } from '../../libs'
 
 /**
  * @description Adds a new book to the library (checks for duplicates).
@@ -77,7 +77,7 @@ const listBooks: Controller = async (req: Request, res: Response, next: NextFunc
       .skip(skip)
       .limit(limit)
 
-    if (!books || books.length === 0) {
+    if (!books?.length) {
       throw new HttpError(messageConstant.NO_BOOKS_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
@@ -363,6 +363,9 @@ const importBookSpreadSheet: Controller = async (
     const { sheetID } = req.params
 
     const data = await googleSheetUtils.fetchSheetData(String(sheetID), String('Sheet1!A2:Z'))
+    if (!data) {
+      throw new HttpError(messageConstant.NO_DATA_FOUND, httpStatusConstant.NOT_FOUND)
+    }
 
     const db = await dbConfig.connectToDatabase()
     if (!db) {
