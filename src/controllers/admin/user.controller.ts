@@ -68,6 +68,15 @@ const getActiveUsersList: Controller = async (req: Request, res: Response, next:
     const limit = Number(pageSize) || 10
     const skip = (pageNumber - 1) * limit
 
+    const totalUsersCount = await User.countDocuments({ deletedAt: null })
+    if (!totalUsersCount) {
+      throw new HttpError(messageConstant.ERROR_COUNTING_USERS, httpStatusConstant.OK)
+    }
+
+    const totalPages = Math.ceil(totalUsersCount / limit)
+    if (pageNumber > totalPages) {
+      throw new HttpError(messageConstant.INVALID_PAGE_NUMBER, httpStatusConstant.BAD_REQUEST)
+    }
     const activeUsers = await User.find(
       { deletedAt: null },
       {
@@ -88,16 +97,6 @@ const getActiveUsersList: Controller = async (req: Request, res: Response, next:
 
     if (!activeUsers?.length) {
       throw new HttpError(messageConstant.NO_ACTIVE_USERS_FOUND, httpStatusConstant.BAD_REQUEST)
-    }
-
-    const totalUsersCount = await User.countDocuments({ deletedAt: null })
-    if (!totalUsersCount) {
-      throw new HttpError(messageConstant.ERROR_COUNTING_USERS, httpStatusConstant.OK)
-    }
-
-    const totalPages = Math.ceil(totalUsersCount / limit)
-    if (pageNumber > totalPages) {
-      throw new HttpError(messageConstant.INVALID_PAGE_NUMBER, httpStatusConstant.BAD_REQUEST)
     }
 
     return responseHandlerUtils.responseHandler(res, {

@@ -10,17 +10,17 @@ const paymentCardSchema: Schema = new Schema<IPaymentCard, PaymentCardModel>(
       ref: 'users',
       required: true
     },
+    cardID: {
+      type: String,
+      unique: true,
+      required: true
+    },
     paymentMethodID: {
       type: String,
       required: true
     },
     cardBrand: {
       type: String,
-      required: true
-    },
-    lastFourDigits: {
-      type: String,
-      unique: true,
       required: true
     },
     expirationMonth: {
@@ -31,8 +31,8 @@ const paymentCardSchema: Schema = new Schema<IPaymentCard, PaymentCardModel>(
       type: Number,
       required: true
     },
-    cvv: {
-      type: Number,
+    cardLastFour: {
+      type: String,
       required: true
     },
     isDefault: {

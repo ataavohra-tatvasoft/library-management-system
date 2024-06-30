@@ -68,10 +68,17 @@ const updateUserProfile = {
   })
 }
 
+const uploadUserProfilePhoto = {
+  params: Joi.object().keys({
+    email: Joi.string().email().trim().required()
+  })
+}
+
 export default {
   login,
   forgotPassword,
   resetPassword,
   registerNewUser,
-  updateUserProfile
+  updateUserProfile,
+  uploadUserProfilePhoto
 }

@@ -1,0 +1,15 @@
+2024-07-01 00:37:17 [info]: Connected to database
+2024-07-01 00:37:17 [info]: Deleted all admins!
+2024-07-01 00:37:17 [info]: Inserted new admins!
+2024-07-01 00:37:17 [info]: Deleted all users!
+2024-07-01 00:37:17 [info]: Inserted new users!
+2024-07-01 00:37:17 [info]: Deleted all books!
+2024-07-01 00:37:17 [info]: Inserted new books!
+2024-07-01 00:37:17 [info]: Deleted all book gallery entries!
+2024-07-01 00:37:17 [info]: Inserted new book gallery entries!
+2024-07-01 00:37:17 [info]: Deleted all ratings!
+2024-07-01 00:37:17 [info]: Inserted new ratings!
+2024-07-01 00:37:17 [info]: Deleted all reviews!
+2024-07-01 00:37:17 [info]: Inserted new reviews!
+2024-07-01 00:37:17 [info]: Deleted previous book history!
+2024-07-01 00:37:17 [info]: Deleted previous payment cards!

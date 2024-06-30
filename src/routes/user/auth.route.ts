@@ -32,9 +32,11 @@ router.put(
   userAuthController.updateUserProfile
 )
 router.put(
-  '/upload-profile-photo',
-  upload.single('profilePhoto'),
+  '/upload-profile-photo/:email',
+  celebrate(userAuthSchema.uploadUserProfilePhoto),
+  userAuthMiddleware.uploadProfilePhotoAuth,
   userAuthMiddleware.authMiddleware,
+  upload.single('profilePhoto'),
   userAuthController.uploadUserProfilePhoto
 )
 

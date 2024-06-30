@@ -56,7 +56,7 @@ const addPaymentCardPage: Controller = async (req: Request, res: Response, next:
       throw new HttpError(messageConstant.USER_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
-    const link = `http://${envConfig.serverHost}:${envConfig.serverPort}}/user/add-payment-card/${email}`
+    const link = `http://${envConfig.serverHost}:${envConfig.serverPort}/user/add-payment-card/${email}`
 
     const data = {
       link: link,
@@ -79,11 +79,10 @@ const addPaymentCardPage: Controller = async (req: Request, res: Response, next:
 const addPaymentCard: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email } = req.params
-    console.log(email)
-    const { cardNumber, cardBrand, expirationMonth, expirationYear, cvv, token } = req.body
+    const { cardID, cardBrand, expirationMonth, expirationYear, cardLastFour, token } = req.body
     let isDefault = true
 
-    if (!cardNumber || !cardBrand || !expirationMonth || !expirationYear || !cvv) {
+    if (!cardID || !cardBrand || !expirationMonth || !expirationYear || !cardLastFour || !token) {
       throw new HttpError(
         messageConstant.MISSING_PAYMENT_CARD_DETAILS,
         httpStatusConstant.BAD_REQUEST
@@ -110,18 +109,16 @@ const addPaymentCard: Controller = async (req: Request, res: Response, next: Nex
       throw new HttpError(messageConstant.INVALID_CARD_CREDENTIALS, httpStatusConstant.BAD_REQUEST)
     }
 
-    const lastFourDigits = cardNumber.slice(-4)
-
-    const hashedLastFourDigits = await bcrypt.hash(lastFourDigits, Number(envConfig.saltRounds))
+    const hashedLastFourDigits = await bcrypt.hash(cardLastFour, Number(envConfig.saltRounds))
 
     const paymentCardExists = await PaymentCard.findOne({
       userID: user?._id,
+      cardID,
       paymentMethodID: paymentMethod.id,
       cardBrand,
-      lastFourDigits: hashedLastFourDigits,
       expirationMonth,
       expirationYear,
-      cvv
+      cardLastFour: hashedLastFourDigits
     })
     if (paymentCardExists) {
       isDefault = false
@@ -129,12 +126,12 @@ const addPaymentCard: Controller = async (req: Request, res: Response, next: Nex
 
     const newPaymentCard = await PaymentCard.create({
       userID: user?._id,
+      cardID,
       paymentMethodID: paymentMethod.id,
       cardBrand,
-      lastFourDigits: hashedLastFourDigits,
       expirationMonth,
       expirationYear,
-      cvv,
+      cardLastFour: hashedLastFourDigits,
       isDefault
     })
     if (!newPaymentCard) {
@@ -166,10 +163,23 @@ const addPaymentCard: Controller = async (req: Request, res: Response, next: Nex
  */
 const paymentCardsList: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    let { page, pageSize } = req.query
     const { token } = await authUtils.validateAuthorizationHeader(req.headers)
     const verifiedToken = await authUtils.verifyAccessToken(token)
+    const pageNumber = Number(page) || 1
+    const limit = Number(pageSize) || 10
+    const skip = (pageNumber - 1) * limit
+
+    const totalBooksCount = await PaymentCard.countDocuments({ deletedAt: null })
+    const totalPages = Math.ceil(totalBooksCount / limit)
+
+    if (pageNumber > totalPages) {
+      throw new HttpError(messageConstant.INVALID_PAGE_NUMBER, httpStatusConstant.BAD_REQUEST)
+    }
 
     const paymentCardLists = await PaymentCard.find({ userID: verifiedToken?._id, deletedAt: null })
+      .skip(skip)
+      .limit(limit)
     if (!paymentCardLists?.length) {
       throw new HttpError(messageConstant.NO_PAYMENT_CARDS_FOUND, httpStatusConstant.NOT_FOUND)
     }
@@ -194,10 +204,10 @@ const payCharges: Controller = async (req: Request, res: Response, next: NextFun
     const { token } = await authUtils.validateAuthorizationHeader(req.headers)
     const verifiedToken = await authUtils.verifyAccessToken(token)
 
-    const { amount, cardNumber, cardBrand, expirationMonth, expirationYear, cvv } = req.body
+    const { amount, cardID, cardBrand, expirationMonth, expirationYear, cardLastFour } = req.body
     const stripe = new Stripe(String(envConfig.stripeApiKey))
 
-    if (!cardNumber || !cardBrand || !expirationMonth || !expirationYear || !cvv) {
+    if (!amount || !cardID || !cardBrand || !expirationMonth || !expirationYear || !cardLastFour) {
       throw new HttpError(
         messageConstant.MISSING_PAYMENT_CARD_DETAILS,
         httpStatusConstant.BAD_REQUEST
@@ -211,18 +221,16 @@ const payCharges: Controller = async (req: Request, res: Response, next: NextFun
 
     const paymentCard = await PaymentCard.findOne({
       userID: user?._id,
+      cardID,
       cardBrand,
       expirationMonth,
-      expirationYear,
-      cvv: Number(cvv)
+      expirationYear
     })
     if (!paymentCard) {
       throw new HttpError(messageConstant.NO_PAYMENT_CARDS_FOUND, httpStatusConstant.BAD_REQUEST)
     }
 
-    const lastFourDigits = cardNumber.slice(-4)
-
-    const isPaymentCardValid = await bcrypt.compare(lastFourDigits, paymentCard.lastFourDigits)
+    const isPaymentCardValid = await bcrypt.compare(cardLastFour, paymentCard.cardLastFour)
     if (!isPaymentCardValid) {
       throw new HttpError(messageConstant.INVALID_CARD_CREDENTIALS, httpStatusConstant.UNAUTHORIZED)
     }

@@ -20,7 +20,7 @@ async function getReviews(
         path: 'userID',
         select: 'email firstname lastname'
       })
-    if (!reviews) {
+    if (!reviews?.length) {
       throw new HttpError(messageConstant.NO_REVIEWS_FOUND, httpStatusConstant.NOT_FOUND)
     }
 

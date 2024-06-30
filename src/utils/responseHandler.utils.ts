@@ -30,7 +30,7 @@ async function responseHandler(res: Response, options: ResponseHandlerOptions) {
       })
       formattedResponse.message = httpErrorMessageConstant.VALIDATION_ERROR
       formattedResponse.error = errorDetails
-      loggerUtils.logger.error(formattedResponse.error)
+      console.log('Validation Error: ', formattedResponse.error)
     } else {
       if (data !== null && data !== undefined) {
         formattedResponse.data = data
@@ -40,12 +40,14 @@ async function responseHandler(res: Response, options: ResponseHandlerOptions) {
           errorMessage: error.message,
           errorObject: error
         }
-        loggerUtils.logger.error(error.message)
+        if (statusCode != httpStatusConstant.INTERNAL_SERVER_ERROR) {
+          loggerUtils.logger.error(error.message)
+        }
       }
     }
     return res.status(statusCode).json(formattedResponse)
   } catch (error) {
-    loggerUtils.logger.error('Response Handler Error:', error)
+    console.log('Response Handler Error:', error)
     return res.status(httpStatusConstant.INTERNAL_SERVER_ERROR).json({
       status: false,
       message: httpErrorMessageConstant.RESPONSE_HANDLER_ERROR,

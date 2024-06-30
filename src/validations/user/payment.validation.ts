@@ -5,11 +5,11 @@ const addPaymentCard = {
     email: Joi.string().email().required()
   }),
   body: Joi.object().keys({
-    cardNumber: Joi.string().required().trim(),
+    cardID: Joi.string().required().trim(),
     cardBrand: Joi.string().required().trim(),
     expirationMonth: Joi.number().required().min(1).max(12),
     expirationYear: Joi.number().required().min(2024),
-    cvv: Joi.string().required().trim().length(3),
+    cardLastFour: Joi.string().required().trim().length(4),
     token: Joi.string().required().trim()
   })
 }
@@ -17,11 +17,11 @@ const addPaymentCard = {
 const payCharges = {
   body: Joi.object().keys({
     amount: Joi.number().required().min(1),
-    cardNumber: Joi.string().required().trim(),
+    cardID: Joi.string().required().trim(),
     cardBrand: Joi.string().required().trim(),
     expirationMonth: Joi.number().required().min(1).max(12),
     expirationYear: Joi.number().required().min(2024),
-    cvv: Joi.string().required().trim().length(3)
+    cardLastFour: Joi.string().required().trim().length(4)
   })
 }
 

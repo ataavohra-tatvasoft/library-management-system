@@ -14,4 +14,5 @@ export interface IBook {
   numberOfFreeDays: number
   description: string
   deletedAt: Date
+  branchID: ObjectId
 }

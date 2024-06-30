@@ -3,6 +3,7 @@ import crypto from 'crypto'
 import { User } from '../db/models'
 import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '../constant'
 import { authUtils } from '../utils'
+import { HttpError } from '../libs'
 
 const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -39,6 +40,22 @@ const authMiddleware = async (req: Request, res: Response, next: NextFunction) =
   }
 }
 
+const uploadProfilePhotoAuth = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { email } = req.params
+    const { token } = await authUtils.validateAuthorizationHeader(req.headers)
+    const verifiedToken = await authUtils.verifyAccessToken(token)
+
+    if (verifiedToken?.email != email) {
+      throw new HttpError(httpErrorMessageConstant.UNAUTHORIZED, httpStatusConstant.UNAUTHORIZED)
+    }
+    next()
+  } catch (error) {
+    return next(error)
+  }
+}
+
 export default {
-  authMiddleware
+  authMiddleware,
+  uploadProfilePhotoAuth
 }

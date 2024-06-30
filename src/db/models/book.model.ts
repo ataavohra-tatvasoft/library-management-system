@@ -63,6 +63,13 @@ const bookSchema: Schema = new Schema<IBook, BookModel>(
       type: Date,
       allownull: true,
       default: null
+    },
+    branchID: {
+      type: Schema.Types.ObjectId,
+      ref: 'librarybranches',
+      // required: true //temporary
+      allownull: true,
+      defaut: null
     }
   },
   {

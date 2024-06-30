@@ -16,6 +16,4 @@ export interface IAdmin {
   resetToken: string
   resetTokenExpiry: BigInt
   deletedAt: Date
-  createdAt: Date
-  updatedAt: Date
 }
