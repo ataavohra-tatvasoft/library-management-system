@@ -5,16 +5,17 @@ import { Controller } from '../../interfaces'
 import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '../../constant'
 import { BookHistory } from '../../db/models/bookHistory.model'
 import { HttpError } from '../../libs'
+import { ICustomQuery } from '../../interfaces/query.interface'
 
 /**
  * @description Retrieves a list of unique issued books with details.
  */
 const getIssuedBooksList: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    let { page, pageSize } = req.query
+    let { page, pageSize } = req.query as unknown as ICustomQuery
 
-    const pageNumber = Number(page) || 1
-    const limit = Number(pageSize) || 10
+    const pageNumber = page || 1
+    const limit = pageSize || 10
     const skip = (pageNumber - 1) * limit
 
     const issuedBooksAggregationPipeline = [
@@ -58,6 +59,25 @@ const getIssuedBooksList: Controller = async (req: Request, res: Response, next:
           _id: 0,
           book: '$bookDetails',
           issueDate: '$_id.issueDate'
+        }
+      },
+      {
+        $lookup: {
+          from: 'librarybranches',
+          localField: 'book.branchID',
+          foreignField: '_id',
+          as: 'libraryDetails'
+        }
+      },
+      {
+        $addFields: {
+          libraryDetails: {
+            $map: {
+              input: '$libraryDetails',
+              as: 'branch',
+              in: { name: '$$branch.name', address: '$$branch.address' }
+            }
+          }
         }
       }
     ]

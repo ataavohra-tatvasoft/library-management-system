@@ -34,8 +34,20 @@ const getBookReviewsSummary = {
     bookID: Joi.number().min(13).required()
   }),
   query: Joi.object().keys({
-    page: Joi.string().min(1).optional().default(1),
-    pageSize: Joi.string().min(1).optional().default(10)
+    page: Joi.number().integer().min(1).optional().default(1),
+    pageSize: Joi.number().integer().min(1).optional().default(10)
+  })
+}
+
+const getReport = {
+  query: Joi.object().keys({
+    page: Joi.number().integer().min(1).optional().default(1),
+    pageSize: Joi.number().integer().min(1).optional().default(10),
+    startDate: Joi.string().isoDate().optional(),
+    endDate: Joi.string().isoDate().optional(),
+    monthYear: Joi.string()
+      .pattern(/^\d{4}-\d{2}$/)
+      .optional()
   })
 }
 
@@ -44,5 +56,6 @@ export default {
   addBookReview,
   addBookRating,
   getBookRatingsSummary,
-  getBookReviewsSummary
+  getBookReviewsSummary,
+  getReport
 }

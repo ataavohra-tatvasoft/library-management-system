@@ -8,19 +8,21 @@ import { seedBookReviews } from './bookReview.seeder'
 import { loggerUtils } from '../../utils'
 import { BookHistory } from '../models'
 import { PaymentCard } from '../models/paymentCard.model'
+import { seedLibraryBranches } from './libraryBranch.seeder'
 
 const seedData = async () => {
   try {
     await dbConfig.connectToDatabase()
     loggerUtils.logger.info('Connected to database')
 
+    const insertedLibraryBranches = await seedLibraryBranches()
+    const insertedBooks = await seedBooks(insertedLibraryBranches)
     const insertedAdmins = await seedAdmins()
     const insertedUsers = await seedUsers()
-    const insertedBooks = await seedBooks()
 
     await seedBookGalleries(insertedBooks)
-    await seedBookRatings(insertedBooks, insertedUsers, insertedAdmins)
-    await seedBookReviews(insertedBooks, insertedUsers, insertedAdmins)
+    await seedBookRatings(insertedBooks, insertedAdmins, insertedUsers)
+    await seedBookReviews(insertedBooks, insertedAdmins, insertedUsers)
 
     await BookHistory.deleteMany()
     loggerUtils.logger.info('Deleted previous book history!')

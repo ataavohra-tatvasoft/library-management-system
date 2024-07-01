@@ -21,6 +21,10 @@ const bookRatingSchema: Schema = new Schema<IBookRating, BookRatingModel>(
       min: 1,
       max: 5
     },
+    createdAt: {
+      type: Date,
+      default: Date.now
+    },
     deletedAt: {
       type: Date,
       allownull: true,

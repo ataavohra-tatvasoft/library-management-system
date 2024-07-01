@@ -14,6 +14,7 @@ import {
 import { envConfig } from '../../config'
 import { PaymentCard } from '../../db/models/paymentCard.model'
 import { HttpError } from '../../libs'
+import { ICustomQuery } from '../../interfaces/query.interface'
 
 /**
  * @description get link for adding payment card
@@ -163,11 +164,11 @@ const addPaymentCard: Controller = async (req: Request, res: Response, next: Nex
  */
 const paymentCardsList: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    let { page, pageSize } = req.query
+    let { page, pageSize } = req.query as unknown as ICustomQuery
     const { token } = await authUtils.validateAuthorizationHeader(req.headers)
     const verifiedToken = await authUtils.verifyAccessToken(token)
-    const pageNumber = Number(page) || 1
-    const limit = Number(pageSize) || 10
+    const pageNumber = page || 1
+    const limit = pageSize || 10
     const skip = (pageNumber - 1) * limit
 
     const totalBooksCount = await PaymentCard.countDocuments({ deletedAt: null })
@@ -253,7 +254,10 @@ const payCharges: Controller = async (req: Request, res: Response, next: NextFun
     })
     if (confirmResult.status === 'succeeded') {
       const updatedDueCharges: number = Number(user?.dueCharges) - Number(amount)
-      await User.updateOne({ _id: user?._id }, { $set: { dueCharges: updatedDueCharges } })
+      await User.updateOne(
+        { _id: user?._id },
+        { $set: { dueCharges: updatedDueCharges, paidAmount: Number(amount) } }
+      )
 
       return responseHandlerUtils.responseHandler(res, {
         statusCode: httpStatusConstant.OK,

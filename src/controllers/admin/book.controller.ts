@@ -6,6 +6,9 @@ import { databaseUtils, googleSheetUtils, responseHandlerUtils } from '../../uti
 import { getRatingService, getReviewService } from '../../services/book'
 import { dbConfig } from '../../config'
 import { HttpError } from '../../libs'
+import { LibraryBranch } from '../../db/models/libraryBranch.model'
+import { ObjectId } from 'mongodb'
+import { ICustomQuery } from '../../interfaces/query.interface'
 
 /**
  * @description Adds a new book to the library (checks for duplicates).
@@ -13,8 +16,22 @@ import { HttpError } from '../../libs'
 const addBook: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const {
-      body: { bookID, name, author, charges, subscriptionDays, quantityAvailable, description }
+      body: {
+        branchName,
+        bookID,
+        name,
+        author,
+        charges,
+        subscriptionDays,
+        quantityAvailable,
+        description
+      }
     } = req
+
+    const branchExists = await LibraryBranch.findOne({ name: branchName, deletedAt: null })
+    if (!branchExists) {
+      throw new HttpError(messageConstant.LIBRARY_BRANCH_NOT_FOUND, httpStatusConstant.NOT_FOUND)
+    }
 
     const existingBook = await Book.findOne({ bookID })
     if (existingBook) {
@@ -28,7 +45,8 @@ const addBook: Controller = async (req: Request, res: Response, next: NextFuncti
       ...(subscriptionDays && { subscriptionDays: Number(subscriptionDays) }),
       quantityAvailable: Number(quantityAvailable),
       charges: Number(charges),
-      description
+      description,
+      branchID: branchExists._id
     })
 
     if (!newBook) {
@@ -49,10 +67,10 @@ const addBook: Controller = async (req: Request, res: Response, next: NextFuncti
  */
 const listBooks: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    let { page, pageSize } = req.query
+    let { page, pageSize } = req.query as unknown as ICustomQuery
 
-    const pageNumber = Number(page) || 1
-    const limit = Number(pageSize) || 10
+    const pageNumber = page || 1
+    const limit = pageSize || 10
     const skip = (pageNumber - 1) * limit
 
     const totalBooksCount = await Book.countDocuments({ deletedAt: null })
@@ -74,6 +92,7 @@ const listBooks: Controller = async (req: Request, res: Response, next: NextFunc
         description: 1
       }
     )
+      .populate({ path: 'branchID', select: 'name address' })
       .skip(skip)
       .limit(limit)
 
@@ -111,8 +130,14 @@ const updateBook: Controller = async (req: Request, res: Response, next: NextFun
       subscriptionDays,
       quantityAvailable,
       numberOfFreeDays,
-      description
+      description,
+      branchName
     } = req.body || {}
+
+    const branchExists = await LibraryBranch.findOne({ name: branchName, deletedAt: null })
+    if (!branchExists) {
+      throw new HttpError(messageConstant.LIBRARY_BRANCH_NOT_FOUND, httpStatusConstant.NOT_FOUND)
+    }
 
     const existingBook = await Book.findOne({ bookID })
 
@@ -127,7 +152,8 @@ const updateBook: Controller = async (req: Request, res: Response, next: NextFun
       ...(quantityAvailable && { quantityAvailable: Number(quantityAvailable) }),
       ...(subscriptionDays && { subscriptionDays: Number(subscriptionDays) }),
       ...(numberOfFreeDays && { numberOfFreeDays: Number(numberOfFreeDays) }),
-      ...(description && { description })
+      ...(description && { description }),
+      ...(branchName && { branchName: branchExists._id })
     }
 
     const updatedBook = await Book.findOneAndUpdate({ bookID }, updatedBookData, { new: true })
@@ -330,13 +356,9 @@ const getRatingsSummary: Controller = async (req: Request, res: Response, next: 
 const getReviewsSummary: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { bookID } = req.params
-    const { page = 1, pageSize = 10 } = req.query
+    const { page = 1, pageSize = 10 } = req.query as unknown as ICustomQuery
 
-    const reviewsSummary = await getReviewService.getReviews(
-      Number(bookID),
-      Number(page),
-      Number(pageSize)
-    )
+    const reviewsSummary = await getReviewService.getReviews(Number(bookID), page, pageSize)
 
     if (!reviewsSummary) {
       throw new HttpError(messageConstant.NO_REVIEWS_FOUND, httpStatusConstant.NOT_FOUND)
@@ -392,7 +414,8 @@ const importBookSpreadSheet: Controller = async (
             quantityAvailable: Number(row[8]),
             numberOfFreeDays: Number(row[9]),
             description: row[10],
-            deletedAt: row[11] == String(null) ? null : new Date(row[11])
+            branchID: new ObjectId(String(row[11])),
+            deletedAt: row[12] == String(null) ? null : new Date(row[11])
           }
         } catch (error) {
           console.error('Error formatting data row:', error)
@@ -457,6 +480,7 @@ const exportDataToSpreadsheet: Controller = async (
       row.quantityAvailable,
       row.numberOfFreeDays,
       row.description,
+      row.branchID,
       row.deletedAt
     ])
 
@@ -475,6 +499,7 @@ const exportDataToSpreadsheet: Controller = async (
         'quantityAvailable',
         'numberOfFreeDays',
         'description',
+        'branchID',
         'deletedAt'
       ],
       ...formattedData
@@ -495,7 +520,8 @@ const exportDataToSpreadsheet: Controller = async (
       { startIndex: 7, endIndex: 8, pixelSize: 130 },
       { startIndex: 8, endIndex: 9, pixelSize: 130 },
       { startIndex: 9, endIndex: 10, pixelSize: 130 },
-      { startIndex: 10, endIndex: 11, pixelSize: 300 }
+      { startIndex: 10, endIndex: 11, pixelSize: 200 },
+      { startIndex: 11, endIndex: 12, pixelSize: 300 }
     ]
 
     await googleSheetUtils.updateColumnWidths(auth, sheetID, columnWidthUpdates)

@@ -20,6 +20,10 @@ const bookReviewSchema: Schema = new Schema<IBookReview, BookReviewModel>(
       required: true,
       maxlength: 500 // Set maximum review length
     },
+    createdAt: {
+      type: Date,
+      default: Date.now
+    },
     deletedAt: {
       type: Date,
       allownull: true,

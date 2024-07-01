@@ -8,11 +8,13 @@ const libraryBranchSchema: Schema<ILibraryBranch, LibraryBranchModel> = new Sche
     branchID: {
       type: String,
       unique: true,
-      required: true
+      required: true,
+      allownull: false
     },
     name: {
       type: String,
-      required: true
+      required: true,
+      unique: true
     },
     address: {
       type: String,
@@ -20,7 +22,8 @@ const libraryBranchSchema: Schema<ILibraryBranch, LibraryBranchModel> = new Sche
     },
     phoneNumber: {
       type: String,
-      required: true
+      required: true,
+      unique: true
     },
     deletedAt: {
       type: Date,

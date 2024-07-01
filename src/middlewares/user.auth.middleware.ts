@@ -31,7 +31,7 @@ const authMiddleware = async (req: Request, res: Response, next: NextFunction) =
     if (!user) {
       return res.status(httpStatusConstant.NOT_FOUND).json({
         status: false,
-        message: messageConstant.USER_NOT_FOUND + 'or Invalid Token'
+        message: messageConstant.USER_NOT_FOUND + ' or Invalid Token'
       })
     }
     next()

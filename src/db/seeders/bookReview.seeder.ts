@@ -4,8 +4,8 @@ import { IAdmin, IBook, IUser } from '../../interfaces'
 
 export const seedBookReviews = async (
   insertedBooks: IBook[],
-  insertedUsers: IUser[],
-  insertedAdmins: IAdmin[]
+  insertedAdmins: IAdmin[],
+  insertedUsers: IUser[]
 ) => {
   await BookReview.deleteMany({})
   loggerUtils.logger.info('Deleted all reviews!')

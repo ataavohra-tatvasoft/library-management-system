@@ -2,6 +2,7 @@ import { Joi } from 'celebrate'
 
 const addBook = {
   body: Joi.object().keys({
+    branchName: Joi.string().required().trim(),
     bookID: Joi.string().required().length(13).trim(),
     name: Joi.string().required().min(3).max(50).trim(),
     author: Joi.string().required().min(3).max(50).trim(),
@@ -14,8 +15,8 @@ const addBook = {
 
 const bookList = {
   query: Joi.object().keys({
-    page: Joi.string().min(1).optional().default(1),
-    pageSize: Joi.string().min(1).optional().default(10)
+    page: Joi.number().integer().min(1).optional().default(1),
+    pageSize: Joi.number().integer().min(1).optional().default(10)
   })
 }
 
@@ -30,7 +31,8 @@ const updateBook = {
     quantityAvailable: Joi.string().min(0).optional().allow(null),
     subscriptionDays: Joi.string().optional().trim(),
     numberOfFreeDays: Joi.string().min(0).optional().allow(null),
-    description: Joi.string().optional().allow('')
+    description: Joi.string().optional().allow(''),
+    branchName: Joi.string().required().trim()
   })
 }
 
@@ -51,8 +53,8 @@ const getReviewsSummary = {
     bookID: Joi.string().required().min(13).max(13).trim()
   }),
   query: Joi.object().keys({
-    page: Joi.string().min(1).optional().default(1),
-    pageSize: Joi.string().min(1).optional().default(10)
+    page: Joi.number().integer().min(1).optional().default(1),
+    pageSize: Joi.number().integer().min(1).optional().default(10)
   })
 }
 

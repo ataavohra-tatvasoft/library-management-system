@@ -2,18 +2,19 @@ import { Request, Response, NextFunction } from 'express'
 import { Book, BookHistory, BookRating, BookReview, User } from '../../db/models'
 import { httpErrorMessageConstant, httpStatusConstant, messageConstant } from '../../constant'
 import { Controller, PopulatedBookHistory } from '../../interfaces'
-import { authUtils, responseHandlerUtils } from '../../utils'
+import { authUtils, helperFunctionsUtils, responseHandlerUtils } from '../../utils'
 import { getRatingService, getReviewService } from '../../services/book'
 import { HttpError } from '../../libs'
+import { ICustomQuery } from '../../interfaces/query.interface'
 
 /**
  * @description Searches for active books by name, ID, or both (returns details & aggregates).
  */
 const searchBooks: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { name, bookID, page, pageSize } = req.query
-    const pageNumber = Number(page) || 1
-    const limit = Number(pageSize) || 10
+    const { name, bookID, page, pageSize } = req.query as unknown as ICustomQuery
+    const pageNumber = page || 1
+    const limit = pageSize || 10
     const skip = (pageNumber - 1) * limit
 
     const searchQuery: { deletedAt: Date | null } & {
@@ -24,8 +25,8 @@ const searchBooks: Controller = async (req: Request, res: Response, next: NextFu
 
     if (bookID || name) {
       searchQuery.$or = []
-      if (bookID) searchQuery.$or.push({ bookID: String(bookID) })
-      if (name) searchQuery.$or.push({ name: new RegExp(name as string, 'i') })
+      if (bookID) searchQuery.$or.push({ bookID: bookID })
+      if (name) searchQuery.$or.push({ name: new RegExp(name, 'i') })
     }
 
     const totalBooks = await Book.countDocuments({ deletedAt: null })
@@ -82,6 +83,25 @@ const searchBooks: Controller = async (req: Request, res: Response, next: NextFu
         }
       },
       {
+        $lookup: {
+          from: 'librarybranches',
+          localField: 'branchID',
+          foreignField: '_id',
+          as: 'libraryDetails'
+        }
+      },
+      {
+        $addFields: {
+          libraryDetails: {
+            $map: {
+              input: '$libraryDetails',
+              as: 'branch',
+              in: { name: '$$branch.name', address: '$$branch.address' }
+            }
+          }
+        }
+      },
+      {
         $project: {
           bookID: 1,
           name: 1,
@@ -89,8 +109,10 @@ const searchBooks: Controller = async (req: Request, res: Response, next: NextFu
           stock: '$quantityAvailable',
           rating: { $ifNull: ['$rating', 0] },
           reviewCount: 1,
-          publishYear: 1,
-          coverImage: 1
+          publishYear: { $year: '$publishedDate' },
+          coverImage: 1,
+          branchID: 1,
+          libraryDetails: 1
         }
       },
       { $skip: skip },
@@ -117,18 +139,26 @@ const searchBooks: Controller = async (req: Request, res: Response, next: NextFu
     return next(error)
   }
 }
-
 /**
  * @description Retrieves detailed information for all active books.
  */
 const getAllBookDetails: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const { page, pageSize } = req.query as unknown as ICustomQuery
+    const pageNumber = page || 1
+    const limit = pageSize || 10
+    const skip = (pageNumber - 1) * limit
+
     const totalBooks = await Book.countDocuments({ deletedAt: null })
     if (!totalBooks) {
       throw new HttpError(
         messageConstant.ERROR_COUNTING_BOOKS,
         httpStatusConstant.INTERNAL_SERVER_ERROR
       )
+    }
+
+    if (pageNumber > Math.ceil(totalBooks / limit)) {
+      throw new HttpError(messageConstant.INVALID_PAGE_NUMBER, httpStatusConstant.BAD_REQUEST)
     }
 
     const searchPipeline = [
@@ -191,12 +221,36 @@ const getAllBookDetails: Controller = async (req: Request, res: Response, next: 
           gallery: 1,
           rating: 1,
           reviews: 1,
-          reviewCount: 1
+          reviewCount: 1,
+          branchID: 1
+        }
+      },
+      {
+        $lookup: {
+          from: 'librarybranches',
+          localField: 'branchID',
+          foreignField: '_id',
+          as: 'libraryDetails'
+        }
+      },
+      {
+        $addFields: {
+          libraryDetails: {
+            $map: {
+              input: '$libraryDetails',
+              as: 'branch',
+              in: {
+                name: '$$branch.name',
+                address: '$$branch.address',
+                phoneNumber: '$$branch.phoneNumber'
+              }
+            }
+          }
         }
       }
     ]
 
-    const books = await Book.aggregate(searchPipeline)
+    const books = await Book.aggregate(searchPipeline).skip(skip).limit(limit)
     if (!books.length) {
       throw new HttpError(messageConstant.BOOK_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
@@ -340,7 +394,7 @@ const getBookIssueHistory: Controller = async (req: Request, res: Response, next
 /**
  * @description Provides overall library statistics (issued, submitted, charges etc.) of a user.
  */
-const getLibrarySummary: Controller = async (req: Request, res: Response, next: NextFunction) => {
+const getSummary: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { token } = await authUtils.validateAuthorizationHeader(req.headers)
     const verifiedToken = await authUtils.verifyAccessToken(token)
@@ -412,9 +466,9 @@ const getBookReviewsSummary: Controller = async (
 ) => {
   try {
     const { bookID } = req.params
-    const { page = 1, pageSize = 10 } = req.query
-    const pageNumber = Number(page)
-    const limit = Number(pageSize)
+    const { page = 1, pageSize = 10 } = req.query as unknown as ICustomQuery
+    const pageNumber = page
+    const limit = pageSize
     const skip = (pageNumber - 1) * limit
 
     const totalReviews = await getReviewService.getReviewsCount(Number(bookID))
@@ -447,13 +501,115 @@ const getBookReviewsSummary: Controller = async (
   }
 }
 
+/**
+ * @description Gives overall report of books issued by user.
+ */
+const getReport: Controller = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { page, pageSize, startDate, endDate, monthYear } = req.query as unknown as ICustomQuery
+    const pageNumber = page || 1
+    const limit = pageSize || 10
+    const skip = (pageNumber - 1) * limit
+    let start: Date | undefined
+    let end: Date | undefined
+
+    const { token } = await authUtils.validateAuthorizationHeader(req.headers)
+    const verifiedToken = await authUtils.verifyAccessToken(token)
+
+    await helperFunctionsUtils.validateDateRange(
+      startDate ? startDate : undefined,
+      endDate ? endDate : undefined,
+      monthYear ? monthYear : undefined
+    )
+
+    if (monthYear) {
+      const [month, year] = monthYear.split('-')
+      start = new Date(Number(year), Number(month) - 1, 1)
+      end = new Date(Number(year), Number(month), 0)
+    } else if (startDate && endDate) {
+      start = new Date(startDate)
+      end = new Date(endDate)
+    }
+
+    const filter: any = {
+      userID: verifiedToken._id,
+      deletedAt: null
+    }
+
+    if (start) {
+      filter.issueDate = { $gte: start }
+    }
+    if (end) {
+      filter.submitDate = { $lte: end }
+    }
+
+    const total = await BookHistory.countDocuments(filter)
+    const totalPages = Math.ceil(total / limit)
+
+    if (pageNumber > totalPages) {
+      throw new HttpError(messageConstant.INVALID_PAGE_NUMBER, httpStatusConstant.BAD_REQUEST)
+    }
+
+    const userReport = await BookHistory.find(filter)
+      .populate({
+        path: 'userID bookID',
+        select: 'email firstname lastname paidAmount dueCharges name author charges description'
+      })
+      .skip(skip)
+      .limit(limit)
+
+    if (!userReport) {
+      throw new HttpError(messageConstant.BOOK_HISTORY_NOT_FOUND, httpStatusConstant.NOT_FOUND)
+    }
+
+    const formattedReport = userReport.map((report: any) => ({
+      userDetail: {
+        email: report.userID.email,
+        firstname: report.userID.firstname,
+        lastname: report.userID.lastname
+      },
+      bookDetail: {
+        name: report.bookID.name,
+        author: report.bookID.author,
+        paidAmount: report.bookID.paidAmount,
+        dueCharges: report.bookID.dueCharges,
+        charges: report.bookID.charges,
+        description: report.bookID.description
+      },
+      bookIssueDate: report.issueDate.toISOString().split('T')[0],
+      bookSubmitDate: report.submitDate.toISOString().split('T')[0]
+    }))
+
+    return responseHandlerUtils.responseHandler(res, {
+      statusCode: httpStatusConstant.OK,
+      data: {
+        userDetail: formattedReport[0]?.userDetail,
+        bookReports: formattedReport.map(({ bookDetail, bookIssueDate, bookSubmitDate }) => ({
+          bookDetail,
+          bookIssueDate,
+          bookSubmitDate
+        })),
+        pagination: {
+          page: pageNumber,
+          pageSize: limit,
+          totalPages
+        }
+      },
+      message: httpErrorMessageConstant.SUCCESSFUL
+    })
+  } catch (error) {
+    return next(error)
+  }
+}
+
 export default {
   searchBooks,
   getAllBookDetails,
   addBookReview,
   addBookRating,
   getBookIssueHistory,
-  getLibrarySummary,
+  getSummary,
   getBookRatingsSummary,
-  getBookReviewsSummary
+  getBookReviewsSummary,
+  getReport
 }

@@ -59,24 +59,21 @@ const bookSchema: Schema = new Schema<IBook, BookModel>(
       type: String,
       allownull: true
     },
+    branchID: {
+      type: Schema.Types.ObjectId,
+      ref: 'librarybranches',
+      required: true,
+      allownull: true
+    },
     deletedAt: {
       type: Date,
       allownull: true,
       default: null
-    },
-    branchID: {
-      type: Schema.Types.ObjectId,
-      ref: 'librarybranches',
-      // required: true //temporary
-      allownull: true,
-      defaut: null
     }
   },
   {
     timestamps: true
   }
 )
-
-// bookSchema.index({ name: 1, author: 1 }, { unique: true });
 
 export const Book: BookModel = model<IBook, BookModel>('books', bookSchema)

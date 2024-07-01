@@ -6,6 +6,7 @@ import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '.
 import { helperFunctionsUtils, responseHandlerUtils } from '../../utils'
 import { envConfig } from '../../config'
 import { HttpError } from '../../libs'
+import { ICustomQuery } from '../../interfaces/query.interface'
 
 /**
  * @description Registers a new user (validates age and hashes password).
@@ -45,7 +46,10 @@ const registerUser: Controller = async (req: Request, res: Response, next: NextF
     })
 
     if (!newUser) {
-      throw new HttpError(messageConstant.ERROR_CREATING_USER, httpStatusConstant.BAD_REQUEST)
+      throw new HttpError(
+        messageConstant.ERROR_CREATING_USER,
+        httpStatusConstant.INTERNAL_SERVER_ERROR
+      )
     }
 
     return responseHandlerUtils.responseHandler(res, {
@@ -62,15 +66,18 @@ const registerUser: Controller = async (req: Request, res: Response, next: NextF
  */
 const getActiveUsersList: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    let { page, pageSize } = req.query
+    let { page, pageSize } = req.query as unknown as ICustomQuery
 
-    const pageNumber = Number(page) || 1
-    const limit = Number(pageSize) || 10
+    const pageNumber = page || 1
+    const limit = pageSize || 10
     const skip = (pageNumber - 1) * limit
 
     const totalUsersCount = await User.countDocuments({ deletedAt: null })
     if (!totalUsersCount) {
-      throw new HttpError(messageConstant.ERROR_COUNTING_USERS, httpStatusConstant.OK)
+      throw new HttpError(
+        messageConstant.ERROR_COUNTING_USERS,
+        httpStatusConstant.INTERNAL_SERVER_ERROR
+      )
     }
 
     const totalPages = Math.ceil(totalUsersCount / limit)
@@ -178,7 +185,10 @@ const deactivateUser: Controller = async (req: Request, res: Response, next: Nex
     )
 
     if (!updatedUser) {
-      throw new HttpError(messageConstant.ERROR_DELETING_USER, httpStatusConstant.NOT_FOUND)
+      throw new HttpError(
+        messageConstant.ERROR_DELETING_USER,
+        httpStatusConstant.INTERNAL_SERVER_ERROR
+      )
     }
 
     return responseHandlerUtils.responseHandler(res, {
@@ -208,7 +218,10 @@ const deleteUserPermanently: Controller = async (
 
     const deletedUser = await User.deleteOne({ email })
     if (!deletedUser) {
-      throw new HttpError(messageConstant.ERROR_DELETING_USER, httpStatusConstant.NOT_FOUND)
+      throw new HttpError(
+        messageConstant.ERROR_DELETING_USER,
+        httpStatusConstant.INTERNAL_SERVER_ERROR
+      )
     }
 
     return responseHandlerUtils.responseHandler(res, {

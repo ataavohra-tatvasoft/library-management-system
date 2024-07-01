@@ -40,18 +40,51 @@ const calculateNumberOfFreeDays = (issueDate: Date, quantityAvailable: number): 
   }
 }
 
-const generatePlaceholderbookID = (): string => {
-  {
-    const prefix = '999'
-    const randomDigits = Math.floor(Math.random() * 10 ** 10)
-      .toString()
-      .padStart(10, '0')
-    return `${prefix}${randomDigits}`
+const generatePlaceholderID = (prefix: string, numDigits: number): string => {
+  if (numDigits < 0) {
+    throw new Error('Number of digits cannot be negative')
+  }
+
+  const randomDigits = Math.floor(Math.random() * 10 ** numDigits)
+    .toString()
+    .padStart(numDigits, '0')
+  return `${prefix}${randomDigits}`
+}
+
+const validateDateRange = async (
+  startDate?: string,
+  endDate?: string,
+  monthYear?: string
+): Promise<void> => {
+  if (monthYear) {
+    const [month, year] = String(monthYear).split('-')
+    if (!month || !year || isNaN(Number(month)) || isNaN(Number(year))) {
+      console.log('Invalid monthYear:', { month, year })
+      throw new HttpError(messageConstant.INVALID_DATE_FORMAT, httpStatusConstant.BAD_REQUEST)
+    }
+  }
+
+  if (startDate && endDate) {
+    const start = new Date(startDate)
+    const end = new Date(endDate)
+
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      throw new HttpError(messageConstant.INVALID_DATE_FORMAT, httpStatusConstant.BAD_REQUEST)
+    }
+
+    const monthDifference =
+      (end.getFullYear() - start.getFullYear()) * 12 + end.getMonth() - start.getMonth()
+    const dayDifference = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+
+    if (monthDifference > 6 || dayDifference > 182) {
+      throw new HttpError(messageConstant.INVALID_DATE_RANGE, httpStatusConstant.BAD_REQUEST)
+    }
   }
 }
 
 export default {
   validateAgeLimit,
   calculateNumberOfFreeDays,
-  generatePlaceholderbookID
+  generatePlaceholderID,
+  validateDateRange
 }

@@ -84,6 +84,7 @@ export const messageConstant = {
   INVALID_RESET_TOKEN: 'Invalid reset token',
   INVALID_SUBMIT_DATE: 'Invalid submit date',
   REFRESH_TOKEN_EXPIRED: 'Refresh token expired, kindly login again',
+  INVALID_DATE_RANGE: 'Invalid date range',
 
   // Payment Messages
   MISSING_PAYMENT_METHOD: 'Missing payment method',
@@ -108,5 +109,16 @@ export const messageConstant = {
   ERROR_ADD_PAYMENT_CARD_TEMPLATE: 'Error in add payment card template',
 
   //Multer messages
-  INVALID_UPLOAD_ROUTE: 'Invalid upload route'
+  INVALID_UPLOAD_ROUTE: 'Invalid upload route',
+
+  //Library messages
+  LIBRARY_BRANCH_NOT_FOUND: 'Library branch not found',
+  LIBRARY_BRANCH_EXISTS: 'Library branch already exists',
+  ERROR_CREATING_LIBRARY_BRANCH: 'Error creating library branch',
+  ERROR_COUNTING_LIBRARY_BRANCHES: 'Error counting library branches',
+  NO_ACTIVE_LIBRARY_BRANCHES_FOUND: 'No active library branches found',
+  ERROR_UPDATING_LIBRARY_BRANCH: 'Error updating library branch',
+  ERROR_DELETING_LIBRARY_BRANCH: 'Error deleting library branch',
+  LIBRARY_BRANCH_DELETED_SOFT: 'Library branch deleted (soft)',
+  LIBRARY_BRANCH_DELETED_HARD: 'Library branch deleted (hard)'
 }
