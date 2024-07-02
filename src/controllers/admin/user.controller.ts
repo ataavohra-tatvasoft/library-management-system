@@ -66,22 +66,17 @@ const registerUser: Controller = async (req: Request, res: Response, next: NextF
  */
 const getActiveUsersList: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    let { page, pageSize } = req.query as unknown as ICustomQuery
-
-    const pageNumber = page || 1
-    const limit = pageSize || 10
-    const skip = (pageNumber - 1) * limit
+    const { page = 1, pageSize = 10 } = req.query as unknown as ICustomQuery
+    const skip = (page - 1) * pageSize
 
     const totalUsersCount = await User.countDocuments({ deletedAt: null })
     if (!totalUsersCount) {
-      throw new HttpError(
-        messageConstant.ERROR_COUNTING_USERS,
-        httpStatusConstant.INTERNAL_SERVER_ERROR
-      )
+      throw new HttpError(messageConstant.NO_ACTIVE_USERS_FOUND, httpStatusConstant.BAD_REQUEST)
     }
 
-    const totalPages = Math.ceil(totalUsersCount / limit)
-    if (pageNumber > totalPages) {
+    const totalPages = Math.ceil(totalUsersCount / pageSize)
+
+    if (page > totalPages) {
       throw new HttpError(messageConstant.INVALID_PAGE_NUMBER, httpStatusConstant.BAD_REQUEST)
     }
     const activeUsers = await User.find(
@@ -100,7 +95,7 @@ const getActiveUsersList: Controller = async (req: Request, res: Response, next:
       }
     )
       .skip(skip)
-      .limit(limit)
+      .limit(pageSize)
 
     if (!activeUsers?.length) {
       throw new HttpError(messageConstant.NO_ACTIVE_USERS_FOUND, httpStatusConstant.BAD_REQUEST)
@@ -111,8 +106,8 @@ const getActiveUsersList: Controller = async (req: Request, res: Response, next:
       data: {
         activeUsers,
         pagination: {
-          page: pageNumber,
-          pageSize: limit,
+          page: page,
+          pageSize: pageSize,
           totalPages
         }
       },
@@ -130,7 +125,7 @@ const updateUserDetails: Controller = async (req: Request, res: Response, next: 
   try {
     const { email } = req.params
     const { password, firstname, lastname, dateOfBirth, mobileNumber, address, city, state } =
-      req.body || {}
+      req.body
     const hashedPassword = password ? await bcrypt.hash(password, 10) : undefined
 
     const user = await User.findOne({ email })

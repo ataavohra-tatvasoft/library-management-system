@@ -3,7 +3,7 @@ import { celebrate } from 'celebrate'
 import { userAuthController } from '../../controllers'
 import { userAuthSchema } from '../../validations'
 import { userAuthMiddleware } from '../../middlewares'
-import { upload } from '../../utils/multerConfig.utils'
+import { multerConfigUtils } from '../../utils'
 
 const router: Router = express.Router()
 
@@ -36,7 +36,7 @@ router.put(
   celebrate(userAuthSchema.uploadUserProfilePhoto),
   userAuthMiddleware.uploadProfilePhotoAuth,
   userAuthMiddleware.authMiddleware,
-  upload.single('profilePhoto'),
+  multerConfigUtils.upload.single('profilePhoto'),
   userAuthController.uploadUserProfilePhoto
 )
 

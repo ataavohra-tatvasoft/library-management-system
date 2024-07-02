@@ -6,6 +6,7 @@ import sendMailUtils from './sendMail.utils'
 import responseHandlerUtils from './responseHandler.utils'
 import errorHandlerUtils from './errorHandler'
 import multerUtils from './multer.utils'
+import multerConfigUtils from './multerConfig.utils'
 import nodeCronUtils from './nodeCron.utils'
 import paymentUtils from './payment.utils'
 import googleSheetUtils from './googleSheet.utils'
@@ -20,6 +21,7 @@ export {
   responseHandlerUtils,
   errorHandlerUtils,
   multerUtils,
+  multerConfigUtils,
   nodeCronUtils,
   paymentUtils,
   googleSheetUtils,

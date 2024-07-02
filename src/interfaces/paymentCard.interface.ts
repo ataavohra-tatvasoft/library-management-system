@@ -1,8 +1,8 @@
-import { ObjectId, Schema } from 'mongoose'
+import { ObjectId } from 'mongoose'
 
 export interface IPaymentCard {
   _id?: ObjectId
-  userID: Schema.Types.ObjectId
+  userID: ObjectId
   cardID: string
   paymentMethodID: string
   cardBrand: string

@@ -12,7 +12,6 @@ router.post(
   adminAuthMiddleware.authMiddleware,
   adminUserController.registerUser
 )
-
 router.get(
   '/user-list',
   celebrate(adminUserSchema.getActiveUsersList),

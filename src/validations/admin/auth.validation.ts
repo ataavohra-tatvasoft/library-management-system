@@ -7,6 +7,13 @@ const login = {
   })
 }
 
+const logout = {
+  body: Joi.object().keys({
+    accessToken: Joi.string().required(),
+    refreshToken: Joi.string().required()
+  })
+}
+
 const forgotPassword = {
   body: Joi.object().keys({
     email: Joi.string().email().required()
@@ -45,6 +52,7 @@ const updateAdminProfile = {
 
 export default {
   login,
+  logout,
   forgotPassword,
   resetPassword,
   updateAdminProfile

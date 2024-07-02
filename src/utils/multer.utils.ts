@@ -4,11 +4,9 @@ import { promises as fs } from 'fs'
 import { httpStatusConstant, messageConstant } from '../constant'
 import { HttpError } from '../libs'
 
-// Set base directories for uploads
 const userUploadDirectory = path.join('public', 'uploads', 'user')
 const bookUploadDirectory = path.join('public', 'uploads', 'book')
 
-// Function to determine the upload directory based on the request URL
 const getUploadDirectory = (url: string): string => {
   if (url.includes('/upload-profile-photo')) {
     return userUploadDirectory
@@ -19,7 +17,6 @@ const getUploadDirectory = (url: string): string => {
   }
 }
 
-// Function to generate a unique file name
 const generateUniqueFileName = (
   url: string,
   params: { email: string; bookID: string },
@@ -42,7 +39,6 @@ const generateUniqueFileName = (
   return uniqueName
 }
 
-// Function to delete existing profile photo
 const deleteExistingProfilePhoto = async (directory: string, email: string) => {
   const files = await fs.readdir(directory)
   const profilePhotos = files.filter((file: string) =>
@@ -55,7 +51,6 @@ const deleteExistingProfilePhoto = async (directory: string, email: string) => {
   }
 }
 
-// Function to delete existing cover photo
 const deleteExistingCoverPhoto = async (directory: string, bookID: string) => {
   const files: string[] = await fs.readdir(directory)
   const coverPhotos: string[] = files.filter((file: string) =>

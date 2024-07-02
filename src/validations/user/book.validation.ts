@@ -5,7 +5,14 @@ const searchBooks = {
     page: Joi.number().integer().min(1).optional().default(1),
     pageSize: Joi.number().integer().min(1).optional().default(10),
     name: Joi.string().optional().allow('', null).min(3).max(50).trim(),
-    bookID: Joi.string().optional().trim()
+    bookID: Joi.string().optional().trim().allow(null)
+  })
+}
+
+const getAllBookDetails = {
+  query: Joi.object().keys({
+    page: Joi.number().integer().min(1).optional().default(1),
+    pageSize: Joi.number().integer().min(1).optional().default(10)
   })
 }
 
@@ -25,13 +32,13 @@ const addBookRating = {
 
 const getBookRatingsSummary = {
   params: Joi.object().keys({
-    bookID: Joi.number().min(13).required()
+    bookID: Joi.string().min(13).required()
   })
 }
 
 const getBookReviewsSummary = {
   params: Joi.object().keys({
-    bookID: Joi.number().min(13).required()
+    bookID: Joi.string().min(13).required()
   }),
   query: Joi.object().keys({
     page: Joi.number().integer().min(1).optional().default(1),
@@ -53,6 +60,7 @@ const getReport = {
 
 export default {
   searchBooks,
+  getAllBookDetails,
   addBookReview,
   addBookRating,
   getBookRatingsSummary,

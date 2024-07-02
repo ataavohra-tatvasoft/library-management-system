@@ -1,5 +1,5 @@
 import { Model, model, Schema } from 'mongoose'
-import { IBookRating } from '../../interfaces' // Assuming you have a User model
+import { IBookRating } from '../../interfaces'
 
 type BookRatingModel = Model<IBookRating>
 

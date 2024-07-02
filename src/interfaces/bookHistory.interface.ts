@@ -1,20 +1,21 @@
-import { ObjectId, Schema } from 'mongoose'
+import { ObjectId } from 'mongoose'
 interface IBookID {
-  _id: Schema.Types.ObjectId
+  _id: ObjectId
+  bookID: number
   charges: number
   name: string
 }
 
 interface IUserID {
-  _id: Schema.Types.ObjectId
+  _id: ObjectId
   email: string
   firstname: string
   lastname: string
 }
 export interface IBookHistory {
   _id?: ObjectId
-  bookID: Schema.Types.ObjectId
-  userID: Schema.Types.ObjectId
+  bookID: ObjectId
+  userID: ObjectId
   issueDate: Date
   submitDate: Date
   deletedAt: Date

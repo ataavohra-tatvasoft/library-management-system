@@ -12,7 +12,6 @@ router.post(
   adminAuthMiddleware.authMiddleware,
   adminLibraryBranchController.registerNewBranch
 )
-
 router.get(
   '/library-branch-list',
   celebrate(adminLibraryBranchSchema.getActiveBranchesList),

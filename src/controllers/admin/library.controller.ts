@@ -3,7 +3,7 @@ import { Controller } from '../../interfaces'
 import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '../../constant'
 import { responseHandlerUtils } from '../../utils'
 import { HttpError } from '../../libs'
-import { LibraryBranch } from '../../db/models/libraryBranch.model'
+import { LibraryBranch } from '../../db/models'
 import { ICustomQuery } from '../../interfaces/query.interface'
 
 /**
@@ -54,11 +54,8 @@ const getActiveBranchesList: Controller = async (
   next: NextFunction
 ) => {
   try {
-    let { page, pageSize } = req.query as unknown as ICustomQuery
-
-    const pageNumber = page || 1
-    const limit = pageSize || 10
-    const skip = (pageNumber - 1) * limit
+    const { page = 1, pageSize = 10 } = req.query as unknown as ICustomQuery
+    const skip = (page - 1) * pageSize
 
     const totalBranchesCount = await LibraryBranch.countDocuments({ deletedAt: null })
     if (!totalBranchesCount) {
@@ -68,10 +65,11 @@ const getActiveBranchesList: Controller = async (
       )
     }
 
-    const totalPages = Math.ceil(totalBranchesCount / limit)
-    if (pageNumber > totalPages) {
+    const totalPages = Math.ceil(totalBranchesCount / pageSize)
+    if (page > totalPages) {
       throw new HttpError(messageConstant.INVALID_PAGE_NUMBER, httpStatusConstant.BAD_REQUEST)
     }
+
     const activeBranches = await LibraryBranch.find(
       { deletedAt: null },
       {
@@ -82,7 +80,7 @@ const getActiveBranchesList: Controller = async (
       }
     )
       .skip(skip)
-      .limit(limit)
+      .limit(pageSize)
 
     if (!activeBranches?.length) {
       throw new HttpError(
@@ -96,8 +94,8 @@ const getActiveBranchesList: Controller = async (
       data: {
         activeBranches,
         pagination: {
-          page: pageNumber,
-          pageSize: limit,
+          page: page,
+          pageSize: pageSize,
           totalPages
         }
       },
@@ -114,7 +112,7 @@ const getActiveBranchesList: Controller = async (
 const updateBranchDetails: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { branchID } = req.params
-    const { name, address, phoneNumber } = req.body || {}
+    const { name, address, phoneNumber } = req.body
 
     const branch = await LibraryBranch.findOne({ branchID })
     if (!branch) {

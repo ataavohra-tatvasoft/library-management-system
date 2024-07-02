@@ -99,6 +99,13 @@ export const messageConstant = {
   INVALID_CARD_CREDENTIALS: 'Invalid card credentials',
   ERROR_UPDATING_DUE_CHARGES_IN_USER: 'Error while updating due charges in user',
   MINIMUM_CHARGE_INVALID: 'Minimum charge amount is ₹0.50.',
+  PAYMENT_PROCESSING: 'Payment is under processing, please wait for its completion',
+  INVALID_PAYMENT_METHOD: 'The payment method was declined or is otherwise not valid',
+  PAYMENT_NEEDS_CONFIRMATION: 'The payment intent needs to be confirmed',
+  REQUIRES_ADDITIONAL_ACTION: 'Additional action is required (e.g., 3D Secure authentication)',
+  PAYMENT_REQUIRES_CAPTURE: 'The payment intent has been authorized but requires capture',
+  PAYMENT_CANCELED: 'The payment intent was canceled',
+  UNKNOWN_PAYMENT_STATUS: 'Unknown payment status',
 
   // File Upload Messages
   FILE_NOT_UPLOADED: 'File not uploaded',

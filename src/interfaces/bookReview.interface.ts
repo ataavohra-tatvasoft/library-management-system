@@ -1,9 +1,9 @@
-import { ObjectId, Schema } from 'mongoose'
+import { ObjectId } from 'mongoose'
 
 export interface IBookReview {
   _id?: ObjectId
-  bookID: Schema.Types.ObjectId
-  userID: Schema.Types.ObjectId
+  bookID: ObjectId
+  userID: ObjectId
   review: string
   createdAt: Date
   deletedAt: Date

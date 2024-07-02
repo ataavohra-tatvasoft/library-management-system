@@ -194,7 +194,6 @@ const resetPassword: Controller = async (req: Request, res: Response, next: Next
       resetTokenExpiry: { $gt: Date.now() },
       deletedAt: null
     })
-
     if (!user) {
       throw new HttpError(messageConstant.INVALID_RESET_TOKEN, httpStatusConstant.NOT_FOUND)
     }
@@ -262,7 +261,6 @@ const registerNewUser: Controller = async (req: Request, res: Response, next: Ne
       city,
       state
     })
-
     if (!signupStatus) {
       throw new HttpError(messageConstant.ERROR_SIGNING_USER, httpStatusConstant.BAD_REQUEST)
     }
@@ -284,7 +282,7 @@ const updateUserProfile: Controller = async (req: Request, res: Response, next: 
     const { token } = await authUtils.validateAuthorizationHeader(req.headers)
     const verifiedToken = await authUtils.verifyAccessToken(token)
     const { password, firstname, lastname, dateOfBirth, mobileNumber, address, city, state } =
-      req.body || {}
+      req.body
 
     const hashedPassword = password ? await bcrypt.hash(password, 10) : undefined
 

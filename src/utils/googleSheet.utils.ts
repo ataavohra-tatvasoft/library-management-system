@@ -1,7 +1,7 @@
 import { OAuth2Client } from 'google-auth-library'
 import { google } from 'googleapis'
-import { envConfig } from '../config'
 import axios from 'axios'
+import { envConfig } from '../config'
 import { HttpError } from '../libs'
 import { httpStatusConstant, messageConstant } from '../constant'
 
@@ -65,7 +65,7 @@ const appendDataToSheet = async (auth: OAuth2Client, sheetID: string, values: an
   const sheets = google.sheets({ version: 'v4', auth })
   return await sheets.spreadsheets.values.append({
     spreadsheetId: sheetID,
-    range: 'Sheet1!A1', // Adjust the range as needed
+    range: 'Sheet1!A1',
     valueInputOption: 'USER_ENTERED',
     requestBody: { values }
   })

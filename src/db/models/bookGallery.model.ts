@@ -6,7 +6,7 @@ const bookGallerySchema: Schema = new Schema<IBookGallery, BookGalleryModel>(
   {
     bookID: {
       type: Schema.Types.ObjectId,
-      ref: 'books', // Reference to the Book model
+      ref: 'books',
       required: true
     },
     imagePath: {

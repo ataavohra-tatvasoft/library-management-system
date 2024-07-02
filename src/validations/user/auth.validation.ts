@@ -7,6 +7,13 @@ const login = {
   })
 }
 
+const logout = {
+  body: Joi.object().keys({
+    accessToken: Joi.string().required(),
+    refreshToken: Joi.string().required()
+  })
+}
+
 const forgotPassword = {
   body: Joi.object().keys({
     email: Joi.string().email().required()
@@ -28,15 +35,14 @@ const resetPassword = {
 const registerNewUser = {
   body: Joi.object().keys({
     email: Joi.string().email({
-      minDomainSegments: 2,
       tlds: { allow: ['com'] }
     }),
     confirmEmail: Joi.ref('email'),
     password: Joi.string()
       .min(5)
-      .required()
       // eslint-disable-next-line no-useless-escape
-      .pattern(/^(?=.*[A-Z])(?=.*[!@#$%^&*()_+\-=?{|}\[\]:\'\";,.<>\/\\|\s]).+$/),
+      .pattern(/^(?=.*[A-Z])(?=.*[!@#$%^&*()_+\-=?{|}\[\]:\'\";,.<>\/\\|\s]).+$/)
+      .required(),
     confirmPassword: Joi.ref('password'),
     firstname: Joi.string().max(8).min(3).required(),
     lastname: Joi.string().max(8).min(3).required(),
@@ -58,13 +64,13 @@ const updateUserProfile = {
       // eslint-disable-next-line no-useless-escape
       .pattern(/^(?=.*[A-Z])(?=.*[!@#$%^&*()_+\-=?{|}\[\]:\'\";,.<>\/\\|\s]).+$/),
     confirmPassword: Joi.ref('password'),
-    firstname: Joi.string().allow(''),
-    lastname: Joi.string().allow(''),
-    dateOfBirth: Joi.string().allow(null),
-    mobileNumber: Joi.string().allow(null),
-    address: Joi.string().allow(''),
-    city: Joi.string().allow(''),
-    state: Joi.string().allow('')
+    firstname: Joi.string().optional().allow(''),
+    lastname: Joi.string().optional().allow(''),
+    dateOfBirth: Joi.string().optional().allow(null),
+    mobileNumber: Joi.string().optional().allow(null),
+    address: Joi.string().optional().allow(''),
+    city: Joi.string().optional().allow(''),
+    state: Joi.string().optional().allow('')
   })
 }
 
@@ -76,6 +82,7 @@ const uploadUserProfilePhoto = {
 
 export default {
   login,
+  logout,
   forgotPassword,
   resetPassword,
   registerNewUser,

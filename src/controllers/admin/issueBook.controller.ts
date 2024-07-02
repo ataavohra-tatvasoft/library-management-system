@@ -1,9 +1,8 @@
 import { Request, Response, NextFunction } from 'express'
-import { Book, User } from '../../db/models'
+import { Book, User, BookHistory } from '../../db/models'
 import { helperFunctionsUtils, responseHandlerUtils } from '../../utils'
 import { Controller } from '../../interfaces'
 import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '../../constant'
-import { BookHistory } from '../../db/models/bookHistory.model'
 import { HttpError } from '../../libs'
 import { ICustomQuery } from '../../interfaces/query.interface'
 
@@ -12,11 +11,8 @@ import { ICustomQuery } from '../../interfaces/query.interface'
  */
 const getIssuedBooksList: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    let { page, pageSize } = req.query as unknown as ICustomQuery
-
-    const pageNumber = page || 1
-    const limit = pageSize || 10
-    const skip = (pageNumber - 1) * limit
+    const { page = 1, pageSize = 10 } = req.query as unknown as ICustomQuery
+    const skip = (page - 1) * pageSize
 
     const issuedBooksAggregationPipeline = [
       {
@@ -82,16 +78,22 @@ const getIssuedBooksList: Controller = async (req: Request, res: Response, next:
       }
     ]
 
-    const issuedBooks = await User.aggregate(issuedBooksAggregationPipeline).skip(skip).limit(limit)
+    const issuedBooks = await User.aggregate(issuedBooksAggregationPipeline)
+      .skip(skip)
+      .limit(pageSize)
     if (!issuedBooks?.length) {
       throw new HttpError(messageConstant.NO_ISSUED_BOOK_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
     const totalIssuedBooks = await User.aggregate(issuedBooksAggregationPipeline)
-    const total = totalIssuedBooks.length
-    const totalPages = Math.ceil(total / limit)
+    const total = totalIssuedBooks?.length
+    if (!total) {
+      throw new HttpError(messageConstant.NO_ISSUED_BOOK_FOUND, httpStatusConstant.NOT_FOUND)
+    }
 
-    if (pageNumber > totalPages) {
+    const totalPages = Math.ceil(total / pageSize)
+
+    if (page > totalPages) {
       throw new HttpError(messageConstant.INVALID_PAGE_NUMBER, httpStatusConstant.BAD_REQUEST)
     }
 
@@ -100,8 +102,8 @@ const getIssuedBooksList: Controller = async (req: Request, res: Response, next:
       data: {
         issuedBooks: issuedBooks,
         pagination: {
-          page: pageNumber,
-          pageSize: limit,
+          page: page,
+          pageSize: pageSize,
           totalPages
         }
       },

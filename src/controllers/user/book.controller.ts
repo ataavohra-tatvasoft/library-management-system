@@ -12,10 +12,8 @@ import { ICustomQuery } from '../../interfaces/query.interface'
  */
 const searchBooks: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { name, bookID, page, pageSize } = req.query as unknown as ICustomQuery
-    const pageNumber = page || 1
-    const limit = pageSize || 10
-    const skip = (pageNumber - 1) * limit
+    const { name, bookID, page = 1, pageSize = 10 } = req.query as unknown as ICustomQuery
+    const skip = (page - 1) * pageSize
 
     const searchQuery: { deletedAt: Date | null } & {
       $or?: { bookID?: string; name?: RegExp }[]
@@ -31,13 +29,10 @@ const searchBooks: Controller = async (req: Request, res: Response, next: NextFu
 
     const totalBooks = await Book.countDocuments({ deletedAt: null })
     if (!totalBooks) {
-      throw new HttpError(
-        messageConstant.ERROR_COUNTING_BOOKS,
-        httpStatusConstant.INTERNAL_SERVER_ERROR
-      )
+      throw new HttpError(messageConstant.BOOK_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
-    if (pageNumber > Math.ceil(totalBooks / limit)) {
+    if (page > Math.ceil(totalBooks / pageSize)) {
       throw new HttpError(messageConstant.INVALID_PAGE_NUMBER, httpStatusConstant.BAD_REQUEST)
     }
 
@@ -116,7 +111,7 @@ const searchBooks: Controller = async (req: Request, res: Response, next: NextFu
         }
       },
       { $skip: skip },
-      { $limit: limit }
+      { $limit: pageSize }
     ]
 
     const searchedBooks = await Book.aggregate(searchPipeline)
@@ -129,9 +124,9 @@ const searchBooks: Controller = async (req: Request, res: Response, next: NextFu
       data: {
         searchedBooks,
         pagination: {
-          page: pageNumber,
-          pageSize: limit,
-          totalPages: Math.ceil(totalBooks / limit)
+          page: page,
+          pageSize: pageSize,
+          totalPages: Math.ceil(totalBooks / pageSize)
         }
       }
     })
@@ -144,20 +139,15 @@ const searchBooks: Controller = async (req: Request, res: Response, next: NextFu
  */
 const getAllBookDetails: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { page, pageSize } = req.query as unknown as ICustomQuery
-    const pageNumber = page || 1
-    const limit = pageSize || 10
-    const skip = (pageNumber - 1) * limit
+    const { page = 1, pageSize = 10 } = req.query as unknown as ICustomQuery
+    const skip = (page - 1) * pageSize
 
     const totalBooks = await Book.countDocuments({ deletedAt: null })
     if (!totalBooks) {
-      throw new HttpError(
-        messageConstant.ERROR_COUNTING_BOOKS,
-        httpStatusConstant.INTERNAL_SERVER_ERROR
-      )
+      throw new HttpError(messageConstant.BOOK_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
-    if (pageNumber > Math.ceil(totalBooks / limit)) {
+    if (page > Math.ceil(totalBooks / pageSize)) {
       throw new HttpError(messageConstant.INVALID_PAGE_NUMBER, httpStatusConstant.BAD_REQUEST)
     }
 
@@ -250,7 +240,7 @@ const getAllBookDetails: Controller = async (req: Request, res: Response, next: 
       }
     ]
 
-    const books = await Book.aggregate(searchPipeline).skip(skip).limit(limit)
+    const books = await Book.aggregate(searchPipeline).skip(skip).limit(pageSize)
     if (!books.length) {
       throw new HttpError(messageConstant.BOOK_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
@@ -298,6 +288,7 @@ const addBookReview: Controller = async (req: Request, res: Response, next: Next
         httpStatusConstant.INTERNAL_SERVER_ERROR
       )
     }
+
     return responseHandlerUtils.responseHandler(res, {
       statusCode: httpStatusConstant.OK,
       message: httpErrorMessageConstant.SUCCESSFUL
@@ -365,6 +356,8 @@ const getBookIssueHistory: Controller = async (req: Request, res: Response, next
     }
 
     const formattedHistories = bookHistories.map((history) => {
+      const bookID = history.bookID.bookID
+      const bookName = history.bookID.name
       const issueDate = new Date(history.issueDate)
       const submitDate = history.submitDate ? new Date(history.submitDate) : null
       const usedDays = submitDate
@@ -373,6 +366,8 @@ const getBookIssueHistory: Controller = async (req: Request, res: Response, next
       const totalAmount = submitDate ? (usedDays || 0) * history.bookID.charges : null
 
       return {
+        bookID,
+        bookName,
         issueDate,
         submitDate,
         usedDays,
@@ -467,18 +462,16 @@ const getBookReviewsSummary: Controller = async (
   try {
     const { bookID } = req.params
     const { page = 1, pageSize = 10 } = req.query as unknown as ICustomQuery
-    const pageNumber = page
-    const limit = pageSize
-    const skip = (pageNumber - 1) * limit
+    const skip = (page - 1) * pageSize
 
     const totalReviews = await getReviewService.getReviewsCount(Number(bookID))
-    const totalPages = Math.ceil(totalReviews / limit)
+    const totalPages = Math.ceil(totalReviews / pageSize)
 
-    if (pageNumber > totalPages) {
+    if (page > totalPages) {
       throw new HttpError(messageConstant.INVALID_PAGE_NUMBER, httpStatusConstant.BAD_REQUEST)
     }
 
-    const reviews = await getReviewService.getReviews(Number(bookID), skip, limit)
+    const reviews = await getReviewService.getReviews(Number(bookID), skip, pageSize)
 
     if (!reviews?.length) {
       throw new HttpError(messageConstant.NO_REVIEWS_FOUND, httpStatusConstant.NOT_FOUND)
@@ -489,8 +482,8 @@ const getBookReviewsSummary: Controller = async (
       data: {
         reviews: reviews.bookReviews,
         pagination: {
-          page: pageNumber,
-          pageSize: limit,
+          page: page,
+          pageSize: pageSize,
           totalPages
         }
       },
@@ -506,10 +499,14 @@ const getBookReviewsSummary: Controller = async (
  */
 const getReport: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { page, pageSize, startDate, endDate, monthYear } = req.query as unknown as ICustomQuery
-    const pageNumber = page || 1
-    const limit = pageSize || 10
-    const skip = (pageNumber - 1) * limit
+    const {
+      page = 1,
+      pageSize = 10,
+      startDate,
+      endDate,
+      monthYear
+    } = req.query as unknown as ICustomQuery
+    const skip = (page - 1) * pageSize
     let start: Date | undefined
     let end: Date | undefined
 
@@ -544,9 +541,13 @@ const getReport: Controller = async (req: Request, res: Response, next: NextFunc
     }
 
     const total = await BookHistory.countDocuments(filter)
-    const totalPages = Math.ceil(total / limit)
+    if (!total) {
+      throw new HttpError(messageConstant.BOOK_HISTORY_NOT_FOUND, httpStatusConstant.NOT_FOUND)
+    }
 
-    if (pageNumber > totalPages) {
+    const totalPages = Math.ceil(total / pageSize)
+
+    if (page > totalPages) {
       throw new HttpError(messageConstant.INVALID_PAGE_NUMBER, httpStatusConstant.BAD_REQUEST)
     }
 
@@ -556,7 +557,7 @@ const getReport: Controller = async (req: Request, res: Response, next: NextFunc
         select: 'email firstname lastname paidAmount dueCharges name author charges description'
       })
       .skip(skip)
-      .limit(limit)
+      .limit(pageSize)
 
     if (!userReport) {
       throw new HttpError(messageConstant.BOOK_HISTORY_NOT_FOUND, httpStatusConstant.NOT_FOUND)
@@ -590,8 +591,8 @@ const getReport: Controller = async (req: Request, res: Response, next: NextFunc
           bookSubmitDate
         })),
         pagination: {
-          page: pageNumber,
-          pageSize: limit,
+          page: page,
+          pageSize: pageSize,
           totalPages
         }
       },

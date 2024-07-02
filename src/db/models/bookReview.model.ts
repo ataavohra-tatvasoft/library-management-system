@@ -1,5 +1,5 @@
 import { Model, model, Schema } from 'mongoose'
-import { IBookReview } from '../../interfaces' // Assuming you have a User model
+import { IBookReview } from '../../interfaces'
 
 type BookReviewModel = Model<IBookReview>
 
@@ -18,7 +18,7 @@ const bookReviewSchema: Schema = new Schema<IBookReview, BookReviewModel>(
     review: {
       type: String,
       required: true,
-      maxlength: 500 // Set maximum review length
+      maxlength: 500
     },
     createdAt: {
       type: Date,

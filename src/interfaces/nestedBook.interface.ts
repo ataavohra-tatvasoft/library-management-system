@@ -1,6 +1,6 @@
-import { Schema } from 'mongoose'
+import { ObjectId } from 'mongoose'
 
 export interface INestedBook {
-  bookId: Schema.Types.ObjectId
+  bookId: ObjectId
   issueDate: Date
 }

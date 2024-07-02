@@ -20,6 +20,7 @@ router.post(
 )
 router.get(
   '/payment-card-list',
+  celebrate(userPaymentSchema.paymentCardsList),
   userAuthMiddleware.authMiddleware,
   userPaymentController.paymentCardsList
 )

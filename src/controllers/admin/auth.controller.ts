@@ -193,7 +193,6 @@ const resetPassword: Controller = async (req: Request, res: Response, next: Next
       resetTokenExpiry: { $gt: Date.now() },
       deletedAt: null
     })
-
     if (!admin) {
       throw new HttpError(messageConstant.INVALID_RESET_TOKEN, httpStatusConstant.NOT_FOUND)
     }
@@ -234,15 +233,15 @@ const updateAdminProfile: Controller = async (req: Request, res: Response, next:
     const verifiedToken = await authUtils.verifyAccessToken(token)
 
     const { password, firstname, lastname, dateOfBirth, mobileNumber, address, city, state } =
-      req.body || {}
+      req.body
     const hashedPassword = password ? await bcrypt.hash(password, 10) : undefined
 
     const updatedAdminData = {
       ...(hashedPassword && { password: hashedPassword }),
       ...(firstname && { firstname }),
       ...(lastname && { lastname }),
-      ...(dateOfBirth && { dateOfBirth: new Date(dateOfBirth) }), // Assuming dateOfBirth is a string
-      ...(mobileNumber && { mobileNumber: BigInt(mobileNumber) }), // Assuming mobileNumber is a bigint
+      ...(dateOfBirth && { dateOfBirth: new Date(dateOfBirth) }),
+      ...(mobileNumber && { mobileNumber: BigInt(mobileNumber) }),
       ...(address && { address }),
       ...(city && { city }),
       ...(state && { state })
@@ -253,7 +252,6 @@ const updateAdminProfile: Controller = async (req: Request, res: Response, next:
       updatedAdminData,
       { new: true }
     )
-
     if (!updatedProfile) {
       throw new HttpError(
         messageConstant.ERROR_UPDATING_PROFILE,

@@ -11,7 +11,7 @@ const issueBookToUser = {
   body: Joi.object().keys({
     bookID: Joi.string().required().min(13).max(13).trim().required(),
     email: Joi.string().email().required(),
-    issueDate: Joi.string().required().isoDate()
+    issueDate: Joi.string().isoDate().required()
   })
 }
 

@@ -8,7 +8,7 @@ const router: Router = express.Router()
 
 router.post('/login', celebrate(adminAuthSchema.login), adminAuthController.login)
 router.get('/get-access-token', adminAuthController.generateNewAccessToken)
-router.post('/logout', adminAuthController.logout)
+router.post('/logout', celebrate(adminAuthSchema.logout), adminAuthController.logout)
 router.post(
   '/forgot-password',
   celebrate(adminAuthSchema.forgotPassword),

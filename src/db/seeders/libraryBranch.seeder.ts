@@ -1,6 +1,6 @@
 import { helperFunctionsUtils, loggerUtils } from '../../utils'
 import { ILibraryBranch } from '../../interfaces'
-import { LibraryBranch } from '../models/libraryBranch.model'
+import { LibraryBranch } from '../models'
 
 export const seedLibraryBranches = async () => {
   await LibraryBranch.deleteMany({})

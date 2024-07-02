@@ -5,10 +5,9 @@ import { seedBooks } from './book.seeder'
 import { seedBookGalleries } from './bookGallery.seeder'
 import { seedBookRatings } from './bookRating.seeder'
 import { seedBookReviews } from './bookReview.seeder'
-import { loggerUtils } from '../../utils'
-import { BookHistory } from '../models'
-import { PaymentCard } from '../models/paymentCard.model'
 import { seedLibraryBranches } from './libraryBranch.seeder'
+import { BookHistory, PaymentCard } from '../models'
+import { loggerUtils } from '../../utils'
 
 const seedData = async () => {
   try {

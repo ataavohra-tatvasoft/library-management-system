@@ -1,7 +1,7 @@
 import { ObjectId } from 'mongoose'
 
 export interface ILibraryBranch {
-  _id?: ObjectId
+  _id: ObjectId
   branchID: string
   name: string
   address: string

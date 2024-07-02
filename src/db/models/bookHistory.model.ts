@@ -6,12 +6,12 @@ const bookHistorySchema: Schema = new Schema<IBookHistory, BookHistoryModel>(
   {
     bookID: {
       type: Schema.Types.ObjectId,
-      ref: 'books', // Reference to the Book model
+      ref: 'books',
       required: true
     },
     userID: {
       type: Schema.Types.ObjectId,
-      ref: 'users', // Reference to the Book model
+      ref: 'users',
       required: true
     },
     issueDate: {

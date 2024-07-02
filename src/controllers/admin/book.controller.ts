@@ -1,13 +1,17 @@
 import { Request, Response, NextFunction } from 'express'
-import { Book, BookGallery } from '../../db/models'
+import { ObjectId } from 'mongodb'
+import { Book, BookGallery, LibraryBranch } from '../../db/models'
 import { Controller } from '../../interfaces'
 import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '../../constant'
-import { databaseUtils, googleSheetUtils, responseHandlerUtils } from '../../utils'
+import {
+  databaseUtils,
+  googleSheetUtils,
+  multerConfigUtils,
+  responseHandlerUtils
+} from '../../utils'
 import { getRatingService, getReviewService } from '../../services/book'
 import { dbConfig } from '../../config'
 import { HttpError } from '../../libs'
-import { LibraryBranch } from '../../db/models/libraryBranch.model'
-import { ObjectId } from 'mongodb'
 import { ICustomQuery } from '../../interfaces/query.interface'
 
 /**
@@ -45,10 +49,9 @@ const addBook: Controller = async (req: Request, res: Response, next: NextFuncti
       ...(subscriptionDays && { subscriptionDays: Number(subscriptionDays) }),
       quantityAvailable: Number(quantityAvailable),
       charges: Number(charges),
-      description,
+      ...(description && { description: description }),
       branchID: branchExists._id
     })
-
     if (!newBook) {
       throw new HttpError(messageConstant.ERROR_CREATING_BOOK, httpStatusConstant.BAD_REQUEST)
     }
@@ -67,16 +70,17 @@ const addBook: Controller = async (req: Request, res: Response, next: NextFuncti
  */
 const listBooks: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    let { page, pageSize } = req.query as unknown as ICustomQuery
-
-    const pageNumber = page || 1
-    const limit = pageSize || 10
-    const skip = (pageNumber - 1) * limit
+    let { page = 1, pageSize = 10 } = req.query as unknown as ICustomQuery
+    const skip = (page - 1) * pageSize
 
     const totalBooksCount = await Book.countDocuments({ deletedAt: null })
-    const totalPages = Math.ceil(totalBooksCount / limit)
+    if (!totalBooksCount) {
+      throw new HttpError(messageConstant.NO_BOOKS_FOUND, httpStatusConstant.NOT_FOUND)
+    }
 
-    if (pageNumber > totalPages) {
+    const totalPages = Math.ceil(totalBooksCount / pageSize)
+
+    if (page > totalPages) {
       throw new HttpError(messageConstant.INVALID_PAGE_NUMBER, httpStatusConstant.BAD_REQUEST)
     }
 
@@ -94,7 +98,7 @@ const listBooks: Controller = async (req: Request, res: Response, next: NextFunc
     )
       .populate({ path: 'branchID', select: 'name address' })
       .skip(skip)
-      .limit(limit)
+      .limit(pageSize)
 
     if (!books?.length) {
       throw new HttpError(messageConstant.NO_BOOKS_FOUND, httpStatusConstant.NOT_FOUND)
@@ -105,8 +109,8 @@ const listBooks: Controller = async (req: Request, res: Response, next: NextFunc
       data: {
         books,
         pagination: {
-          page: pageNumber,
-          pageSize: limit,
+          page: page,
+          pageSize: pageSize,
           totalPages
         }
       },
@@ -132,7 +136,7 @@ const updateBook: Controller = async (req: Request, res: Response, next: NextFun
       numberOfFreeDays,
       description,
       branchName
-    } = req.body || {}
+    } = req.body
 
     const branchExists = await LibraryBranch.findOne({ name: branchName, deletedAt: null })
     if (!branchExists) {
@@ -140,7 +144,6 @@ const updateBook: Controller = async (req: Request, res: Response, next: NextFun
     }
 
     const existingBook = await Book.findOne({ bookID })
-
     if (!existingBook) {
       throw new HttpError(messageConstant.BOOK_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
@@ -157,7 +160,6 @@ const updateBook: Controller = async (req: Request, res: Response, next: NextFun
     }
 
     const updatedBook = await Book.findOneAndUpdate({ bookID }, updatedBookData, { new: true })
-
     if (!updatedBook) {
       throw new HttpError(
         messageConstant.ERROR_UPDATING_BOOK,
@@ -247,6 +249,8 @@ const uploadBookPhoto: Controller = async (req: Request, res: Response, next: Ne
       throw new HttpError(messageConstant.FILE_NOT_UPLOADED, httpStatusConstant.BAD_REQUEST)
     }
 
+    multerConfigUtils.upload.single('bookPhoto')
+
     const newFileName = req.file.filename
 
     const uploadedPhoto = await BookGallery.create({
@@ -287,6 +291,8 @@ const uploadBookCoverPhoto: Controller = async (
     if (!req.file) {
       throw new HttpError(messageConstant.FILE_NOT_UPLOADED, httpStatusConstant.BAD_REQUEST)
     }
+
+    multerConfigUtils.upload.single('bookCoverPhoto')
 
     const existingCoverPhoto = await BookGallery.findOne({
       bookID: bookExists._id,
@@ -336,7 +342,6 @@ const getRatingsSummary: Controller = async (req: Request, res: Response, next: 
     const { bookID } = req.params
 
     const ratingsSummary = await getRatingService.getRatings(Number(bookID))
-
     if (!ratingsSummary) {
       throw new HttpError(messageConstant.NO_RATINGS_FOUND, httpStatusConstant.NOT_FOUND)
     }
@@ -359,7 +364,6 @@ const getReviewsSummary: Controller = async (req: Request, res: Response, next: 
     const { page = 1, pageSize = 10 } = req.query as unknown as ICustomQuery
 
     const reviewsSummary = await getReviewService.getReviews(Number(bookID), page, pageSize)
-
     if (!reviewsSummary) {
       throw new HttpError(messageConstant.NO_REVIEWS_FOUND, httpStatusConstant.NOT_FOUND)
     }
@@ -384,7 +388,7 @@ const importBookSpreadSheet: Controller = async (
   try {
     const { sheetID } = req.params
 
-    const data = await googleSheetUtils.fetchSheetData(String(sheetID), String('Sheet1!A2:Z'))
+    const data = await googleSheetUtils.fetchSheetData(sheetID, String('Sheet1!A2:Z'))
     if (!data) {
       throw new HttpError(messageConstant.NO_DATA_FOUND, httpStatusConstant.NOT_FOUND)
     }
@@ -506,7 +510,6 @@ const exportDataToSpreadsheet: Controller = async (
     ]
 
     const exportStatus = await googleSheetUtils.appendDataToSheet(auth, sheetID, values)
-
     if (!exportStatus) {
       throw new HttpError(
         messageConstant.ERROR_EXPORTING_DATA,

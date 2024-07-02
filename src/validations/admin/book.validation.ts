@@ -9,11 +9,11 @@ const addBook = {
     charges: Joi.string().required().min(0).trim(),
     subscriptionDays: Joi.string().optional().trim(),
     quantityAvailable: Joi.string().required().trim(),
-    description: Joi.string().allow(null, '')
+    description: Joi.string().optional().allow(null, '')
   })
 }
 
-const bookList = {
+const listBooks = {
   query: Joi.object().keys({
     page: Joi.number().integer().min(1).optional().default(1),
     pageSize: Joi.number().integer().min(1).optional().default(10)
@@ -25,14 +25,14 @@ const updateBook = {
     bookID: Joi.string().required().length(13)
   },
   body: Joi.object().keys({
-    name: Joi.string().optional().allow(''),
-    author: Joi.string().optional().allow(''),
+    name: Joi.string().optional().trim().allow(''),
+    author: Joi.string().optional().trim().allow(''),
     charges: Joi.number().positive().optional().allow(null),
     quantityAvailable: Joi.string().min(0).optional().allow(null),
-    subscriptionDays: Joi.string().optional().trim(),
+    subscriptionDays: Joi.string().optional().trim().allow(null),
     numberOfFreeDays: Joi.string().min(0).optional().allow(null),
     description: Joi.string().optional().allow(''),
-    branchName: Joi.string().required().trim()
+    branchName: Joi.string().optional().trim().allow('')
   })
 }
 
@@ -66,7 +66,7 @@ const importExportBookSpreadSheet = {
 
 export default {
   addBook,
-  bookList,
+  listBooks,
   updateBook,
   deleteBook,
   getRatingsSummary,

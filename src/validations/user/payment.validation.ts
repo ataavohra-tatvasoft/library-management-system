@@ -14,6 +14,13 @@ const addPaymentCard = {
   })
 }
 
+const paymentCardsList = {
+  query: Joi.object().keys({
+    page: Joi.number().integer().min(1).optional().default(1),
+    pageSize: Joi.number().integer().min(1).optional().default(10)
+  })
+}
+
 const payCharges = {
   body: Joi.object().keys({
     amount: Joi.number().required().min(1),
@@ -27,5 +34,6 @@ const payCharges = {
 
 export default {
   addPaymentCard,
+  paymentCardsList,
   payCharges
 }

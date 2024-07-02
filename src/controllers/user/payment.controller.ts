@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
 import bcrypt from 'bcrypt'
 import Stripe from 'stripe'
-import { User } from '../../db/models'
+import { User, PaymentCard } from '../../db/models'
 import { httpErrorMessageConstant, httpStatusConstant, messageConstant } from '../../constant'
 import { Controller } from '../../interfaces'
 import {
@@ -12,7 +12,6 @@ import {
   sendMailUtils
 } from '../../utils'
 import { envConfig } from '../../config'
-import { PaymentCard } from '../../db/models/paymentCard.model'
 import { HttpError } from '../../libs'
 import { ICustomQuery } from '../../interfaces/query.interface'
 
@@ -103,6 +102,14 @@ const addPaymentCard: Controller = async (req: Request, res: Response, next: Nex
       )
     }
 
+    const updateUser = await User.updateOne(
+      { email: user?.email },
+      { $set: { stripeCustomerID: customer.id } }
+    )
+    if (!updateUser) {
+      throw new HttpError(messageConstant.ERROR_UPDATING_USER, httpStatusConstant.NOT_FOUND)
+    }
+
     const paymentMethod = await paymentUtils.createStripePaymentMethod(customer, {
       token
     })
@@ -142,14 +149,6 @@ const addPaymentCard: Controller = async (req: Request, res: Response, next: Nex
       )
     }
 
-    const updateUser = await User.updateOne(
-      { email: user?.email },
-      { $set: { stripeCustomerID: customer.id } }
-    )
-    if (!updateUser) {
-      throw new HttpError(messageConstant.ERROR_UPDATING_USER, httpStatusConstant.NOT_FOUND)
-    }
-
     return responseHandlerUtils.responseHandler(res, {
       statusCode: httpStatusConstant.CREATED,
       message: messageConstant.PAYMENT_CARD_ADDED_SUCCESSFULLY
@@ -164,23 +163,25 @@ const addPaymentCard: Controller = async (req: Request, res: Response, next: Nex
  */
 const paymentCardsList: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    let { page, pageSize } = req.query as unknown as ICustomQuery
+    const { page = 1, pageSize = 10 } = req.query as unknown as ICustomQuery
     const { token } = await authUtils.validateAuthorizationHeader(req.headers)
     const verifiedToken = await authUtils.verifyAccessToken(token)
-    const pageNumber = page || 1
-    const limit = pageSize || 10
-    const skip = (pageNumber - 1) * limit
+    const skip = (page - 1) * pageSize
 
     const totalBooksCount = await PaymentCard.countDocuments({ deletedAt: null })
-    const totalPages = Math.ceil(totalBooksCount / limit)
+    if (!totalBooksCount) {
+      throw new HttpError(messageConstant.NO_PAYMENT_CARDS_FOUND, httpStatusConstant.NOT_FOUND)
+    }
 
-    if (pageNumber > totalPages) {
+    const totalPages = Math.ceil(totalBooksCount / pageSize)
+
+    if (page > totalPages) {
       throw new HttpError(messageConstant.INVALID_PAGE_NUMBER, httpStatusConstant.BAD_REQUEST)
     }
 
     const paymentCardLists = await PaymentCard.find({ userID: verifiedToken?._id, deletedAt: null })
       .skip(skip)
-      .limit(limit)
+      .limit(pageSize)
     if (!paymentCardLists?.length) {
       throw new HttpError(messageConstant.NO_PAYMENT_CARDS_FOUND, httpStatusConstant.NOT_FOUND)
     }
@@ -252,20 +253,59 @@ const payCharges: Controller = async (req: Request, res: Response, next: NextFun
       // eslint-disable-next-line camelcase
       payment_method: String(paymentCard.paymentMethodID)
     })
-    if (confirmResult.status === 'succeeded') {
-      const updatedDueCharges: number = Number(user?.dueCharges) - Number(amount)
-      await User.updateOne(
-        { _id: user?._id },
-        { $set: { dueCharges: updatedDueCharges, paidAmount: Number(amount) } }
-      )
+    switch (confirmResult.status) {
+      case 'succeeded': {
+        const updatedDueCharges = Number(user?.dueCharges) - Number(amount)
+        await User.updateOne(
+          { _id: user?._id },
+          { $set: { dueCharges: updatedDueCharges, paidAmount: Number(amount) } }
+        )
 
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.OK,
-        message: messageConstant.PAYMENT_SUCCESSFUL
-      })
-    } else {
-      console.error('Payment failed:', confirmResult)
-      throw new HttpError(messageConstant.PAYMENT_FAILED, httpStatusConstant.BAD_REQUEST)
+        return responseHandlerUtils.responseHandler(res, {
+          statusCode: httpStatusConstant.OK,
+          message: messageConstant.PAYMENT_SUCCESSFUL
+        })
+      }
+
+      case 'processing': {
+        return responseHandlerUtils.responseHandler(res, {
+          statusCode: httpStatusConstant.OK,
+          message: messageConstant.PAYMENT_PROCESSING
+        })
+      }
+
+      case 'requires_payment_method': {
+        throw new HttpError(messageConstant.INVALID_PAYMENT_METHOD, httpStatusConstant.BAD_REQUEST)
+      }
+
+      case 'requires_confirmation': {
+        throw new HttpError(
+          messageConstant.PAYMENT_NEEDS_CONFIRMATION,
+          httpStatusConstant.BAD_REQUEST
+        )
+      }
+
+      case 'requires_action': {
+        return responseHandlerUtils.responseHandler(res, {
+          statusCode: httpStatusConstant.OK,
+          message: messageConstant.REQUIRES_ADDITIONAL_ACTION
+        })
+      }
+
+      case 'requires_capture': {
+        return responseHandlerUtils.responseHandler(res, {
+          statusCode: httpStatusConstant.OK,
+          message: messageConstant.PAYMENT_REQUIRES_CAPTURE
+        })
+      }
+
+      case 'canceled': {
+        throw new HttpError(messageConstant.PAYMENT_CANCELED, httpStatusConstant.BAD_REQUEST)
+      }
+
+      default: {
+        throw new HttpError(messageConstant.UNKNOWN_PAYMENT_STATUS, httpStatusConstant.BAD_REQUEST)
+      }
     }
   } catch (error) {
     return next(error)

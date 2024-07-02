@@ -1,5 +1,5 @@
 import { Model, model, Schema } from 'mongoose'
-import { IPaymentCard } from '../../interfaces' // Assuming you have a User model
+import { IPaymentCard } from '../../interfaces'
 
 type PaymentCardModel = Model<IPaymentCard>
 
