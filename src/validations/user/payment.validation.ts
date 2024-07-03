@@ -1,5 +1,17 @@
 import { Joi } from 'celebrate'
 
+const addCardHolder = {
+  params: Joi.object().keys({
+    email: Joi.string().email().required()
+  })
+}
+
+const addIssueCard = {
+  params: Joi.object().keys({
+    email: Joi.string().email().required()
+  })
+}
+
 const addPaymentCard = {
   params: Joi.object().keys({
     email: Joi.string().email().required()
@@ -33,6 +45,8 @@ const payCharges = {
 }
 
 export default {
+  addCardHolder,
+  addIssueCard,
   addPaymentCard,
   paymentCardsList,
   payCharges

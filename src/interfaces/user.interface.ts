@@ -20,6 +20,7 @@ export interface IUser {
   resetToken: string
   resetTokenExpiry: BigInt
   stripeCustomerID: string
+  cardHolderId: string
   deletedAt: Date
   books: INestedBook[]
 }

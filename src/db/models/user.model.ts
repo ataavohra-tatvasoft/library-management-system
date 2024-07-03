@@ -61,6 +61,10 @@ const userSchema: Schema = new Schema<IUser, UserModel>(
       type: String,
       allownull: true
     },
+    cardHolderId: {
+      type: String,
+      allownull: true
+    },
     deletedAt: {
       type: Date,
       allownull: true,

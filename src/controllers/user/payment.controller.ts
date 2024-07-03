@@ -15,6 +15,135 @@ import { envConfig } from '../../config'
 import { HttpError } from '../../libs'
 import { ICustomQuery } from '../../interfaces/query.interface'
 
+const STRIPE = new Stripe(String(envConfig.stripeApiKey))
+
+/**
+ * @description Adds a cardholder for the user
+ */
+const addCardHolder = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { email } = req.params
+
+    const user = await User.findOne({ email })
+    if (!user) {
+      throw new HttpError(messageConstant.USER_NOT_FOUND, httpStatusConstant.NOT_FOUND)
+    }
+
+    if (user.cardHolderId) {
+      throw new HttpError(
+        messageConstant.CARD_HOLDER_ALREADY_EXISTS,
+        httpStatusConstant.BAD_REQUEST
+      )
+    }
+
+    const cardholder = await STRIPE.issuing.cardholders.create({
+      name: `${user.firstname} ${user.lastname}`,
+      email: user.email,
+      // eslint-disable-next-line camelcase
+      phone_number: String(user.mobileNumber),
+      status: 'active',
+      type: 'individual',
+      individual: {
+        // eslint-disable-next-line camelcase
+        first_name: user.firstname,
+        // eslint-disable-next-line camelcase
+        last_name: user.lastname,
+        dob: { day: 1, month: 11, year: 2003 }
+      },
+      billing: {
+        address: {
+          line1: '123 Main Street',
+          city: 'San Francisco',
+          state: 'CA',
+          // eslint-disable-next-line camelcase
+          postal_code: 'EC1Y 8SY',
+          country: 'GB'
+        }
+      }
+    })
+
+    if (!cardholder) {
+      throw new HttpError(messageConstant.CARD_HOLDER_FAILED, httpStatusConstant.BAD_REQUEST)
+    }
+
+    await User.updateOne({ email }, { $set: { cardHolderId: cardholder.id } })
+
+    return responseHandlerUtils.responseHandler(res, {
+      statusCode: httpStatusConstant.OK,
+      message: messageConstant.CARD_HOLDER_SAVED,
+      data: cardholder
+    })
+  } catch (error) {
+    return next(error)
+  }
+}
+
+/**
+ * @description Adds a card for the user
+ */
+const addIssueCard = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { email } = req.params
+
+    const user = await User.findOne({ email })
+    if (!user) {
+      throw new HttpError(messageConstant.USER_NOT_FOUND, httpStatusConstant.NOT_FOUND)
+    }
+
+    const card = await STRIPE.issuing.cards.create({
+      cardholder: user.cardHolderId,
+      currency: 'usd',
+      type: 'virtual'
+    })
+
+    const cardActivated = await STRIPE.issuing.cards.update(card.id, { status: 'active' })
+
+    //Error is encountered from below code
+    const paymentMethod = await STRIPE.paymentMethods.create({
+      type: 'card',
+      card: { token: cardActivated.id },
+      // eslint-disable-next-line camelcase
+      billing_details: { email: user.email }
+    })
+
+    if (!paymentMethod) {
+      throw new HttpError(
+        messageConstant.ERROR_CREATING_PAYMENT_METHOD,
+        httpStatusConstant.INTERNAL_SERVER_ERROR
+      )
+    }
+
+    const cardLastFour = cardActivated.last4
+    const hashedLastFourDigits = await bcrypt.hash(cardLastFour, Number(envConfig.saltRounds))
+
+    const newPaymentCard = await PaymentCard.create({
+      userID: user._id,
+      cardID: card.id,
+      paymentMethodID: paymentMethod.id,
+      cardBrand: card.brand,
+      expirationMonth: card.exp_month,
+      expirationYear: card.exp_year,
+      cardLastFour: hashedLastFourDigits,
+      isDefault: true
+    })
+
+    if (!newPaymentCard) {
+      throw new HttpError(
+        messageConstant.ERROR_WHILE_ADDING_PAYMENT_CARD,
+        httpStatusConstant.BAD_REQUEST
+      )
+    }
+
+    return responseHandlerUtils.responseHandler(res, {
+      statusCode: httpStatusConstant.OK,
+      message: messageConstant.CARD_SAVED,
+      data: cardActivated
+    })
+  } catch (error) {
+    return next(error)
+  }
+}
+
 /**
  * @description get link for adding payment card
  */
@@ -76,7 +205,7 @@ const addPaymentCardPage: Controller = async (req: Request, res: Response, next:
 /**
  * @description Adds payment card for user
  */
-const addPaymentCard: Controller = async (req: Request, res: Response, next: NextFunction) => {
+const addPaymentCard = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email } = req.params
     const { cardID, cardBrand, expirationMonth, expirationYear, cardLastFour, token } = req.body
@@ -92,6 +221,19 @@ const addPaymentCard: Controller = async (req: Request, res: Response, next: Nex
     const user = await User.findOne({ email })
     if (!user) {
       throw new HttpError(messageConstant.USER_NOT_FOUND, httpStatusConstant.BAD_REQUEST)
+    }
+
+    const hashedLastFourDigits = await bcrypt.hash(cardLastFour, Number(envConfig.saltRounds))
+    const paymentCardExists = await PaymentCard.findOne({
+      userID: user._id,
+      cardID,
+      cardBrand,
+      expirationMonth,
+      expirationYear
+    })
+
+    if (paymentCardExists) {
+      throw new HttpError(messageConstant.CARD_ALREADY_EXISTS, httpStatusConstant.BAD_REQUEST)
     }
 
     const customer = await paymentUtils.createStripeCustomer(user)
@@ -117,23 +259,8 @@ const addPaymentCard: Controller = async (req: Request, res: Response, next: Nex
       throw new HttpError(messageConstant.INVALID_CARD_CREDENTIALS, httpStatusConstant.BAD_REQUEST)
     }
 
-    const hashedLastFourDigits = await bcrypt.hash(cardLastFour, Number(envConfig.saltRounds))
-
-    const paymentCardExists = await PaymentCard.findOne({
-      userID: user?._id,
-      cardID,
-      paymentMethodID: paymentMethod.id,
-      cardBrand,
-      expirationMonth,
-      expirationYear,
-      cardLastFour: hashedLastFourDigits
-    })
-    if (paymentCardExists) {
-      isDefault = false
-    }
-
     const newPaymentCard = await PaymentCard.create({
-      userID: user?._id,
+      userID: user._id,
       cardID,
       paymentMethodID: paymentMethod.id,
       cardBrand,
@@ -207,7 +334,6 @@ const payCharges: Controller = async (req: Request, res: Response, next: NextFun
     const verifiedToken = await authUtils.verifyAccessToken(token)
 
     const { amount, cardID, cardBrand, expirationMonth, expirationYear, cardLastFour } = req.body
-    const stripe = new Stripe(String(envConfig.stripeApiKey))
 
     if (!amount || !cardID || !cardBrand || !expirationMonth || !expirationYear || !cardLastFour) {
       throw new HttpError(
@@ -237,7 +363,7 @@ const payCharges: Controller = async (req: Request, res: Response, next: NextFun
       throw new HttpError(messageConstant.INVALID_CARD_CREDENTIALS, httpStatusConstant.UNAUTHORIZED)
     }
 
-    const paymentIntent = await stripe.paymentIntents.create({
+    const paymentIntent = await STRIPE.paymentIntents.create({
       amount: Number(amount) * 100,
       currency: 'inr',
       // eslint-disable-next-line camelcase
@@ -249,7 +375,7 @@ const payCharges: Controller = async (req: Request, res: Response, next: NextFun
       customer: user?.stripeCustomerID
     })
 
-    const confirmResult = await stripe.paymentIntents.confirm(paymentIntent.id, {
+    const confirmResult = await STRIPE.paymentIntents.confirm(paymentIntent.id, {
       // eslint-disable-next-line camelcase
       payment_method: String(paymentCard.paymentMethodID)
     })
@@ -313,6 +439,8 @@ const payCharges: Controller = async (req: Request, res: Response, next: NextFun
 }
 
 export default {
+  addIssueCard,
+  addCardHolder,
   addPaymentCard,
   addPaymentCardPage,
   paymentCardsList,

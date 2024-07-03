@@ -1,4 +1,5 @@
 import { Response } from 'express'
+import Stripe from 'stripe'
 import { CelebrateError, isCelebrateError } from 'celebrate'
 import { loggerUtils } from '../utils'
 import { httpErrorMessageConstant, httpStatusConstant } from '../constant'
@@ -19,6 +20,16 @@ async function responseHandler(res: Response, options: ResponseHandlerOptions) {
       code: statusCode,
       message
     }
+
+    if (error instanceof Stripe.errors.StripeError) {
+      const sError = error.raw as any
+      const stripeError = sError.message
+
+      formattedResponse.message = httpErrorMessageConstant.STRIPE_ERROR
+      formattedResponse.error = stripeError
+      console.log('Stripe Error: ', formattedResponse.error)
+    }
+
     if (isCelebrateError(error)) {
       const celebrateError = error as CelebrateError
       const errorDetails: CelebrateErrorDetails[] = []
@@ -35,6 +46,7 @@ async function responseHandler(res: Response, options: ResponseHandlerOptions) {
       if (data !== null && data !== undefined) {
         formattedResponse.data = data
       }
+
       if (error !== null && error !== undefined && typeof error == 'object') {
         formattedResponse.error = {
           errorMessage: error.message,

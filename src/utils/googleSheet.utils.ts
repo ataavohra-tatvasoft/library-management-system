@@ -39,7 +39,7 @@ const authorize = async (): Promise<OAuth2Client> => {
   } else {
     const authorizationUrl = oAuth2Client.generateAuthUrl({
       // eslint-disable-next-line camelcase
-      access_type: 'offline', // Request a refresh token
+      access_type: 'offline',
       scope: responseTokens.data.scope
     })
 
@@ -61,13 +61,46 @@ const fetchSheetData = async (spreadsheetId: string, range: string): Promise<any
   return response.data.values
 }
 
-const appendDataToSheet = async (auth: OAuth2Client, sheetID: string, values: any[][]) => {
+const getSheetName = async (spreadsheetId: string, sheetname: string): Promise<string> => {
+  const auth = await authorize()
   const sheets = google.sheets({ version: 'v4', auth })
-  return await sheets.spreadsheets.values.append({
+
+  const response = await sheets.spreadsheets.get({
+    spreadsheetId
+  })
+
+  if (response.data.properties?.title != sheetname) {
+    throw new HttpError(messageConstant.INVALID_SHEET_NAME, httpStatusConstant.BAD_REQUEST)
+  }
+
+  if (!response.data.sheets || response.data.sheets.length === 0) {
+    throw new HttpError(messageConstant.SHEET_NOT_FOUND, httpStatusConstant.NOT_FOUND)
+  }
+  return response.data.sheets[0].properties?.title || 'sample'
+}
+
+const appendDataToSheet = async (
+  auth: OAuth2Client,
+  sheetID: string,
+  range: string,
+  values: any[][]
+) => {
+  const sheets = google.sheets({ version: 'v4', auth })
+  const response = await sheets.spreadsheets.values.append({
     spreadsheetId: sheetID,
-    range: 'Sheet1!A1',
+    range,
     valueInputOption: 'USER_ENTERED',
     requestBody: { values }
+  })
+
+  return response.status === 200
+}
+
+const clearSheet = async (auth: OAuth2Client, sheetID: string, sheetName: string) => {
+  const sheets = google.sheets({ version: 'v4', auth })
+  await sheets.spreadsheets.values.clear({
+    spreadsheetId: sheetID,
+    range: `${sheetName}!A:Z`
   })
 }
 
@@ -103,6 +136,8 @@ const updateColumnWidths = async (
 export default {
   authorize,
   fetchSheetData,
+  getSheetName,
   appendDataToSheet,
+  clearSheet,
   updateColumnWidths
 }

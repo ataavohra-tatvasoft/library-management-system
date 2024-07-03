@@ -8,10 +8,10 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "build": "npx tsc",
-    "dev": "npx tsx index.ts",
-    "dev:watch": "nodemon --watch src --ext ts,json --exec \"npm run dev\"",
-    "seed": "npx tsx src/db/seeders/index.seeder.ts"
+    "build": "tsc",
+    "dev": "tsx index.ts",
+    "dev:watch": "nodemon --watch src --ext ts,js,json --exec \"npm run dev\"",
+    "seed": "tsx src/db/seeders/index.seeder.ts"
   },
   "author": "",
   "license": "ISC",

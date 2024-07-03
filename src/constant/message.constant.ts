@@ -12,6 +12,8 @@ export const messageConstant = {
   DATA_EXPORTED_SUCCESSFULLY: 'Data exported successfully',
   ERROR_EXPORTING_DATA: 'Error while exporting data',
   ERROR_FETCHING_TOKEN: 'Error fetching tokens',
+  SHEET_NOT_FOUND: 'Sheet not found',
+  INVALID_SHEET_NAME: 'Sheet not found with this name',
 
   // Application Messages
   APP_STARTED: 'Application Running',
@@ -106,6 +108,12 @@ export const messageConstant = {
   PAYMENT_REQUIRES_CAPTURE: 'The payment intent has been authorized but requires capture',
   PAYMENT_CANCELED: 'The payment intent was canceled',
   UNKNOWN_PAYMENT_STATUS: 'Unknown payment status',
+  CARD_ALREADY_EXISTS: 'Payment card already exists',
+  CARD_HOLDER_ALREADY_EXISTS: 'Card holder already exists',
+  CARD_HOLDER_FAILED: 'Card holder failed',
+  CARD_HOLDER_SAVED: 'Card holder saved successfully',
+  ERROR_CREATING_PAYMENT_METHOD: 'Error creating payment method',
+  CARD_SAVED: 'Issue card saved successfully',
 
   // File Upload Messages
   FILE_NOT_UPLOADED: 'File not uploaded',

@@ -1,153 +1,145 @@
 <!doctype html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Add Payment Card</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+      }
 
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Add Payment Card</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f4f4f4;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-    }
+      .container {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        width: 400px;
+      }
 
-    .container {
-      background-color: white;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-      padding: 20px;
-      width: 400px;
-    }
+      h1 {
+        text-align: center;
+        margin-bottom: 20px;
+        color: #4caf50;
+      }
 
-    h1 {
-      text-align: center;
-      margin-bottom: 20px;
-      color: #4caf50;
-    }
+      .form-group {
+        margin-bottom: 15px;
+      }
 
-    .form-group {
-      margin-bottom: 15px;
-    }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+        color: #333;
+      }
 
-    label {
-      display: block;
-      margin-bottom: 5px;
-      font-weight: bold;
-      color: #333;
-    }
+      #card-element {
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        background-color: #fff;
+      }
 
-    #card-element {
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      background-color: #fff;
-    }
+      button {
+        width: 100%;
+        background-color: #4caf50;
+        color: white;
+        padding: 10px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+      }
 
-    button {
-      width: 100%;
-      background-color: #4caf50;
-      color: white;
-      padding: 10px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 16px;
-    }
+      button:hover {
+        background-color: #45a049;
+      }
+    </style>
+    <script src="https://js.stripe.com/v3/"></script>
+  </head>
 
-    button:hover {
-      background-color: #45a049;
-    }
-  </style>
-  <script src="https://js.stripe.com/v3/"></script>
-  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-</head>
+  <body>
+    <div class="container">
+      <h1>Add Payment Card</h1>
+      <form id="payment-form">
+        <div class="form-group">
+          <label for="card-element">Card Details</label>
+          <div id="card-element"></div>
+        </div>
+        <button type="submit">Add Card</button>
+      </form>
+    </div>
+    <script>
+      document.addEventListener('DOMContentLoaded', async () => {
+        const stripe = Stripe('<%= publicKey %>')
+        const elements = stripe.elements()
 
-<body>
-  <div class="container">
-    <h1>Add Payment Card</h1>
-    <form id="payment-form">
-      <div class="form-group">
-        <label for="card-element">Card Details</label>
-        <div id="card-element"></div>
-      </div>
-      <button type="submit">Add Card</button>
-    </form>
-  </div>
-  <script>
-    document.addEventListener('DOMContentLoaded', async () => {
-      const stripe = Stripe('<%= publicKey %>')
-      const elements = stripe.elements()
-
-      const cardElement = elements.create('card', {
-        style: {
-          base: {
-            color: '#32325d',
-            fontFamily: 'Arial, sans-serif',
-            fontSmoothing: 'antialiased',
-            fontSize: '16px',
-            '::placeholder': {
-              color: '#32325d'
+        const cardElement = elements.create('card', {
+          style: {
+            base: {
+              color: '#32325d',
+              fontFamily: 'Arial, sans-serif',
+              fontSmoothing: 'antialiased',
+              fontSize: '16px',
+              '::placeholder': {
+                color: '#32325d'
+              }
+            },
+            invalid: {
+              fontFamily: 'Arial, sans-serif',
+              color: '#fa755a',
+              iconColor: '#fa755a'
             }
-          },
-          invalid: {
-            fontFamily: 'Arial, sans-serif',
-            color: '#fa755a',
-            iconColor: '#fa755a'
           }
-        }
-      })
-
-      cardElement.mount('#card-element')
-
-      const paymentForm = document.getElementById('payment-form')
-
-      paymentForm.addEventListener('submit', async (e) => {
-        e.preventDefault()
-
-        const { token, error } = await stripe.createToken(cardElement)
-
-        if (error) {
-          alert('Error generating token: ' + error.message)
-          return
-        }
-
-        const data = {
-          cardID: String(token.card.id),
-          cardBrand: String(token.card.brand),
-          expirationMonth: Number(token.card.exp_month),
-          expirationYear: Number(token.card.exp_year),
-          cardLastFour: String(token.card.last4),
-          token: String(token.id)
-        }
-
-        // const response = await axios.post(
-        //   '<%= link %>',
-        //   data
-        // )
-
-        const response = await fetch('<%= link %>', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(data)
         })
-        const responseData = await response.json()
 
-        if (response.ok) {
-          alert('Payment card added successfully!')
-          window.location.href = 'https://ethereal.email/'
-        } else {
-          alert('Error adding payment card: ' + responseData.message)
-        }
+        cardElement.mount('#card-element')
+
+        const paymentForm = document.getElementById('payment-form')
+
+        paymentForm.addEventListener('submit', async (e) => {
+          e.preventDefault()
+
+          const { token, error } = await stripe.createToken(cardElement)
+
+          if (error) {
+            alert('Error generating token: ' + error.message)
+            return
+          }
+
+          const data = {
+            cardID: String(token.card.id),
+            cardBrand: String(token.card.brand),
+            expirationMonth: Number(token.card.exp_month),
+            expirationYear: Number(token.card.exp_year),
+            cardLastFour: String(token.card.last4),
+            token: String(token.id)
+          }
+
+          const response = await fetch('<%= link %>', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+          })
+          const responseData = await response.json()
+
+          if (response.ok) {
+            alert('Payment card added successfully!')
+            window.location.href = 'https://ethereal.email/'
+          } else {
+            alert('Error adding payment card: ' + responseData.message)
+          }
+        })
       })
-    })
-  </script>
-</body>
-
+    </script>
+  </body>
 </html>

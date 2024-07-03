@@ -59,8 +59,9 @@ const getReviewsSummary = {
 }
 
 const importExportBookSpreadSheet = {
-  params: Joi.object().keys({
-    sheetID: Joi.string().required().trim()
+  body: Joi.object().keys({
+    sheetID: Joi.string().required().trim(),
+    sheetname: Joi.string().required().trim()
   })
 }
 

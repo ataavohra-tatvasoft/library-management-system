@@ -62,13 +62,13 @@ router.get(
   adminBookController.getReviewsSummary
 )
 router.put(
-  '/spreadsheet-import-books/:sheetID',
+  '/spreadsheet-import-books',
   celebrate(adminBookSchema.importExportBookSpreadSheet),
   adminAuthMiddleware.authMiddleware,
   adminBookController.importBookSpreadSheet
 )
 router.get(
-  '/spreadsheet-export-books/:sheetID',
+  '/spreadsheet-export-books',
   celebrate(adminBookSchema.importExportBookSpreadSheet),
   adminAuthMiddleware.authMiddleware,
   adminBookController.exportDataToSpreadsheet

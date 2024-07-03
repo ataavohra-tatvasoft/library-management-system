@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express'
-import { ObjectId } from 'mongodb'
+import mongoose from 'mongoose'
 import { Book, BookGallery, LibraryBranch } from '../../db/models'
 import { Controller } from '../../interfaces'
 import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '../../constant'
@@ -386,9 +386,19 @@ const importBookSpreadSheet: Controller = async (
   next: NextFunction
 ) => {
   try {
-    const { sheetID } = req.params
+    const { sheetID, sheetname } = req.body
 
-    const data = await googleSheetUtils.fetchSheetData(sheetID, String('Sheet1!A2:Z'))
+    if (!sheetID || !sheetname) {
+      throw new HttpError(
+        messageConstant.MISSING_REQUIRED_PARAMETERS,
+        httpStatusConstant.BAD_REQUEST
+      )
+    }
+
+    const sheetName = await googleSheetUtils.getSheetName(sheetID, sheetname)
+
+    const data = await googleSheetUtils.fetchSheetData(sheetID, String(`${sheetName}!A2:Z`))
+
     if (!data) {
       throw new HttpError(messageConstant.NO_DATA_FOUND, httpStatusConstant.NOT_FOUND)
     }
@@ -418,8 +428,8 @@ const importBookSpreadSheet: Controller = async (
             quantityAvailable: Number(row[8]),
             numberOfFreeDays: Number(row[9]),
             description: row[10],
-            branchID: new ObjectId(String(row[11])),
-            deletedAt: row[12] == String(null) ? null : new Date(row[11])
+            branchID: new mongoose.Types.ObjectId(String(row[11])),
+            deletedAt: row[12] === String(null) ? null : new Date(row[12])
           }
         } catch (error) {
           console.error('Error formatting data row:', error)
@@ -427,18 +437,20 @@ const importBookSpreadSheet: Controller = async (
       })
       .filter(Boolean)
 
-    const insertionStatus = await collection.insertMany(formattedData)
-    if (insertionStatus) {
-      return responseHandlerUtils.responseHandler(res, {
-        statusCode: httpStatusConstant.CREATED,
-        message: messageConstant.DATA_ADDED_SUCCESSFULLY
-      })
-    } else {
-      throw new HttpError(
-        messageConstant.ERROR_INSERTING_DATA,
-        httpStatusConstant.INTERNAL_SERVER_ERROR
-      )
+    for (const book of formattedData) {
+      const existingBook = await collection.findOne({ bookID: book.bookID })
+
+      if (existingBook) {
+        await collection.updateOne({ bookID: book.bookID }, { $set: book })
+      } else {
+        await collection.insertOne(book)
+      }
     }
+
+    return responseHandlerUtils.responseHandler(res, {
+      statusCode: httpStatusConstant.CREATED,
+      message: messageConstant.DATA_ADDED_SUCCESSFULLY
+    })
   } catch (error) {
     return next(error)
   }
@@ -453,14 +465,16 @@ const exportDataToSpreadsheet: Controller = async (
   next: NextFunction
 ) => {
   try {
-    const { sheetID } = req.params
+    const { sheetID, sheetname } = req.body
 
-    if (!sheetID) {
+    if (!sheetID || !sheetname) {
       throw new HttpError(
         messageConstant.MISSING_REQUIRED_PARAMETERS,
         httpStatusConstant.BAD_REQUEST
       )
     }
+
+    const sheetName = await googleSheetUtils.getSheetName(sheetID, sheetname)
 
     const db = await dbConfig.connectToDatabase()
     if (!db) {
@@ -479,7 +493,7 @@ const exportDataToSpreadsheet: Controller = async (
       row.charges,
       row.issueCount,
       row.submitCount,
-      row.publishedDate,
+      new Date(row.publishedDate).toISOString().split('T')[0],
       row.subscriptionDays,
       row.quantityAvailable,
       row.numberOfFreeDays,
@@ -509,7 +523,17 @@ const exportDataToSpreadsheet: Controller = async (
       ...formattedData
     ]
 
-    const exportStatus = await googleSheetUtils.appendDataToSheet(auth, sheetID, values)
+    const sheetData = await googleSheetUtils.fetchSheetData(sheetID, `${sheetName}!A:Z`)
+    if (sheetData && sheetData.length > 0) {
+      await googleSheetUtils.clearSheet(auth, sheetID, sheetName)
+    }
+
+    const exportStatus = await googleSheetUtils.appendDataToSheet(
+      auth,
+      sheetID,
+      `${sheetName}!A1`,
+      values
+    )
     if (!exportStatus) {
       throw new HttpError(
         messageConstant.ERROR_EXPORTING_DATA,
@@ -518,12 +542,12 @@ const exportDataToSpreadsheet: Controller = async (
     }
 
     const columnWidthUpdates = [
-      { startIndex: 0, endIndex: 1, pixelSize: 150 },
-      { startIndex: 6, endIndex: 7, pixelSize: 200 },
+      { startIndex: 0, endIndex: 1, pixelSize: 125 },
+      { startIndex: 6, endIndex: 7, pixelSize: 150 },
       { startIndex: 7, endIndex: 8, pixelSize: 130 },
-      { startIndex: 8, endIndex: 9, pixelSize: 130 },
-      { startIndex: 9, endIndex: 10, pixelSize: 130 },
-      { startIndex: 10, endIndex: 11, pixelSize: 200 },
+      { startIndex: 8, endIndex: 9, pixelSize: 100 },
+      { startIndex: 9, endIndex: 10, pixelSize: 100 },
+      { startIndex: 10, endIndex: 11, pixelSize: 300 },
       { startIndex: 11, endIndex: 12, pixelSize: 300 }
     ]
 

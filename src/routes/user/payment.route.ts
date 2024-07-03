@@ -6,6 +6,18 @@ import { userAuthMiddleware } from '../../middlewares'
 
 const router: Router = express.Router()
 
+router.put(
+  '/add-card-holder/:email',
+  celebrate(userPaymentSchema.addCardHolder),
+  userAuthMiddleware.authMiddleware,
+  userPaymentController.addCardHolder
+)
+router.post(
+  '/add-issue-card/:email',
+  celebrate(userPaymentSchema.addIssueCard),
+  userAuthMiddleware.authMiddleware,
+  userPaymentController.addIssueCard
+)
 router.get(
   '/get-add-card-link',
   userAuthMiddleware.authMiddleware,
