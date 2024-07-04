@@ -15,7 +15,8 @@ const bookSchema: Schema = new Schema<IBook, BookModel>(
       required: true
     },
     author: {
-      type: String,
+      type: Schema.Types.ObjectId,
+      ref: 'authors',
       required: true
     },
     charges: {
@@ -57,12 +58,6 @@ const bookSchema: Schema = new Schema<IBook, BookModel>(
     },
     description: {
       type: String,
-      allownull: true
-    },
-    branchID: {
-      type: Schema.Types.ObjectId,
-      ref: 'librarybranches',
-      required: true,
       allownull: true
     },
     deletedAt: {

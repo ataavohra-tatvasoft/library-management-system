@@ -2,26 +2,30 @@ import express, { Router } from 'express'
 import { celebrate } from 'celebrate'
 import { adminIssueBookController } from '../../controllers'
 import { adminIssueBookSchema } from '../../validations'
-import { adminAuthMiddleware } from '../../middlewares'
+import { userAuthMiddleware, roleAuthMiddleware } from '../../middlewares'
+import { UserType } from '../../types'
 
 const router: Router = express.Router()
 
 router.get(
   '/issue-book-list',
   celebrate(adminIssueBookSchema.getIssuedBooksList),
-  adminAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.Admin),
+  userAuthMiddleware.authMiddleware,
   adminIssueBookController.getIssuedBooksList
 )
 router.put(
   '/issue-book',
   celebrate(adminIssueBookSchema.issueBookToUser),
-  adminAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.Admin),
+  userAuthMiddleware.authMiddleware,
   adminIssueBookController.issueBookToUser
 )
 router.put(
   '/submit-book',
   celebrate(adminIssueBookSchema.submitBookForUser),
-  adminAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.Admin),
+  userAuthMiddleware.authMiddleware,
   adminIssueBookController.submitBookForUser
 )
 

@@ -1,8 +1,8 @@
 import { Book } from '../models'
 import { helperFunctionsUtils, loggerUtils } from '../../utils'
-import { IBook, ILibraryBranch } from '../../interfaces'
+import { IAuthor, IBook } from '../../interfaces'
 
-export const seedBooks = async (insertedLibraryBranches: ILibraryBranch[]) => {
+export const seedBooks = async (insertedAuthors: IAuthor[]) => {
   await Book.deleteMany({})
   loggerUtils.logger.info('Deleted all books!')
 
@@ -10,7 +10,7 @@ export const seedBooks = async (insertedLibraryBranches: ILibraryBranch[]) => {
     {
       bookID: helperFunctionsUtils.generatePlaceholderID('999', 10),
       name: 'Book 1',
-      author: 'Author 1',
+      author: insertedAuthors[0]._id,
       charges: 120,
       issueCount: 100,
       submitCount: 90,
@@ -18,13 +18,12 @@ export const seedBooks = async (insertedLibraryBranches: ILibraryBranch[]) => {
       subscriptionDays: 2,
       quantityAvailable: 12,
       numberOfFreeDays: 3,
-      description: 'This is the description of the Book 1',
-      branchID: insertedLibraryBranches[0]._id
+      description: 'This is the description of the Book 1'
     },
     {
       bookID: helperFunctionsUtils.generatePlaceholderID('999', 10),
       name: 'Book 2',
-      author: 'Author 2',
+      author: insertedAuthors[1]._id,
       charges: 150,
       issueCount: 90,
       submitCount: 80,
@@ -32,13 +31,12 @@ export const seedBooks = async (insertedLibraryBranches: ILibraryBranch[]) => {
       subscriptionDays: 2,
       quantityAvailable: 20,
       numberOfFreeDays: 5,
-      description: 'This is the description of the Book 2',
-      branchID: insertedLibraryBranches[1]._id
+      description: 'This is the description of the Book 2'
     },
     {
       bookID: helperFunctionsUtils.generatePlaceholderID('999', 10),
       name: 'Book 3',
-      author: 'Author 3',
+      author: insertedAuthors[2]._id,
       charges: 160,
       issueCount: 80,
       submitCount: 70,
@@ -46,13 +44,12 @@ export const seedBooks = async (insertedLibraryBranches: ILibraryBranch[]) => {
       subscriptionDays: 2,
       quantityAvailable: 22,
       numberOfFreeDays: 7,
-      description: 'This is the description of the Book 3',
-      branchID: insertedLibraryBranches[2]._id
+      description: 'This is the description of the Book 3'
     },
     {
       bookID: helperFunctionsUtils.generatePlaceholderID('999', 10),
       name: 'Book 4',
-      author: 'Author 4',
+      author: insertedAuthors[3]._id,
       charges: 140,
       issueCount: 70,
       submitCount: 60,
@@ -60,13 +57,12 @@ export const seedBooks = async (insertedLibraryBranches: ILibraryBranch[]) => {
       subscriptionDays: 2,
       quantityAvailable: 30,
       numberOfFreeDays: 9,
-      description: 'This is the description of the Book 4',
-      branchID: insertedLibraryBranches[3]._id
+      description: 'This is the description of the Book 4'
     },
     {
       bookID: helperFunctionsUtils.generatePlaceholderID('999', 10),
       name: 'Book 5',
-      author: 'Author 5',
+      author: insertedAuthors[4]._id,
       charges: 145,
       issueCount: 40,
       submitCount: 30,
@@ -74,13 +70,12 @@ export const seedBooks = async (insertedLibraryBranches: ILibraryBranch[]) => {
       subscriptionDays: 2,
       quantityAvailable: 30,
       numberOfFreeDays: 9,
-      description: 'This is the description of the Book 5',
-      branchID: insertedLibraryBranches[4]._id
+      description: 'This is the description of the Book 5'
     },
     {
       bookID: helperFunctionsUtils.generatePlaceholderID('999', 10),
       name: 'Book 6',
-      author: 'Author 6',
+      author: insertedAuthors[5]._id,
       charges: 155,
       issueCount: 45,
       submitCount: 35,
@@ -88,8 +83,7 @@ export const seedBooks = async (insertedLibraryBranches: ILibraryBranch[]) => {
       subscriptionDays: 2,
       quantityAvailable: 30,
       numberOfFreeDays: 9,
-      description: 'This is the description of the Book 6',
-      branchID: insertedLibraryBranches[5]._id
+      description: 'This is the description of the Book 6'
     }
   ]
 

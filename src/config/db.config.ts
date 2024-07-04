@@ -5,7 +5,7 @@ import { envConfig } from '../config'
 import { httpStatusConstant } from '../constant'
 import { HttpError } from '../libs'
 
-async function connectToDatabase() {
+const connectToDatabase = async () => {
   try {
     const conn = await mongoose.connect(envConfig.dbURL as string, {
       autoIndex: true,

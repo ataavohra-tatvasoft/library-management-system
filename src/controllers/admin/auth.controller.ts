@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken'
 import bcrypt from 'bcrypt'
 import * as crypto from 'crypto'
 import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '../../constant'
-import { Admin } from '../../db/models'
+import { User } from '../../db/models'
 import { authUtils, ejsCompilerUtils, sendMailUtils } from '../../utils'
 import { Controller } from '../../interfaces'
 import { envConfig } from '../../config'
@@ -18,7 +18,7 @@ const login: Controller = async (req: Request, res: Response, next: NextFunction
   try {
     const { email, password } = req.body
 
-    const admin = await Admin.findOne({ email, deletedAt: null })
+    const admin = await User.findOne({ email, deletedAt: null })
     if (!admin) {
       throw new HttpError(messageConstant.ADMIN_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
@@ -93,7 +93,7 @@ const generateNewAccessToken: Controller = async (
       throw new HttpError(messageConstant.INVALID_TOKEN_TYPE, httpStatusConstant.INVALID_TOKEN)
     }
 
-    const admin = await Admin.findOne({ email: validatedToken.email })
+    const admin = await User.findOne({ email: validatedToken.email })
 
     const newAccessToken = jwt.sign(
       {
@@ -148,7 +148,7 @@ const forgotPassword: Controller = async (req: Request, res: Response, next: Nex
   try {
     const { email } = req.body
 
-    const admin = await Admin.findOne({ email, deletedAt: null })
+    const admin = await User.findOne({ email, deletedAt: null })
     if (!admin) {
       throw new HttpError(messageConstant.ADMIN_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
@@ -156,7 +156,7 @@ const forgotPassword: Controller = async (req: Request, res: Response, next: Nex
     const resetToken = crypto.createHash('sha256').update(email).digest('hex')
     const expireTime = Date.now() + 60 * 60 * 1000 // 1 hour
 
-    const updateAdmin = await Admin.updateOne(
+    const updateAdmin = await User.updateOne(
       { email },
       { resetToken, resetTokenExpiry: expireTime }
     )
@@ -188,7 +188,7 @@ const resetPassword: Controller = async (req: Request, res: Response, next: Next
   try {
     const { password, resetToken } = req.body
 
-    const admin = await Admin.findOne({
+    const admin = await User.findOne({
       resetToken,
       resetTokenExpiry: { $gt: Date.now() },
       deletedAt: null
@@ -200,7 +200,7 @@ const resetPassword: Controller = async (req: Request, res: Response, next: Next
     const salt = await bcrypt.genSalt(Number(envConfig.saltRounds))
     const hashedPassword = await bcrypt.hash(password, salt)
 
-    const updateAdmin = await Admin.updateOne(
+    const updateAdmin = await User.updateOne(
       { _id: admin._id },
       {
         password: hashedPassword,
@@ -247,7 +247,7 @@ const updateAdminProfile: Controller = async (req: Request, res: Response, next:
       ...(state && { state })
     }
 
-    const updatedProfile = await Admin.findOneAndUpdate(
+    const updatedProfile = await User.findOneAndUpdate(
       { email: verifiedToken.email },
       updatedAdminData,
       { new: true }

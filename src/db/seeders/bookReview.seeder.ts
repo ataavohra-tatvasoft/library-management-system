@@ -1,12 +1,8 @@
 import { BookReview } from '../models'
 import { loggerUtils } from '../../utils'
-import { IAdmin, IBook, IUser } from '../../interfaces'
+import { IBook, IUser } from '../../interfaces'
 
-export const seedBookReviews = async (
-  insertedBooks: IBook[],
-  insertedAdmins: IAdmin[],
-  insertedUsers: IUser[]
-) => {
+export const seedBookReviews = async (insertedBooks: IBook[], insertedUsers: IUser[]) => {
   await BookReview.deleteMany({})
   loggerUtils.logger.info('Deleted all reviews!')
 
@@ -18,7 +14,7 @@ export const seedBookReviews = async (
     },
     {
       bookID: insertedBooks[1]._id,
-      userID: insertedAdmins[0]._id,
+      userID: insertedUsers[1]._id,
       review: 'Very informative and well-written.'
     },
     {
@@ -28,7 +24,7 @@ export const seedBookReviews = async (
     },
     {
       bookID: insertedBooks[3]._id,
-      userID: insertedAdmins[0]._id,
+      userID: insertedUsers[1]._id,
       review: 'Interesting read, highly recommended!'
     }
   ]

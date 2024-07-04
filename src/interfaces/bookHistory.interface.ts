@@ -14,14 +14,11 @@ interface IUserID {
 }
 export interface IBookHistory {
   _id?: ObjectId
-  bookID: ObjectId
-  userID: ObjectId
+  bookID: IBookID
+  userID: IUserID
+  issuedBy: IUserID
+  submittedBy: IUserID
   issueDate: Date
   submitDate: Date
   deletedAt: Date
-}
-
-export interface PopulatedBookHistory extends Omit<IBookHistory, 'bookID' | 'userID'> {
-  bookID: IBookID
-  userID: IUserID
 }

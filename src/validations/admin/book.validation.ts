@@ -5,11 +5,16 @@ const addBook = {
     branchName: Joi.string().required().trim(),
     bookID: Joi.string().required().length(13).trim(),
     name: Joi.string().required().min(3).max(50).trim(),
-    author: Joi.string().required().min(3).max(50).trim(),
-    charges: Joi.string().required().min(0).trim(),
-    subscriptionDays: Joi.string().optional().trim(),
-    quantityAvailable: Joi.string().required().trim(),
-    description: Joi.string().optional().allow(null, '')
+    authorEmail: Joi.string().required().trim().email(),
+    authorFirstName: Joi.string().required().min(1).max(10).trim(),
+    authorLastName: Joi.string().required().min(1).max(10).trim(),
+    authorBio: Joi.string().required().max(500).trim(),
+    authorWebsite: Joi.string().optional().trim().allow(''),
+    authorAddress: Joi.string().optional().max(200).trim().allow(''),
+    charges: Joi.number().positive().required(),
+    subscriptionDays: Joi.number().positive().optional().allow(null),
+    quantityAvailable: Joi.number().integer().min(0).required(),
+    description: Joi.string().optional().allow(null, '').trim()
   })
 }
 
@@ -26,11 +31,16 @@ const updateBook = {
   },
   body: Joi.object().keys({
     name: Joi.string().optional().trim().allow(''),
-    author: Joi.string().optional().trim().allow(''),
+    authorEmail: Joi.string().optional().trim().email(),
+    authorFirstName: Joi.string().optional().min(1).max(10).trim(),
+    authorLastName: Joi.string().optional().min(1).max(10).trim(),
+    authorBio: Joi.string().optional().max(500).trim(),
+    authorWebsite: Joi.string().optional().trim().allow(''),
+    authorAddress: Joi.string().optional().max(200).trim().allow(''),
     charges: Joi.number().positive().optional().allow(null),
-    quantityAvailable: Joi.string().min(0).optional().allow(null),
-    subscriptionDays: Joi.string().optional().trim().allow(null),
-    numberOfFreeDays: Joi.string().min(0).optional().allow(null),
+    subscriptionDays: Joi.number().positive().optional().allow(null),
+    quantityAvailable: Joi.number().integer().min(0).optional().allow(null),
+    numberOfFreeDays: Joi.number().integer().min(0).optional().allow(null),
     description: Joi.string().optional().allow(''),
     branchName: Joi.string().optional().trim().allow('')
   })

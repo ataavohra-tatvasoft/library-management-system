@@ -20,6 +20,7 @@ export const messageConstant = {
 
   // User Messages
   USER_NOT_FOUND: 'User not found',
+  USER_ALREADY_EXISTS: 'User already exists',
   USER_NOT_EXISTS: 'User not exists',
   USER_DELETED_SOFT: 'User deleted(soft)',
   USER_DELETED_HARD: 'User deleted(hard)',
@@ -34,10 +35,15 @@ export const messageConstant = {
   ERROR_LISTING_USER: 'Error listing user',
   ERROR_COUNTING_USERS: 'Error counting users',
   NO_ACTIVE_USERS_FOUND: 'No active users found',
+  USER_ROLE_MAPPING_NOT_FOUND: 'User role mapping not found',
+  USER_DOES_NOT_HAVE_REQUIRED_ROLE: 'User does not have the required role',
 
   // Admin Messages
   ADMIN_NOT_FOUND: 'Admin not found ',
   ERROR_UPDATING_ADMIN: 'Error while updating admin',
+
+  //Librarian Messages
+  LIBRARIAN_NOT_FOUND: 'Librarian not found',
 
   // Book Messages
   BOOK_NOT_FOUND: 'Book not found',
@@ -59,6 +65,7 @@ export const messageConstant = {
   ERROR_COUNTING_BOOKS: 'Error while counting books',
   ERROR_LOGGING_HISTORY: 'Error logging history',
   NO_BOOKS_FOUND: 'No books found',
+  NO_ISSUED_BOOKS_FOUND: 'No issued books found',
 
   // Book Issue/Return Messages
   SUBMIT_INVALID: 'submit date is invalid, kindly check',
@@ -135,5 +142,8 @@ export const messageConstant = {
   ERROR_UPDATING_LIBRARY_BRANCH: 'Error updating library branch',
   ERROR_DELETING_LIBRARY_BRANCH: 'Error deleting library branch',
   LIBRARY_BRANCH_DELETED_SOFT: 'Library branch deleted (soft)',
-  LIBRARY_BRANCH_DELETED_HARD: 'Library branch deleted (hard)'
+  LIBRARY_BRANCH_DELETED_HARD: 'Library branch deleted (hard)',
+
+  //Role messages
+  ROLE_NOT_FOUND: 'Role not found'
 }

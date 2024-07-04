@@ -14,6 +14,16 @@ const bookHistorySchema: Schema = new Schema<IBookHistory, BookHistoryModel>(
       ref: 'users',
       required: true
     },
+    issuedBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'users',
+      required: true
+    },
+    submittedBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'users',
+      allownull: true
+    },
     issueDate: {
       type: Date,
       required: true

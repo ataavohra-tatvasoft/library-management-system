@@ -1,10 +1,19 @@
 import { ObjectId } from 'mongoose'
 
+interface IAuthorID {
+  _id?: ObjectId
+  firstname: string
+  lastname: string
+  bio: string
+  website?: string
+  email?: string
+  address?: string
+}
 export interface IBook {
   _id?: ObjectId
   bookID: string
   name: string
-  author: string
+  author?: IAuthorID | ObjectId
   charges: number
   issueCount: number
   submitCount: number
@@ -13,6 +22,5 @@ export interface IBook {
   quantityAvailable: number
   numberOfFreeDays: number
   description: string
-  branchID: ObjectId
   deletedAt: Date
 }

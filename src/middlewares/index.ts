@@ -1,4 +1,4 @@
-import adminAuthMiddleware from './admin.auth.middleware'
 import userAuthMiddleware from './user.auth.middleware'
+import roleAuthMiddleware from './role.auth.middleware'
 
-export { adminAuthMiddleware, userAuthMiddleware }
+export { userAuthMiddleware, roleAuthMiddleware }

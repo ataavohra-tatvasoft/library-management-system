@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
 import { Book, BookHistory, BookRating, BookReview, User } from '../../db/models'
 import { httpErrorMessageConstant, httpStatusConstant, messageConstant } from '../../constant'
-import { Controller, PopulatedBookHistory } from '../../interfaces'
+import { Controller, IBookHistory } from '../../interfaces'
 import { authUtils, helperFunctionsUtils, responseHandlerUtils } from '../../utils'
 import { getRatingService, getReviewService } from '../../services/book'
 import { HttpError } from '../../libs'
@@ -38,6 +38,15 @@ const searchBooks: Controller = async (req: Request, res: Response, next: NextFu
 
     const searchPipeline = [
       { $match: searchQuery },
+      {
+        $lookup: {
+          from: 'authors',
+          localField: 'author',
+          foreignField: '_id',
+          as: 'authorDetails'
+        }
+      },
+      { $unwind: '$authorDetails' },
       {
         $lookup: {
           from: 'bookgalleries',
@@ -100,7 +109,14 @@ const searchBooks: Controller = async (req: Request, res: Response, next: NextFu
         $project: {
           bookID: 1,
           name: 1,
-          author: 1,
+          author: {
+            email: '$authorDetails.email',
+            firstname: '$authorDetails.firstname',
+            lastname: '$authorDetails.lastname',
+            bio: '$authorDetails.bio',
+            website: '$authorDetails.website',
+            address: '$authorDetails.address'
+          },
           stock: '$quantityAvailable',
           rating: { $ifNull: ['$rating', 0] },
           reviewCount: 1,
@@ -134,6 +150,7 @@ const searchBooks: Controller = async (req: Request, res: Response, next: NextFu
     return next(error)
   }
 }
+
 /**
  * @description Retrieves detailed information for all active books.
  */
@@ -194,6 +211,15 @@ const getAllBookDetails: Controller = async (req: Request, res: Response, next: 
         }
       },
       {
+        $lookup: {
+          from: 'authors',
+          localField: 'author',
+          foreignField: '_id',
+          as: 'authorDetails'
+        }
+      },
+      { $unwind: '$authorDetails' },
+      {
         $addFields: {
           rating: { $avg: '$ratings.rating' },
           reviewCount: { $size: '$reviews' }
@@ -204,7 +230,14 @@ const getAllBookDetails: Controller = async (req: Request, res: Response, next: 
           _id: 0,
           bookID: 1,
           name: 1,
-          author: 1,
+          author: {
+            email: '$authorDetails.email',
+            firstname: '$authorDetails.firstname',
+            lastname: '$authorDetails.lastname',
+            bio: '$authorDetails.bio',
+            website: '$authorDetails.website',
+            address: '$authorDetails.address'
+          },
           stock: '$quantityAvailable',
           publishedDate: 1,
           coverImage: 1,
@@ -347,9 +380,9 @@ const getBookIssueHistory: Controller = async (req: Request, res: Response, next
     const verifiedToken = await authUtils.verifyAccessToken(token)
 
     const bookHistories = (await BookHistory.find({ userID: verifiedToken?._id }).populate({
-      path: 'userID bookID',
-      select: 'email firstname lastname bookID name charges'
-    })) as unknown as PopulatedBookHistory[]
+      path: 'userID bookID issuedBy submittedBy',
+      select: 'email firstname lastname bookID name charges firstname lastname firstname lastname'
+    })) as unknown as IBookHistory[]
 
     if (!bookHistories?.length) {
       throw new HttpError(messageConstant.BOOK_HISTORY_NOT_FOUND, httpStatusConstant.NOT_FOUND)
@@ -358,6 +391,8 @@ const getBookIssueHistory: Controller = async (req: Request, res: Response, next
     const formattedHistories = bookHistories.map((history) => {
       const bookID = history.bookID.bookID
       const bookName = history.bookID.name
+      const issuedBy = history.issuedBy.firstname + ' ' + history.issuedBy.lastname
+      const submittedBy = history.submittedBy.firstname + ' ' + history.submittedBy.lastname
       const issueDate = new Date(history.issueDate)
       const submitDate = history.submitDate ? new Date(history.submitDate) : null
       const usedDays = submitDate
@@ -368,6 +403,8 @@ const getBookIssueHistory: Controller = async (req: Request, res: Response, next
       return {
         bookID,
         bookName,
+        issuedBy,
+        submittedBy,
         issueDate,
         submitDate,
         usedDays,
@@ -553,8 +590,14 @@ const getReport: Controller = async (req: Request, res: Response, next: NextFunc
 
     const userReport = await BookHistory.find(filter)
       .populate({
-        path: 'userID bookID',
-        select: 'email firstname lastname paidAmount dueCharges name author charges description'
+        path: 'userID bookID issuedBy submittedBy',
+        select:
+          'email firstname lastname paidAmount dueCharges name author charges description firstname lastname firstname lastname',
+        populate: {
+          path: 'author',
+          model: 'authors',
+          select: 'email firstname lastname bio website address'
+        }
       })
       .skip(skip)
       .limit(pageSize)
@@ -571,12 +614,21 @@ const getReport: Controller = async (req: Request, res: Response, next: NextFunc
       },
       bookDetail: {
         name: report.bookID.name,
-        author: report.bookID.author,
+        author: {
+          email: report.bookID.author.email,
+          firstname: report.bookID.author.firstname,
+          lastname: report.bookID.author.lastname,
+          bio: report.bookID.author.bio,
+          website: report.bookID.author.website,
+          address: report.bookID.author.address
+        },
         paidAmount: report.bookID.paidAmount,
         dueCharges: report.bookID.dueCharges,
         charges: report.bookID.charges,
         description: report.bookID.description
       },
+      issuedBy: report.issuedBy.firstname + ' ' + report.issuedBy.lastname,
+      submittedBy: report.submittedBy.firstname + ' ' + report.submittedBy.lastname,
       bookIssueDate: report.issueDate.toISOString().split('T')[0],
       bookSubmitDate: report.submitDate.toISOString().split('T')[0]
     }))

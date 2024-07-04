@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
 import mongoose from 'mongoose'
-import { Book, BookGallery, LibraryBranch } from '../../db/models'
+import { Author, Book, BookGallery, LibraryBranch } from '../../db/models'
 import { Controller } from '../../interfaces'
 import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '../../constant'
 import {
@@ -24,7 +24,12 @@ const addBook: Controller = async (req: Request, res: Response, next: NextFuncti
         branchName,
         bookID,
         name,
-        author,
+        authorEmail,
+        authorFirstName,
+        authorLastName,
+        authorBio,
+        authorWebsite,
+        authorAddress,
         charges,
         subscriptionDays,
         quantityAvailable,
@@ -42,14 +47,26 @@ const addBook: Controller = async (req: Request, res: Response, next: NextFuncti
       throw new HttpError(messageConstant.BOOK_ALREADY_EXISTS, httpStatusConstant.BAD_REQUEST)
     }
 
+    let author = await Author.findOne({ email: authorEmail })
+    if (!author) {
+      author = await Author.create({
+        email: authorEmail,
+        firstname: authorFirstName,
+        lastname: authorLastName,
+        bio: authorBio,
+        website: authorWebsite,
+        address: authorAddress
+      })
+    }
+
     const newBook = await Book.create({
       bookID,
       name,
-      author,
+      author: author._id,
       ...(subscriptionDays && { subscriptionDays: Number(subscriptionDays) }),
       quantityAvailable: Number(quantityAvailable),
       charges: Number(charges),
-      ...(description && { description: description }),
+      ...(description && { description }),
       branchID: branchExists._id
     })
     if (!newBook) {
@@ -97,6 +114,7 @@ const listBooks: Controller = async (req: Request, res: Response, next: NextFunc
       }
     )
       .populate({ path: 'branchID', select: 'name address' })
+      .populate({ path: 'author', select: 'firstname lastname email bio website address' }) // Populating author details
       .skip(skip)
       .limit(pageSize)
 
@@ -129,7 +147,12 @@ const updateBook: Controller = async (req: Request, res: Response, next: NextFun
     const { bookID } = req.params
     const {
       name,
-      author,
+      authorEmail,
+      authorFirstName,
+      authorLastName,
+      authorBio,
+      authorWebsite,
+      authorAddress,
       charges,
       subscriptionDays,
       quantityAvailable,
@@ -148,15 +171,39 @@ const updateBook: Controller = async (req: Request, res: Response, next: NextFun
       throw new HttpError(messageConstant.BOOK_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
+    let author = await Author.findOne({ email: authorEmail })
+    if (!author) {
+      author = await Author.create({
+        email: authorEmail,
+        firstname: authorFirstName,
+        lastname: authorLastName,
+        bio: authorBio,
+        website: authorWebsite,
+        address: authorAddress
+      })
+    } else {
+      // Update author information if it exists
+      await Author.updateOne(
+        { email: authorEmail },
+        {
+          firstname: authorFirstName,
+          lastname: authorLastName,
+          bio: authorBio,
+          website: authorWebsite,
+          address: authorAddress
+        }
+      )
+    }
+
     const updatedBookData = {
       ...(name && { name }),
-      ...(author && { author }),
+      author: author._id,
       ...(charges && { charges: Number(charges) }),
       ...(quantityAvailable && { quantityAvailable: Number(quantityAvailable) }),
       ...(subscriptionDays && { subscriptionDays: Number(subscriptionDays) }),
       ...(numberOfFreeDays && { numberOfFreeDays: Number(numberOfFreeDays) }),
       ...(description && { description }),
-      ...(branchName && { branchName: branchExists._id })
+      branchID: branchExists._id
     }
 
     const updatedBook = await Book.findOneAndUpdate({ bookID }, updatedBookData, { new: true })
@@ -543,6 +590,7 @@ const exportDataToSpreadsheet: Controller = async (
 
     const columnWidthUpdates = [
       { startIndex: 0, endIndex: 1, pixelSize: 125 },
+      { startIndex: 2, endIndex: 3, pixelSize: 125 },
       { startIndex: 6, endIndex: 7, pixelSize: 150 },
       { startIndex: 7, endIndex: 8, pixelSize: 130 },
       { startIndex: 8, endIndex: 9, pixelSize: 100 },

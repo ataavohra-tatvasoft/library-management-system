@@ -6,3 +6,10 @@ build
 
 #Env Variables
 .env
+
+#Logs
+logs
+
+#Package Files
+package-lock.json
+

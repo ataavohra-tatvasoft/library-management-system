@@ -7,17 +7,25 @@ import { HttpError } from '../../libs'
 import { ICustomQuery } from '../../interfaces/query.interface'
 
 /**
- * @description Retrieves a list of unique issued books with details.
+ * @description Retrieves a list of unique issued books with details for the librarian's branch only.
  */
 const getIssuedBooksList: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { page = 1, pageSize = 10 } = req.query as unknown as ICustomQuery
     const skip = (page - 1) * pageSize
 
+    const { token } = await authUtils.validateAuthorizationHeader(req.headers)
+    const verifiedToken = await authUtils.verifyAccessToken(token)
+
+    const librarian = await User.findOne({ _id: verifiedToken._id })
+    if (!librarian) {
+      throw new HttpError(messageConstant.LIBRARIAN_NOT_FOUND, httpStatusConstant.NOT_FOUND)
+    }
+
     const issuedBooksAggregationPipeline = [
       {
         $match: {
-          books: { $elemMatch: { issueDate: { $ne: null } } }
+          'books.issueDate': { $ne: null }
         }
       },
       { $unwind: '$books' },
@@ -30,31 +38,14 @@ const getIssuedBooksList: Controller = async (req: Request, res: Response, next:
         }
       },
       {
-        $project: {
-          _id: 0,
-          book: { $first: '$bookDetails' },
-          issueDate: 1
+        $addFields: {
+          book: { $arrayElemAt: ['$bookDetails', 0] },
+          issueDate: '$books.issueDate'
         }
       },
       {
-        $group: {
-          _id: { bookId: '$book._id', issueDate: '$issueDate' }
-        }
-      },
-      {
-        $lookup: {
-          from: 'books',
-          localField: '_id.bookId',
-          foreignField: '_id',
-          as: 'bookDetails'
-        }
-      },
-      { $unwind: '$bookDetails' },
-      {
-        $project: {
-          _id: 0,
-          book: '$bookDetails',
-          issueDate: '$_id.issueDate'
+        $match: {
+          'book.branchID': librarian.libraryBranchID
         }
       },
       {
@@ -81,16 +72,12 @@ const getIssuedBooksList: Controller = async (req: Request, res: Response, next:
     const issuedBooks = await User.aggregate(issuedBooksAggregationPipeline)
       .skip(skip)
       .limit(pageSize)
+
     if (!issuedBooks?.length) {
       throw new HttpError(messageConstant.NO_ISSUED_BOOK_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
-    const totalIssuedBooks = await User.aggregate(issuedBooksAggregationPipeline)
-    const total = totalIssuedBooks?.length
-    if (!total) {
-      throw new HttpError(messageConstant.NO_ISSUED_BOOK_FOUND, httpStatusConstant.NOT_FOUND)
-    }
-
+    const total = issuedBooks.length
     const totalPages = Math.ceil(total / pageSize)
 
     if (page > totalPages) {
@@ -100,10 +87,10 @@ const getIssuedBooksList: Controller = async (req: Request, res: Response, next:
     return responseHandlerUtils.responseHandler(res, {
       statusCode: httpStatusConstant.OK,
       data: {
-        issuedBooks: issuedBooks,
+        issuedBooks,
         pagination: {
-          page: page,
-          pageSize: pageSize,
+          page,
+          pageSize,
           totalPages
         }
       },
@@ -115,7 +102,7 @@ const getIssuedBooksList: Controller = async (req: Request, res: Response, next:
 }
 
 /**
- * @description Issues a book to a user after validating availability and limits.
+ * @description Issues a book to a user after validating availability and limits, restricted to librarian's branch.
  */
 const issueBookToUser: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -124,7 +111,12 @@ const issueBookToUser: Controller = async (req: Request, res: Response, next: Ne
 
     const { bookID, email, issueDate } = req.body
 
-    const book = await Book.findOne({ bookID })
+    const librarian = await User.findOne({ _id: verifiedToken._id })
+    if (!librarian) {
+      throw new HttpError(messageConstant.LIBRARIAN_NOT_FOUND, httpStatusConstant.NOT_FOUND)
+    }
+
+    const book = await Book.findOne({ bookID, branchID: librarian.libraryBranchID })
     if (!book) {
       throw new HttpError(messageConstant.BOOK_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
@@ -148,6 +140,7 @@ const issueBookToUser: Controller = async (req: Request, res: Response, next: Ne
         throw new HttpError(messageConstant.BOOK_LIMIT_EXCEEDED, httpStatusConstant.BAD_REQUEST)
       }
     }
+
     if (book.quantityAvailable <= 0) {
       throw new HttpError(messageConstant.BOOK_OUT_OF_STOCK, httpStatusConstant.BAD_REQUEST)
     }
@@ -204,7 +197,7 @@ const issueBookToUser: Controller = async (req: Request, res: Response, next: Ne
     const logHistory = await BookHistory.create({
       bookID: book._id,
       userID: user._id,
-      issuedBy: verifiedToken?._id,
+      issuedBy: verifiedToken._id, // Assuming verifiedToken includes _id of the librarian
       issueDate: new Date(issueDate)
     })
 
@@ -231,7 +224,15 @@ const submitBookForUser: Controller = async (req: Request, res: Response, next: 
     const verifiedToken = await authUtils.verifyAccessToken(token)
     const { bookID, email, submitDate } = req.body
 
-    const [book, user] = await Promise.all([Book.findOne({ bookID }), User.findOne({ email })])
+    const librarian = await User.findOne({ _id: verifiedToken._id })
+    if (!librarian) {
+      throw new HttpError(messageConstant.LIBRARIAN_NOT_FOUND, httpStatusConstant.NOT_FOUND)
+    }
+
+    const [book, user] = await Promise.all([
+      Book.findOne({ bookID, branchID: librarian.libraryBranchID }),
+      User.findOne({ email })
+    ])
 
     if (!book) {
       throw new HttpError(messageConstant.BOOK_NOT_FOUND, httpStatusConstant.BAD_REQUEST)

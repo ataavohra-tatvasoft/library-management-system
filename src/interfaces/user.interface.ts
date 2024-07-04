@@ -3,24 +3,25 @@ import { INestedBook } from './nestedBook.interface'
 
 export interface IUser {
   _id?: ObjectId
-  email: string
-  password: string
-  isAuthToken: boolean
-  firstname: string
-  lastname: string
-  gender: string
-  dateOfBirth: Date
-  mobileNumber: BigInt
-  address: string
-  city: string
-  state: string
-  profilePhoto: string
-  paidAmount: Number
-  dueCharges: Number
-  resetToken: string
-  resetTokenExpiry: BigInt
-  stripeCustomerID: string
-  cardHolderId: string
-  deletedAt: Date
-  books: INestedBook[]
+  email: string // Common field
+  password: string // Common field
+  isAuthToken: boolean // Common field
+  firstname?: string // Common field
+  lastname?: string // Common field
+  gender?: string // Common field
+  dateOfBirth?: Date // Common field
+  mobileNumber?: bigint // Common field
+  address?: string // Common field
+  city?: string // Common field
+  state?: string // Common field
+  profilePhoto?: string // User field
+  paidAmount?: number // User field
+  dueCharges?: number // User field
+  resetToken?: string // Common field
+  resetTokenExpiry?: bigint // Common field
+  stripeCustomerID?: string // User field
+  cardHolderId?: string // User field
+  libraryBranchID?: ObjectId //Librarian field
+  deletedAt?: Date // Common field
+  books?: INestedBook[] // User field
 }

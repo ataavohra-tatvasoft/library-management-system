@@ -23,6 +23,19 @@ export const seedUsers = async () => {
       city: 'Demo_City_1',
       state: 'Demo_State_1',
       paidAmount: 0
+    },
+    {
+      email: 'admin@mailinator.com',
+      password: await hash('Password@789', SALT_ROUNDS),
+      isAuthToken: false,
+      firstname: 'Dummy',
+      lastname: 'Dummy',
+      gender: 'male',
+      dateOfBirth: new Date('2011-01-01'),
+      mobileNumber: BigInt(8542103572),
+      address: 'Demo_Address',
+      city: 'Demo_City',
+      state: 'Demo_State'
     }
   ]
 

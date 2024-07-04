@@ -2,7 +2,8 @@ import express, { Router } from 'express'
 import { celebrate } from 'celebrate'
 import { adminAuthController } from '../../controllers'
 import { adminAuthSchema } from '../../validations'
-import { adminAuthMiddleware } from '../../middlewares'
+import { userAuthMiddleware, roleAuthMiddleware } from '../../middlewares'
+import { UserType } from '../../types'
 
 const router: Router = express.Router()
 
@@ -17,12 +18,15 @@ router.post(
 router.post(
   '/reset-password',
   celebrate(adminAuthSchema.resetPassword),
+  roleAuthMiddleware.checkUserRole(UserType.Admin),
+  userAuthMiddleware.authMiddleware,
   adminAuthController.resetPassword
 )
 router.put(
   '/update-profile',
   celebrate(adminAuthSchema.updateAdminProfile),
-  adminAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.Admin),
+  userAuthMiddleware.authMiddleware,
   adminAuthController.updateAdminProfile
 )
 
