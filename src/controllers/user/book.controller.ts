@@ -1,11 +1,18 @@
 import { Request, Response, NextFunction } from 'express'
-import { Book, BookHistory, BookRating, BookReview, User } from '../../db/models'
+import {
+  Book,
+  BookHistory,
+  BookRating,
+  BookReview,
+  User,
+  UserLibraryBranchMapping
+} from '../../db/models'
 import { httpErrorMessageConstant, httpStatusConstant, messageConstant } from '../../constant'
 import { Controller, IBookHistory } from '../../interfaces'
 import { authUtils, helperFunctionsUtils, responseHandlerUtils } from '../../utils'
 import { getRatingService, getReviewService } from '../../services/book'
 import { HttpError } from '../../libs'
-import { ICustomQuery } from '../../interfaces/query.interface'
+import { ICustomQuery } from '../../interfaces'
 
 /**
  * @description Searches for active books by name, ID, or both (returns details & aggregates).
@@ -13,7 +20,10 @@ import { ICustomQuery } from '../../interfaces/query.interface'
 const searchBooks: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { name, bookID, page = 1, pageSize = 10 } = req.query as unknown as ICustomQuery
+    const { branchID } = req.body
     const skip = (page - 1) * pageSize
+    const { token } = await authUtils.validateAuthorizationHeader(req.headers)
+    const verifiedToken = await authUtils.verifyAccessToken(token)
 
     const searchQuery: { deletedAt: Date | null } & {
       $or?: { bookID?: string; name?: RegExp }[]
@@ -23,12 +33,29 @@ const searchBooks: Controller = async (req: Request, res: Response, next: NextFu
 
     if (bookID || name) {
       searchQuery.$or = []
-      if (bookID) searchQuery.$or.push({ bookID: bookID })
+      if (bookID) searchQuery.$or.push({ bookID })
       if (name) searchQuery.$or.push({ name: new RegExp(name, 'i') })
     }
 
-    const totalBooks = await Book.countDocuments({ deletedAt: null })
-    if (!totalBooks) {
+    const user = await User.findOne({ _id: verifiedToken._id }).exec()
+    if (!user) {
+      throw new HttpError(messageConstant.USER_NOT_FOUND, httpStatusConstant.NOT_FOUND)
+    }
+
+    const userLibraryBranchMapping = await UserLibraryBranchMapping.findOne({
+      userID: user._id,
+      branchID: branchID
+    }).exec()
+
+    if (!userLibraryBranchMapping) {
+      throw new HttpError(
+        messageConstant.USER_NOT_ASSIGNED_TO_BRANCH,
+        httpStatusConstant.BAD_REQUEST
+      )
+    }
+
+    const totalBooks = await Book.countDocuments(searchQuery)
+    if (totalBooks === 0) {
       throw new HttpError(messageConstant.BOOK_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
@@ -49,18 +76,34 @@ const searchBooks: Controller = async (req: Request, res: Response, next: NextFu
       { $unwind: '$authorDetails' },
       {
         $lookup: {
-          from: 'bookgalleries',
-          let: { bookID: '$_id' },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $and: [{ $eq: ['$bookID', '$$bookID'] }, { $eq: ['$imageName', 'coverImage'] }]
-                }
-              }
+          from: 'booklibrarybranchmappings',
+          localField: '_id',
+          foreignField: 'bookID',
+          as: 'branchMappings'
+        }
+      },
+      {
+        $match: {
+          'branchMappings.libraryBranchID': branchID
+        }
+      },
+      {
+        $lookup: {
+          from: 'librarybranches',
+          localField: 'branchMappings.libraryBranchID',
+          foreignField: '_id',
+          as: 'libraryDetails'
+        }
+      },
+      {
+        $addFields: {
+          libraryDetails: {
+            $map: {
+              input: '$libraryDetails',
+              as: 'branch',
+              in: { name: '$$branch.name', address: '$$branch.address' }
             }
-          ],
-          as: 'coverImage'
+          }
         }
       },
       {
@@ -87,25 +130,6 @@ const searchBooks: Controller = async (req: Request, res: Response, next: NextFu
         }
       },
       {
-        $lookup: {
-          from: 'librarybranches',
-          localField: 'branchID',
-          foreignField: '_id',
-          as: 'libraryDetails'
-        }
-      },
-      {
-        $addFields: {
-          libraryDetails: {
-            $map: {
-              input: '$libraryDetails',
-              as: 'branch',
-              in: { name: '$$branch.name', address: '$$branch.address' }
-            }
-          }
-        }
-      },
-      {
         $project: {
           bookID: 1,
           name: 1,
@@ -120,9 +144,7 @@ const searchBooks: Controller = async (req: Request, res: Response, next: NextFu
           stock: '$quantityAvailable',
           rating: { $ifNull: ['$rating', 0] },
           reviewCount: 1,
-          publishYear: { $year: '$publishedDate' },
-          coverImage: 1,
-          branchID: 1,
+          publishYear: 1,
           libraryDetails: 1
         }
       },
@@ -140,8 +162,8 @@ const searchBooks: Controller = async (req: Request, res: Response, next: NextFu
       data: {
         searchedBooks,
         pagination: {
-          page: page,
-          pageSize: pageSize,
+          page,
+          pageSize,
           totalPages: Math.ceil(totalBooks / pageSize)
         }
       }
@@ -157,10 +179,30 @@ const searchBooks: Controller = async (req: Request, res: Response, next: NextFu
 const getAllBookDetails: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { page = 1, pageSize = 10 } = req.query as unknown as ICustomQuery
+    const { branchID } = req.body
     const skip = (page - 1) * pageSize
+    const { token } = await authUtils.validateAuthorizationHeader(req.headers)
+    const verifiedToken = await authUtils.verifyAccessToken(token)
+
+    const user = await User.findOne({ _id: verifiedToken._id }).exec()
+    if (!user) {
+      throw new HttpError(messageConstant.USER_NOT_FOUND, httpStatusConstant.NOT_FOUND)
+    }
+
+    const userLibraryBranchMapping = await UserLibraryBranchMapping.findOne({
+      userID: user._id,
+      branchID: branchID
+    }).exec()
+
+    if (!userLibraryBranchMapping) {
+      throw new HttpError(
+        messageConstant.USER_NOT_ASSIGNED_TO_BRANCH,
+        httpStatusConstant.BAD_REQUEST
+      )
+    }
 
     const totalBooks = await Book.countDocuments({ deletedAt: null })
-    if (!totalBooks) {
+    if (totalBooks === 0) {
       throw new HttpError(messageConstant.BOOK_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
@@ -168,7 +210,7 @@ const getAllBookDetails: Controller = async (req: Request, res: Response, next: 
       throw new HttpError(messageConstant.INVALID_PAGE_NUMBER, httpStatusConstant.BAD_REQUEST)
     }
 
-    const searchPipeline = [
+    const aggregationPipeline = [
       { $match: { deletedAt: null } },
       {
         $lookup: {
@@ -204,14 +246,6 @@ const getAllBookDetails: Controller = async (req: Request, res: Response, next: 
       },
       {
         $lookup: {
-          from: 'bookgalleries',
-          localField: '_id',
-          foreignField: 'bookID',
-          as: 'gallery'
-        }
-      },
-      {
-        $lookup: {
           from: 'authors',
           localField: 'author',
           foreignField: '_id',
@@ -241,17 +275,27 @@ const getAllBookDetails: Controller = async (req: Request, res: Response, next: 
           stock: '$quantityAvailable',
           publishedDate: 1,
           coverImage: 1,
-          gallery: 1,
           rating: 1,
-          reviews: 1,
-          reviewCount: 1,
-          branchID: 1
+          reviewCount: 1
+        }
+      },
+      {
+        $lookup: {
+          from: 'booklibrarybranchmappings',
+          localField: '_id',
+          foreignField: 'bookID',
+          as: 'libraryMappings'
+        }
+      },
+      {
+        $match: {
+          'libraryMappings.libraryBranchID': branchID
         }
       },
       {
         $lookup: {
           from: 'librarybranches',
-          localField: 'branchID',
+          localField: 'libraryMappings.libraryBranchID',
           foreignField: '_id',
           as: 'libraryDetails'
         }
@@ -270,10 +314,12 @@ const getAllBookDetails: Controller = async (req: Request, res: Response, next: 
             }
           }
         }
-      }
+      },
+      { $skip: skip },
+      { $limit: pageSize }
     ]
 
-    const books = await Book.aggregate(searchPipeline).skip(skip).limit(pageSize)
+    const books = await Book.aggregate(aggregationPipeline)
     if (!books.length) {
       throw new HttpError(messageConstant.BOOK_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
@@ -595,7 +641,6 @@ const getReport: Controller = async (req: Request, res: Response, next: NextFunc
           'email firstname lastname paidAmount dueCharges name author charges description firstname lastname firstname lastname',
         populate: {
           path: 'author',
-          model: 'authors',
           select: 'email firstname lastname bio website address'
         }
       })

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
 import mongoose from 'mongoose'
-import { Author, Book, BookGallery, LibraryBranch } from '../../db/models'
+import { Author, Book, BookGallery, BookLibraryBranchMapping, LibraryBranch } from '../../db/models'
 import { Controller } from '../../interfaces'
 import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '../../constant'
 import {
@@ -12,7 +12,7 @@ import {
 import { getRatingService, getReviewService } from '../../services/book'
 import { dbConfig } from '../../config'
 import { HttpError } from '../../libs'
-import { ICustomQuery } from '../../interfaces/query.interface'
+import { ICustomQuery } from '../../interfaces'
 
 /**
  * @description Adds a new book to the library (checks for duplicates).
@@ -21,7 +21,6 @@ const addBook: Controller = async (req: Request, res: Response, next: NextFuncti
   try {
     const {
       body: {
-        branchName,
         bookID,
         name,
         authorEmail,
@@ -36,11 +35,6 @@ const addBook: Controller = async (req: Request, res: Response, next: NextFuncti
         description
       }
     } = req
-
-    const branchExists = await LibraryBranch.findOne({ name: branchName, deletedAt: null })
-    if (!branchExists) {
-      throw new HttpError(messageConstant.LIBRARY_BRANCH_NOT_FOUND, httpStatusConstant.NOT_FOUND)
-    }
 
     const existingBook = await Book.findOne({ bookID })
     if (existingBook) {
@@ -63,12 +57,15 @@ const addBook: Controller = async (req: Request, res: Response, next: NextFuncti
       bookID,
       name,
       author: author._id,
+      charges: Number(charges),
+      issueCount: 0,
+      submitCount: 0,
       ...(subscriptionDays && { subscriptionDays: Number(subscriptionDays) }),
       quantityAvailable: Number(quantityAvailable),
-      charges: Number(charges),
       ...(description && { description }),
-      branchID: branchExists._id
+      deletedAt: null
     })
+
     if (!newBook) {
       throw new HttpError(messageConstant.ERROR_CREATING_BOOK, httpStatusConstant.BAD_REQUEST)
     }
@@ -113,8 +110,7 @@ const listBooks: Controller = async (req: Request, res: Response, next: NextFunc
         description: 1
       }
     )
-      .populate({ path: 'branchID', select: 'name address' })
-      .populate({ path: 'author', select: 'firstname lastname email bio website address' }) // Populating author details
+      .populate({ path: 'author', select: 'firstname lastname email bio website address' })
       .skip(skip)
       .limit(pageSize)
 
@@ -157,14 +153,8 @@ const updateBook: Controller = async (req: Request, res: Response, next: NextFun
       subscriptionDays,
       quantityAvailable,
       numberOfFreeDays,
-      description,
-      branchName
+      description
     } = req.body
-
-    const branchExists = await LibraryBranch.findOne({ name: branchName, deletedAt: null })
-    if (!branchExists) {
-      throw new HttpError(messageConstant.LIBRARY_BRANCH_NOT_FOUND, httpStatusConstant.NOT_FOUND)
-    }
 
     const existingBook = await Book.findOne({ bookID })
     if (!existingBook) {
@@ -182,7 +172,6 @@ const updateBook: Controller = async (req: Request, res: Response, next: NextFun
         address: authorAddress
       })
     } else {
-      // Update author information if it exists
       await Author.updateOne(
         { email: authorEmail },
         {
@@ -202,8 +191,7 @@ const updateBook: Controller = async (req: Request, res: Response, next: NextFun
       ...(quantityAvailable && { quantityAvailable: Number(quantityAvailable) }),
       ...(subscriptionDays && { subscriptionDays: Number(subscriptionDays) }),
       ...(numberOfFreeDays && { numberOfFreeDays: Number(numberOfFreeDays) }),
-      ...(description && { description }),
-      branchID: branchExists._id
+      ...(description && { description })
     }
 
     const updatedBook = await Book.findOneAndUpdate({ bookID }, updatedBookData, { new: true })
@@ -388,7 +376,12 @@ const getRatingsSummary: Controller = async (req: Request, res: Response, next: 
   try {
     const { bookID } = req.params
 
-    const ratingsSummary = await getRatingService.getRatings(Number(bookID))
+    const book = await Book.findOne({ bookID })
+    if (!book) {
+      throw new HttpError(messageConstant.BOOK_NOT_EXISTS, httpStatusConstant.NOT_FOUND)
+    }
+
+    const ratingsSummary = await getRatingService.getRatings(Number(book.bookID))
     if (!ratingsSummary) {
       throw new HttpError(messageConstant.NO_RATINGS_FOUND, httpStatusConstant.NOT_FOUND)
     }
@@ -410,7 +403,12 @@ const getReviewsSummary: Controller = async (req: Request, res: Response, next: 
     const { bookID } = req.params
     const { page = 1, pageSize = 10 } = req.query as unknown as ICustomQuery
 
-    const reviewsSummary = await getReviewService.getReviews(Number(bookID), page, pageSize)
+    const book = await Book.findOne({ bookID })
+    if (!book) {
+      throw new HttpError(messageConstant.BOOK_NOT_EXISTS, httpStatusConstant.NOT_FOUND)
+    }
+
+    const reviewsSummary = await getReviewService.getReviews(Number(book.bookID), page, pageSize)
     if (!reviewsSummary) {
       throw new HttpError(messageConstant.NO_REVIEWS_FOUND, httpStatusConstant.NOT_FOUND)
     }
@@ -475,8 +473,7 @@ const importBookSpreadSheet: Controller = async (
             quantityAvailable: Number(row[8]),
             numberOfFreeDays: Number(row[9]),
             description: row[10],
-            branchID: new mongoose.Types.ObjectId(String(row[11])),
-            deletedAt: row[12] === String(null) ? null : new Date(row[12])
+            deletedAt: row[12] === String(null) ? null : new Date(row[11])
           }
         } catch (error) {
           console.error('Error formatting data row:', error)
@@ -523,30 +520,21 @@ const exportDataToSpreadsheet: Controller = async (
 
     const sheetName = await googleSheetUtils.getSheetName(sheetID, sheetname)
 
-    const db = await dbConfig.connectToDatabase()
-    if (!db) {
-      throw new HttpError(
-        messageConstant.CONNECTION_ERROR,
-        httpStatusConstant.INTERNAL_SERVER_ERROR
-      )
-    }
-
-    const data = await databaseUtils.fetchCollectionData(db.connection, 'books')
+    const data = await Book.find({}).populate('author').exec()
 
     const formattedData = data.map((row: any) => [
       row.bookID,
       row.name,
-      row.author,
+      row.author._id,
       row.charges,
       row.issueCount,
       row.submitCount,
-      new Date(row.publishedDate).toISOString().split('T')[0],
+      row.publishedDate ? row.publishedDate.toISOString().split('T')[0] : null,
       row.subscriptionDays,
       row.quantityAvailable,
       row.numberOfFreeDays,
       row.description,
-      row.branchID,
-      row.deletedAt
+      row.deletedAt ? row.deletedAt.toISOString().split('T')[0] : null
     ])
 
     const auth = await googleSheetUtils.authorize()
@@ -564,7 +552,6 @@ const exportDataToSpreadsheet: Controller = async (
         'quantityAvailable',
         'numberOfFreeDays',
         'description',
-        'branchID',
         'deletedAt'
       ],
       ...formattedData

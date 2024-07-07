@@ -34,6 +34,7 @@ const userSchema: Schema = new Schema<IUser, UserModel>(
       // Reference to books
       {
         bookId: { type: Schema.Types.ObjectId, ref: 'book', required: true },
+        branchID: { type: Schema.Types.ObjectId, ref: 'librarybranches', required: true },
         issueDate: { type: Date, default: new Date() },
         _id: false
       }

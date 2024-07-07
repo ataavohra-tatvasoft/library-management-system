@@ -4,7 +4,7 @@ import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '.
 import { responseHandlerUtils } from '../../utils'
 import { HttpError } from '../../libs'
 import { LibraryBranch } from '../../db/models'
-import { ICustomQuery } from '../../interfaces/query.interface'
+import { ICustomQuery } from '../../interfaces'
 
 /**
  * @description Registers a new library branch

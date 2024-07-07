@@ -4,7 +4,7 @@ import { authUtils, helperFunctionsUtils, responseHandlerUtils } from '../../uti
 import { Controller } from '../../interfaces'
 import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '../../constant'
 import { HttpError } from '../../libs'
-import { ICustomQuery } from '../../interfaces/query.interface'
+import { ICustomQuery } from '../../interfaces'
 
 /**
  * @description Retrieves a list of unique issued books with details for the librarian's branch only.

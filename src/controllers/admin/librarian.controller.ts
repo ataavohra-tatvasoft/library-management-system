@@ -29,8 +29,7 @@ const signupLibrarian: Controller = async (req: Request, res: Response, next: Ne
       throw new HttpError(messageConstant.USER_ALREADY_EXISTS, httpStatusConstant.BAD_REQUEST)
     }
 
-    let libraryBranch = await LibraryBranch.findOne({ name: libraryBranchName })
-
+    const libraryBranch = await LibraryBranch.findOne({ name: libraryBranchName })
     if (!libraryBranch) {
       throw new HttpError(messageConstant.LIBRARY_BRANCH_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
@@ -41,11 +40,11 @@ const signupLibrarian: Controller = async (req: Request, res: Response, next: Ne
       lastname,
       gender,
       dateOfBirth,
-      mobileNumber: BigInt(mobileNumber),
+      mobileNumber: BigInt(mobileNumber), 
       address,
       city,
       state,
-      libraryBranchID: libraryBranch._id
+      libraryBranchID: libraryBranch._id // Assign library branch ID to the user
     })
 
     if (!user) {

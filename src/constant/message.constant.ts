@@ -37,6 +37,7 @@ export const messageConstant = {
   NO_ACTIVE_USERS_FOUND: 'No active users found',
   USER_ROLE_MAPPING_NOT_FOUND: 'User role mapping not found',
   USER_DOES_NOT_HAVE_REQUIRED_ROLE: 'User does not have the required role',
+  USER_NOT_ASSIGNED_TO_BRANCH: 'User not assigned to that branch',
 
   // Admin Messages
   ADMIN_NOT_FOUND: 'Admin not found ',
@@ -66,6 +67,8 @@ export const messageConstant = {
   ERROR_LOGGING_HISTORY: 'Error logging history',
   NO_BOOKS_FOUND: 'No books found',
   NO_ISSUED_BOOKS_FOUND: 'No issued books found',
+  ERROR_CREATING_BOOK_LIBRARY_BRANCH_MAPPING: 'Error creating book and library branch mapping',
+  BOOK_NOT_AVAILABLE_IN_BRANCH: 'Book not available in this branch',
 
   // Book Issue/Return Messages
   SUBMIT_INVALID: 'submit date is invalid, kindly check',

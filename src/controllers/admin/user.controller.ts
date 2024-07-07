@@ -6,7 +6,7 @@ import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '.
 import { helperFunctionsUtils, responseHandlerUtils } from '../../utils'
 import { envConfig } from '../../config'
 import { HttpError } from '../../libs'
-import { ICustomQuery } from '../../interfaces/query.interface'
+import { ICustomQuery } from '../../interfaces'
 
 /**
  * @description Registers a new user (validates age and hashes password).

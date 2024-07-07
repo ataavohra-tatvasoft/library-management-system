@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from 'express'
-import { Author, Book, LibraryBranch } from '../../db/models'
+import { Author, Book, BookLibraryBranchMapping, LibraryBranch } from '../../db/models'
 import { Controller } from '../../interfaces'
 import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '../../constant'
 import { HttpError } from '../../libs'
-import { ICustomQuery } from '../../interfaces/query.interface'
+import { ICustomQuery } from '../../interfaces'
 import { responseHandlerUtils } from '../../utils'
 
 //On Hold: All controllers are on hold for further modification
@@ -57,14 +57,29 @@ const addBook: Controller = async (req: Request, res: Response, next: NextFuncti
       bookID,
       name,
       author: author._id,
+      charges: Number(charges),
+      issueCount: 0,
+      submitCount: 0,
       ...(subscriptionDays && { subscriptionDays: Number(subscriptionDays) }),
       quantityAvailable: Number(quantityAvailable),
-      charges: Number(charges),
       ...(description && { description }),
-      branchID: branchExists._id
+      deletedAt: null
     })
+
     if (!newBook) {
       throw new HttpError(messageConstant.ERROR_CREATING_BOOK, httpStatusConstant.BAD_REQUEST)
+    }
+
+    const bookLibraryBranchMapping = await BookLibraryBranchMapping.create({
+      bookID: newBook._id,
+      libraryBranchID: branchExists._id
+    })
+
+    if (!bookLibraryBranchMapping) {
+      throw new HttpError(
+        messageConstant.ERROR_CREATING_BOOK_LIBRARY_BRANCH_MAPPING,
+        httpStatusConstant.BAD_REQUEST
+      )
     }
 
     return responseHandlerUtils.responseHandler(res, {
