@@ -24,12 +24,12 @@ const signupLibrarian: Controller = async (req: Request, res: Response, next: Ne
       libraryBranchName
     } = req.body
 
-    let user = await User.findOne({ email })
+    let user = await User.findOne({ email, deletedAt: null })
     if (user) {
       throw new HttpError(messageConstant.USER_ALREADY_EXISTS, httpStatusConstant.BAD_REQUEST)
     }
 
-    const libraryBranch = await LibraryBranch.findOne({ name: libraryBranchName })
+    const libraryBranch = await LibraryBranch.findOne({ name: libraryBranchName, deletedAt: null })
     if (!libraryBranch) {
       throw new HttpError(messageConstant.LIBRARY_BRANCH_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
@@ -40,7 +40,7 @@ const signupLibrarian: Controller = async (req: Request, res: Response, next: Ne
       lastname,
       gender,
       dateOfBirth,
-      mobileNumber: BigInt(mobileNumber), 
+      mobileNumber: BigInt(mobileNumber),
       address,
       city,
       state,
@@ -54,7 +54,7 @@ const signupLibrarian: Controller = async (req: Request, res: Response, next: Ne
       )
     }
 
-    const librarianRole = await Role.findOne({ role: UserType.Librarian })
+    const librarianRole = await Role.findOne({ role: UserType.Librarian, deletedAt: null })
     if (!librarianRole) {
       throw new HttpError(messageConstant.ROLE_NOT_FOUND, httpStatusConstant.INTERNAL_SERVER_ERROR)
     }

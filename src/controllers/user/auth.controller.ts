@@ -97,7 +97,7 @@ const generateNewAccessToken: Controller = async (
       throw new HttpError(messageConstant.INVALID_TOKEN_TYPE, httpStatusConstant.INVALID_TOKEN)
     }
 
-    const user = await User.findOne({ email: validatedToken.email })
+    const user = await User.findOne({ email: validatedToken.email, deletedAt: null })
 
     const newAccessToken = jwt.sign(
       {
@@ -259,7 +259,8 @@ const registerNewUser: Controller = async (req: Request, res: Response, next: Ne
       mobileNumber: BigInt(mobileNumber),
       address,
       city,
-      state
+      state,
+      deletedAt: null
     })
     if (!signupStatus) {
       throw new HttpError(messageConstant.ERROR_SIGNING_USER, httpStatusConstant.BAD_REQUEST)
@@ -297,9 +298,13 @@ const updateUserProfile: Controller = async (req: Request, res: Response, next: 
       ...(state && { state })
     }
 
-    const updatedUser = await User.findOneAndUpdate({ email: verifiedToken?.email }, updateData, {
-      new: true
-    })
+    const updatedUser = await User.findOneAndUpdate(
+      { email: verifiedToken?.email, deletedAt: null },
+      updateData,
+      {
+        new: true
+      }
+    )
     if (!updatedUser) {
       throw new HttpError(
         messageConstant.ERROR_UPDATING_USER,
@@ -335,7 +340,7 @@ const uploadUserProfilePhoto: Controller = async (
     const profilePhotoPath = req.file.path
 
     const uploadFile = await User.findOneAndUpdate(
-      { email: verifiedToken?.email },
+      { email: verifiedToken?.email, deletedAt: null },
       {
         profilePhoto: profilePhotoPath
       },

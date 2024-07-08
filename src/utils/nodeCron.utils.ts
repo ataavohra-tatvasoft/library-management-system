@@ -11,14 +11,18 @@ const updateDueCharges = async () => {
     const users = await User.find().populate('books')
 
     for (const user of users) {
+      if (!user.books || !Array.isArray(user.books)) {
+        continue
+      }
+
       for (const issuedBook of user.books) {
         const bookID = issuedBook.bookId
         const issueDate = new Date(issuedBook.issueDate)
         const currentDate = new Date()
-        const book = await Book.findById(bookID)
+        const book = await Book.findOne({ bookID, deletedAt: null })
 
         if (!book) {
-          loggerUtils.logger.info('Book not found for bookID: ', user, ' and bookID: ' + bookID)
+          loggerUtils.logger.info(`Book not found for user: ${user._id} and bookID: ${bookID}`)
           continue
         }
 
@@ -41,6 +45,7 @@ const updateDueCharges = async () => {
             { _id: user._id },
             { $inc: { dueCharges: dueCharges } }
           )
+
           if (!userUpdate) {
             throw new HttpError(
               messageConstant.ERROR_UPDATING_USER,

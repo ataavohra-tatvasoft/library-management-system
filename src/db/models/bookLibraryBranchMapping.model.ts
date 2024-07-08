@@ -14,6 +14,11 @@ const bookLibraryMappingSchema: Schema<IBookLibraryBranchMapping, BookLibraryBra
       type: Schema.Types.ObjectId,
       ref: 'librarybranches',
       required: true
+    },
+    deletedAt: {
+      type: Date,
+      allownull: true,
+      default: null
     }
   })
 

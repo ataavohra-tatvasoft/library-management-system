@@ -33,6 +33,11 @@ const authorSchema: Schema = new Schema<IAuthor, AuthorModel>(
       type: String,
       trim: true,
       maxlength: 200
+    },
+    deletedAt: {
+      type: Date,
+      allownull: true,
+      default: null
     }
   },
   {

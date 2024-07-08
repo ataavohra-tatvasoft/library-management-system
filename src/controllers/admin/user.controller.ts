@@ -42,7 +42,8 @@ const registerUser: Controller = async (req: Request, res: Response, next: NextF
       mobileNumber: BigInt(mobileNumber),
       address,
       city,
-      state
+      state,
+      deletedAt: null
     })
 
     if (!newUser) {
@@ -128,7 +129,7 @@ const updateUserDetails: Controller = async (req: Request, res: Response, next: 
       req.body
     const hashedPassword = password ? await bcrypt.hash(password, 10) : undefined
 
-    const user = await User.findOne({ email })
+    const user = await User.findOne({ email, deletedAt: null })
     if (!user) {
       throw new HttpError(messageConstant.USER_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
@@ -144,7 +145,9 @@ const updateUserDetails: Controller = async (req: Request, res: Response, next: 
       ...(state && { state })
     }
 
-    const updatedUser = await User.findOneAndUpdate({ email }, updatedData, { new: true })
+    const updatedUser = await User.findOneAndUpdate({ email, deletedAt: null }, updatedData, {
+      new: true
+    })
     if (!updatedUser) {
       throw new HttpError(
         messageConstant.ERROR_UPDATING_USER,

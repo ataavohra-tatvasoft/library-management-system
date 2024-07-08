@@ -105,24 +105,25 @@ const issueBookToUser: Controller = async (req: Request, res: Response, next: Ne
 
     const { bookID, email, issueDate, branchID } = req.body
 
-    const book = await Book.findOne({ bookID }).populate('author').exec()
+    const book = await Book.findOne({ bookID, deletedAt: null }).populate('author').exec()
     if (!book) {
       throw new HttpError(messageConstant.BOOK_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
-    const user = await User.findOne({ email }).populate('libraryBranchID').exec()
+    const user = await User.findOne({ email, deletedAt: null }).populate('libraryBranchID').exec()
     if (!user) {
       throw new HttpError(messageConstant.USER_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
-    const branch = await LibraryBranch.findOne({ branchID })
+    const branch = await LibraryBranch.findOne({ branchID, deletedAt: null })
     if (!branch) {
       throw new HttpError(messageConstant.LIBRARY_BRANCH_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
     const userLibraryBranchMapping = await UserLibraryBranchMapping.findOne({
       userID: user._id,
-      branchID: branch._id
+      branchID: branch._id,
+      deletedAt: null
     }).exec()
 
     if (!userLibraryBranchMapping) {
@@ -134,7 +135,8 @@ const issueBookToUser: Controller = async (req: Request, res: Response, next: Ne
 
     const matchingBookBranch = await BookLibraryBranchMapping.findOne({
       bookID: book._id,
-      libraryBranchID: branch._id
+      libraryBranchID: branch._id,
+      deletedAt: null
     }).exec()
 
     if (!matchingBookBranch) {
@@ -185,7 +187,7 @@ const issueBookToUser: Controller = async (req: Request, res: Response, next: Ne
     )
 
     const userUpdate = await User.findOneAndUpdate(
-      { email },
+      { email, deletedAt: null },
       {
         $push: {
           books: {
@@ -203,7 +205,7 @@ const issueBookToUser: Controller = async (req: Request, res: Response, next: Ne
     }
 
     const bookUpdate = await Book.findOneAndUpdate(
-      { _id: book._id },
+      { _id: book._id, deletedAt: null },
       {
         $inc: { quantityAvailable: -1, issueCount: 1 },
         numberOfFreeDays: numberOfFreeDays
@@ -245,9 +247,9 @@ const submitBookForUser: Controller = async (req: Request, res: Response, next: 
     const verifiedToken = await authUtils.verifyAccessToken(token)
     const { bookID, email, submitDate, branchID } = req.body
 
-    const book = await Book.findOne({ bookID }).exec()
-    const user = await User.findOne({ email }).populate('libraryBranchID').exec()
-    const branch = await LibraryBranch.findOne({ branchID })
+    const book = await Book.findOne({ bookID, deletedAt: null }).exec()
+    const user = await User.findOne({ email, deletedAt: null }).populate('libraryBranchID').exec()
+    const branch = await LibraryBranch.findOne({ branchID, deletedAt: null })
 
     if (!book) {
       throw new HttpError(messageConstant.BOOK_NOT_FOUND, httpStatusConstant.BAD_REQUEST)
@@ -262,7 +264,8 @@ const submitBookForUser: Controller = async (req: Request, res: Response, next: 
     }
     const userLibraryBranchMapping = await UserLibraryBranchMapping.findOne({
       userID: user._id,
-      branchID: branch._id
+      branchID: branch._id,
+      deletedAt: null
     }).exec()
 
     if (!userLibraryBranchMapping) {
@@ -274,7 +277,8 @@ const submitBookForUser: Controller = async (req: Request, res: Response, next: 
 
     const matchingBookBranch = await BookLibraryBranchMapping.findOne({
       bookID: book._id,
-      libraryBranchID: branch._id
+      libraryBranchID: branch._id,
+      deletedAt: null
     }).exec()
 
     if (!matchingBookBranch) {
@@ -314,7 +318,7 @@ const submitBookForUser: Controller = async (req: Request, res: Response, next: 
     }
 
     const userUpdate = await User.findOneAndUpdate(
-      { email },
+      { email, deletedAt: null },
       {
         $pull: {
           books: { bookId: book._id, branchID: branch._id }
@@ -351,7 +355,10 @@ const submitBookForUser: Controller = async (req: Request, res: Response, next: 
       throw new HttpError(messageConstant.ERROR_LOGGING_HISTORY, httpStatusConstant.BAD_REQUEST)
     }
 
-    const totalCharge = await User.findOne({ email }, { _id: 0, dueCharges: 1 }).exec()
+    const totalCharge = await User.findOne(
+      { email, deletedAt: null },
+      { _id: 0, dueCharges: 1 }
+    ).exec()
 
     const message = `Due charges: Rs. ${totalCharge?.dueCharges || 0}. Kindly pay after submission of the book.`
 

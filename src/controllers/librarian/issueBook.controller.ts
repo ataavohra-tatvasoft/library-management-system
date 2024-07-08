@@ -1,5 +1,12 @@
 import { Request, Response, NextFunction } from 'express'
-import { Book, User, BookHistory } from '../../db/models'
+import {
+  Book,
+  User,
+  BookHistory,
+  BookLibraryBranchMapping,
+  UserLibraryBranchMapping,
+  LibraryBranch
+} from '../../db/models'
 import { authUtils, helperFunctionsUtils, responseHandlerUtils } from '../../utils'
 import { Controller } from '../../interfaces'
 import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '../../constant'
@@ -7,7 +14,7 @@ import { HttpError } from '../../libs'
 import { ICustomQuery } from '../../interfaces'
 
 /**
- * @description Retrieves a list of unique issued books with details for the librarian's branch only.
+ * @description Retrieves a list of unique issued books with details including branch name and branch ID.
  */
 const getIssuedBooksList: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -17,15 +24,21 @@ const getIssuedBooksList: Controller = async (req: Request, res: Response, next:
     const { token } = await authUtils.validateAuthorizationHeader(req.headers)
     const verifiedToken = await authUtils.verifyAccessToken(token)
 
-    const librarian = await User.findOne({ _id: verifiedToken._id })
-    if (!librarian) {
-      throw new HttpError(messageConstant.LIBRARIAN_NOT_FOUND, httpStatusConstant.NOT_FOUND)
+    const librarian = await User.findOne({ _id: verifiedToken._id, deletedAt: null })
+    if (!librarian || !librarian.libraryBranchID) {
+      throw new HttpError(
+        messageConstant.USER_NOT_ASSIGNED_TO_BRANCH,
+        httpStatusConstant.BAD_REQUEST
+      )
     }
+
+    const branchID = librarian.libraryBranchID
 
     const issuedBooksAggregationPipeline = [
       {
         $match: {
-          'books.issueDate': { $ne: null }
+          'books.issueDate': { $ne: null },
+          'books.branchID': branchID
         }
       },
       { $unwind: '$books' },
@@ -38,33 +51,25 @@ const getIssuedBooksList: Controller = async (req: Request, res: Response, next:
         }
       },
       {
-        $addFields: {
-          book: { $arrayElemAt: ['$bookDetails', 0] },
-          issueDate: '$books.issueDate'
-        }
-      },
-      {
-        $match: {
-          'book.branchID': librarian.libraryBranchID
-        }
-      },
-      {
         $lookup: {
           from: 'librarybranches',
-          localField: 'book.branchID',
+          localField: 'books.branchID',
           foreignField: '_id',
-          as: 'libraryDetails'
+          as: 'branchDetails'
         }
       },
       {
-        $addFields: {
-          libraryDetails: {
-            $map: {
-              input: '$libraryDetails',
-              as: 'branch',
-              in: { name: '$$branch.name', address: '$$branch.address' }
-            }
-          }
+        $unwind: '$bookDetails'
+      },
+      {
+        $unwind: '$branchDetails'
+      },
+      {
+        $project: {
+          bookDetails: 1,
+          issueDate: '$books.issueDate',
+          branchID: '$branchDetails._id',
+          branchName: '$branchDetails.name'
         }
       }
     ]
@@ -77,7 +82,10 @@ const getIssuedBooksList: Controller = async (req: Request, res: Response, next:
       throw new HttpError(messageConstant.NO_ISSUED_BOOK_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
-    const total = issuedBooks.length
+    const totalIssuedBooksPipeline = [...issuedBooksAggregationPipeline]
+    const totalIssuedBooks = await User.aggregate(totalIssuedBooksPipeline)
+
+    const total = totalIssuedBooks?.length || 0
     const totalPages = Math.ceil(total / pageSize)
 
     if (page > totalPages) {
@@ -102,31 +110,73 @@ const getIssuedBooksList: Controller = async (req: Request, res: Response, next:
 }
 
 /**
- * @description Issues a book to a user after validating availability and limits, restricted to librarian's branch.
+ * @description Issues a book to a user after validating availability and limits.
  */
 const issueBookToUser: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { token } = await authUtils.validateAuthorizationHeader(req.headers)
     const verifiedToken = await authUtils.verifyAccessToken(token)
 
-    const { bookID, email, issueDate } = req.body
+    const { bookID, email, issueDate, branchID } = req.body
 
-    const librarian = await User.findOne({ _id: verifiedToken._id })
-    if (!librarian) {
-      throw new HttpError(messageConstant.LIBRARIAN_NOT_FOUND, httpStatusConstant.NOT_FOUND)
+    const librarian = await User.findOne({ _id: verifiedToken._id, deletedAt: null })
+
+    if (!librarian || !librarian.libraryBranchID) {
+      throw new HttpError(
+        messageConstant.USER_NOT_ASSIGNED_TO_BRANCH,
+        httpStatusConstant.BAD_REQUEST
+      )
     }
 
-    const book = await Book.findOne({ bookID, branchID: librarian.libraryBranchID })
+    if (String(librarian.libraryBranchID) !== String(branchID)) {
+      throw new HttpError(
+        messageConstant.BOOK_NOT_AVAILABLE_IN_BRANCH,
+        httpStatusConstant.ACCESS_FORBIDDEN
+      )
+    }
+
+    const book = await Book.findOne({ _id: bookID, deletedAt: null }).populate('author').exec()
     if (!book) {
       throw new HttpError(messageConstant.BOOK_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
-    const user = await User.findOne({ email }).populate('books')
+    const user = await User.findOne({ email, deletedAt: null }).populate('libraryBranchID').exec()
     if (!user) {
       throw new HttpError(messageConstant.USER_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
-    if (user.books) {
+    const branch = await LibraryBranch.findOne({ _id: branchID, deletedAt: null })
+    if (!branch) {
+      throw new HttpError(messageConstant.LIBRARY_BRANCH_NOT_FOUND, httpStatusConstant.NOT_FOUND)
+    }
+
+    const userLibraryBranchMapping = await UserLibraryBranchMapping.findOne({
+      userID: user._id,
+      branchID: branch._id,
+      deletedAt: null
+    }).exec()
+
+    if (!userLibraryBranchMapping) {
+      throw new HttpError(
+        messageConstant.USER_NOT_ASSIGNED_TO_BRANCH,
+        httpStatusConstant.BAD_REQUEST
+      )
+    }
+
+    const matchingBookBranch = await BookLibraryBranchMapping.findOne({
+      bookID: book._id,
+      libraryBranchID: branch._id,
+      deletedAt: null
+    }).exec()
+
+    if (!matchingBookBranch) {
+      throw new HttpError(
+        messageConstant.BOOK_NOT_AVAILABLE_IN_BRANCH,
+        httpStatusConstant.BAD_REQUEST
+      )
+    }
+
+    if (user.books && user.books.length > 0) {
       for (const issuedBook of user.books) {
         if (String(issuedBook.bookId) === String(book._id)) {
           throw new HttpError(
@@ -167,38 +217,41 @@ const issueBookToUser: Controller = async (req: Request, res: Response, next: Ne
     )
 
     const userUpdate = await User.findOneAndUpdate(
-      { email },
+      { email, deletedAt: null },
       {
         $push: {
           books: {
             bookId: book._id,
+            branchID: branch._id,
             ...(issueDate && { issueDate: new Date(issueDate) })
           }
         }
-      }
-    )
+      },
+      { new: true }
+    ).exec()
 
     if (!userUpdate) {
       throw new HttpError(messageConstant.ERROR_ASSIGNING_BOOK, httpStatusConstant.BAD_REQUEST)
     }
 
-    const bookUpdate = await Book.updateOne(
-      { _id: book._id },
+    const bookUpdate = await Book.findOneAndUpdate(
+      { _id: book._id, deletedAt: null },
       {
-        $inc: { quantityAvailable: -1, issueCount: +1 },
+        $inc: { quantityAvailable: -1, issueCount: 1 },
         numberOfFreeDays: numberOfFreeDays
-      }
-    )
+      },
+      { new: true }
+    ).exec()
 
-    if (!bookUpdate.modifiedCount) {
+    if (!bookUpdate) {
       throw new HttpError(messageConstant.ERROR_UPDATING_BOOK, httpStatusConstant.BAD_REQUEST)
     }
 
     const logHistory = await BookHistory.create({
       bookID: book._id,
       userID: user._id,
-      issuedBy: verifiedToken._id, // Assuming verifiedToken includes _id of the librarian
-      issueDate: new Date(issueDate)
+      issuedBy: verifiedToken?._id,
+      issueDate: issueDate ? new Date(issueDate) : undefined
     })
 
     if (!logHistory) {
@@ -222,17 +275,26 @@ const submitBookForUser: Controller = async (req: Request, res: Response, next: 
     const DAY_IN_MILLISECONDS = 1000 * 60 * 60 * 24
     const { token } = await authUtils.validateAuthorizationHeader(req.headers)
     const verifiedToken = await authUtils.verifyAccessToken(token)
-    const { bookID, email, submitDate } = req.body
+    const { bookID, email, submitDate, branchID } = req.body
 
-    const librarian = await User.findOne({ _id: verifiedToken._id })
-    if (!librarian) {
-      throw new HttpError(messageConstant.LIBRARIAN_NOT_FOUND, httpStatusConstant.NOT_FOUND)
+    const librarian = await User.findOne({ _id: verifiedToken._id, deletedAt: null })
+    if (!librarian || !librarian.libraryBranchID) {
+      throw new HttpError(
+        messageConstant.USER_NOT_ASSIGNED_TO_BRANCH,
+        httpStatusConstant.BAD_REQUEST
+      )
     }
 
-    const [book, user] = await Promise.all([
-      Book.findOne({ bookID, branchID: librarian.libraryBranchID }),
-      User.findOne({ email })
-    ])
+    if (String(librarian.libraryBranchID) !== String(branchID)) {
+      throw new HttpError(
+        messageConstant.BOOK_NOT_AVAILABLE_IN_BRANCH,
+        httpStatusConstant.ACCESS_FORBIDDEN
+      )
+    }
+
+    const book = await Book.findOne({ _id: bookID, deletedAt: null }).exec()
+    const user = await User.findOne({ email, deletedAt: null }).populate('libraryBranchID').exec()
+    const branch = await LibraryBranch.findOne({ _id: branchID, deletedAt: null })
 
     if (!book) {
       throw new HttpError(messageConstant.BOOK_NOT_FOUND, httpStatusConstant.BAD_REQUEST)
@@ -242,15 +304,43 @@ const submitBookForUser: Controller = async (req: Request, res: Response, next: 
       throw new HttpError(messageConstant.USER_NOT_FOUND, httpStatusConstant.BAD_REQUEST)
     }
 
+    if (!branch) {
+      throw new HttpError(messageConstant.LIBRARY_BRANCH_NOT_FOUND, httpStatusConstant.NOT_FOUND)
+    }
+
+    const userLibraryBranchMapping = await UserLibraryBranchMapping.findOne({
+      userID: user._id,
+      branchID: branch._id,
+      deletedAt: null
+    }).exec()
+
+    if (!userLibraryBranchMapping) {
+      throw new HttpError(
+        messageConstant.USER_NOT_ASSIGNED_TO_BRANCH,
+        httpStatusConstant.BAD_REQUEST
+      )
+    }
+
+    const matchingBookBranch = await BookLibraryBranchMapping.findOne({
+      bookID: book._id,
+      libraryBranchID: branch._id,
+      deletedAt: null
+    }).exec()
+
+    if (!matchingBookBranch) {
+      throw new HttpError(
+        messageConstant.BOOK_NOT_AVAILABLE_IN_BRANCH,
+        httpStatusConstant.BAD_REQUEST
+      )
+    }
+
     const submitDateObject = new Date(submitDate)
 
-    if (!user.books) {
-      throw new HttpError(messageConstant.NO_ISSUED_BOOKS_FOUND, httpStatusConstant.NOT_FOUND)
-    }
-    const issuedBook = user.books.find(
+    const issuedBook = user.books?.find(
       (issuedBookEntry) =>
         String(issuedBookEntry.bookId) === String(book._id) &&
-        issuedBookEntry.issueDate <= submitDateObject
+        issuedBookEntry.issueDate <= submitDateObject &&
+        String(issuedBookEntry.branchID) === String(branch._id)
     )
 
     if (!issuedBook) {
@@ -268,39 +358,32 @@ const submitBookForUser: Controller = async (req: Request, res: Response, next: 
     const dueCharges = durationInDays * book.charges
 
     if (dueCharges > 0) {
-      const userUpdateStatus = await User.updateOne({ email }, { $inc: { dueCharges: dueCharges } })
-      if (!userUpdateStatus.modifiedCount) {
-        throw new HttpError(
-          messageConstant.ERROR_UPDATING_DUE_CHARGES_IN_USER,
-          httpStatusConstant.BAD_REQUEST
-        )
-      }
+      await User.updateOne({ email }, { $inc: { dueCharges: dueCharges } }).exec()
     } else {
       console.log('Due charges are already 0 for user:', user.firstname + ' ' + user.lastname)
     }
 
-    const deletedBook = await User.findOneAndUpdate(
-      { email, 'books.bookId': book._id },
+    const userUpdate = await User.findOneAndUpdate(
+      { email, deletedAt: null },
       {
-        $pull: { books: { bookId: book._id } }
+        $pull: {
+          books: { bookId: book._id, branchID: branch._id }
+        },
+        $inc: {
+          dueCharges: dueCharges
+        }
       },
       { new: true }
-    )
+    ).exec()
 
-    if (!deletedBook) {
-      throw new HttpError(messageConstant.ERROR_DELETING_BOOK, httpStatusConstant.BAD_REQUEST)
+    if (!userUpdate) {
+      throw new HttpError(messageConstant.ERROR_UPDATING_USER, httpStatusConstant.BAD_REQUEST)
     }
 
-    const bookUpdateStatus = await Book.updateOne(
+    await Book.updateOne(
       { _id: book._id },
-      {
-        $inc: { quantityAvailable: 1, submitCount: +1 }
-      }
-    )
-
-    if (!bookUpdateStatus.modifiedCount) {
-      throw new HttpError(messageConstant.ERROR_UPDATING_BOOK, httpStatusConstant.BAD_REQUEST)
-    }
+      { $inc: { quantityAvailable: 1, submitCount: 1 } }
+    ).exec()
 
     const logHistory = await BookHistory.updateOne(
       {
@@ -310,15 +393,18 @@ const submitBookForUser: Controller = async (req: Request, res: Response, next: 
       },
       {
         submittedBy: verifiedToken?._id,
-        submitDate: new Date(submitDate)
+        submitDate: submitDate ? new Date(submitDate) : undefined
       }
-    )
+    ).exec()
 
     if (!logHistory) {
       throw new HttpError(messageConstant.ERROR_LOGGING_HISTORY, httpStatusConstant.BAD_REQUEST)
     }
 
-    const totalCharge = await User.findOne({ email }, { _id: 0, dueCharges: 1 })
+    const totalCharge = await User.findOne(
+      { email, deletedAt: null },
+      { _id: 0, dueCharges: 1 }
+    ).exec()
 
     const message = `Due charges: Rs. ${totalCharge?.dueCharges || 0}. Kindly pay after submission of the book.`
 

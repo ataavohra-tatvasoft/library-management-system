@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from 'express'
-import mongoose from 'mongoose'
-import { Author, Book, BookGallery, BookLibraryBranchMapping, LibraryBranch } from '../../db/models'
+import { Author, Book, BookGallery } from '../../db/models'
 import { Controller } from '../../interfaces'
 import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '../../constant'
 import {
@@ -36,12 +35,12 @@ const addBook: Controller = async (req: Request, res: Response, next: NextFuncti
       }
     } = req
 
-    const existingBook = await Book.findOne({ bookID })
+    const existingBook = await Book.findOne({ bookID, deletedAt: null })
     if (existingBook) {
       throw new HttpError(messageConstant.BOOK_ALREADY_EXISTS, httpStatusConstant.BAD_REQUEST)
     }
 
-    let author = await Author.findOne({ email: authorEmail })
+    let author = await Author.findOne({ email: authorEmail, deletedAt: null })
     if (!author) {
       author = await Author.create({
         email: authorEmail,
@@ -155,38 +154,41 @@ const updateBook: Controller = async (req: Request, res: Response, next: NextFun
       numberOfFreeDays,
       description
     } = req.body
+    let author
 
-    const existingBook = await Book.findOne({ bookID })
+    const existingBook = await Book.findOne({ bookID, deletedAt: null })
     if (!existingBook) {
       throw new HttpError(messageConstant.BOOK_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
-    let author = await Author.findOne({ email: authorEmail })
-    if (!author) {
-      author = await Author.create({
-        email: authorEmail,
-        firstname: authorFirstName,
-        lastname: authorLastName,
-        bio: authorBio,
-        website: authorWebsite,
-        address: authorAddress
-      })
-    } else {
-      await Author.updateOne(
-        { email: authorEmail },
-        {
+    if (authorEmail) {
+      author = await Author.findOne({ email: authorEmail, deletedAt: null })
+      if (!author) {
+        author = await Author.create({
+          email: authorEmail,
           firstname: authorFirstName,
           lastname: authorLastName,
           bio: authorBio,
           website: authorWebsite,
           address: authorAddress
-        }
-      )
+        })
+      } else {
+        await Author.updateOne(
+          { email: authorEmail },
+          {
+            firstname: authorFirstName,
+            lastname: authorLastName,
+            bio: authorBio,
+            website: authorWebsite,
+            address: authorAddress
+          }
+        )
+      }
     }
 
     const updatedBookData = {
       ...(name && { name }),
-      author: author._id,
+      ...(author && { author: author._id }),
       ...(charges && { charges: Number(charges) }),
       ...(quantityAvailable && { quantityAvailable: Number(quantityAvailable) }),
       ...(subscriptionDays && { subscriptionDays: Number(subscriptionDays) }),
@@ -194,7 +196,9 @@ const updateBook: Controller = async (req: Request, res: Response, next: NextFun
       ...(description && { description })
     }
 
-    const updatedBook = await Book.findOneAndUpdate({ bookID }, updatedBookData, { new: true })
+    const updatedBook = await Book.findOneAndUpdate({ bookID, deletedAt: null }, updatedBookData, {
+      new: true
+    })
     if (!updatedBook) {
       throw new HttpError(
         messageConstant.ERROR_UPDATING_BOOK,
@@ -275,7 +279,7 @@ const uploadBookPhoto: Controller = async (req: Request, res: Response, next: Ne
   try {
     const { bookID } = req.params
 
-    const bookExists = await Book.findOne({ bookID })
+    const bookExists = await Book.findOne({ bookID, deletedAt: null })
     if (!bookExists) {
       throw new HttpError(messageConstant.BOOK_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
@@ -318,7 +322,7 @@ const uploadBookCoverPhoto: Controller = async (
   try {
     const { bookID } = req.params
 
-    const bookExists = await Book.findOne({ bookID })
+    const bookExists = await Book.findOne({ bookID, deletedAt: null })
     if (!bookExists) {
       throw new HttpError(messageConstant.BOOK_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
@@ -331,7 +335,8 @@ const uploadBookCoverPhoto: Controller = async (
 
     const existingCoverPhoto = await BookGallery.findOne({
       bookID: bookExists._id,
-      imageName: 'coverImage'
+      imageName: 'coverImage',
+      deletedAt: null
     })
 
     if (existingCoverPhoto) {
@@ -376,7 +381,7 @@ const getRatingsSummary: Controller = async (req: Request, res: Response, next: 
   try {
     const { bookID } = req.params
 
-    const book = await Book.findOne({ bookID })
+    const book = await Book.findOne({ bookID, deletedAt: null })
     if (!book) {
       throw new HttpError(messageConstant.BOOK_NOT_EXISTS, httpStatusConstant.NOT_FOUND)
     }
@@ -403,7 +408,7 @@ const getReviewsSummary: Controller = async (req: Request, res: Response, next: 
     const { bookID } = req.params
     const { page = 1, pageSize = 10 } = req.query as unknown as ICustomQuery
 
-    const book = await Book.findOne({ bookID })
+    const book = await Book.findOne({ bookID, deletedAt: null })
     if (!book) {
       throw new HttpError(messageConstant.BOOK_NOT_EXISTS, httpStatusConstant.NOT_FOUND)
     }
@@ -520,7 +525,7 @@ const exportDataToSpreadsheet: Controller = async (
 
     const sheetName = await googleSheetUtils.getSheetName(sheetID, sheetname)
 
-    const data = await Book.find({}).populate('author').exec()
+    const data = await Book.find({ deletedAt: null }).populate('author').exec()
 
     const formattedData = data.map((row: any) => [
       row.bookID,

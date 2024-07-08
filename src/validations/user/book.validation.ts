@@ -13,6 +13,9 @@ const getAllBookDetails = {
   query: Joi.object().keys({
     page: Joi.number().integer().min(1).optional().default(1),
     pageSize: Joi.number().integer().min(1).optional().default(10)
+  }),
+  body: Joi.object({
+    branchID: Joi.string().required()
   })
 }
 

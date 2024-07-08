@@ -10,6 +10,7 @@ interface ILibraryBranchID {
 
 export interface IBookLibraryBranchMapping {
   _id?: ObjectId
-  bookID: IBookID
-  libraryBranchID: ILibraryBranchID
+  bookID?: IBookID
+  libraryBranchID?: ILibraryBranchID
+  deletedAt?: Date
 }

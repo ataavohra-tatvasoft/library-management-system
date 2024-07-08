@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express'
 import {
   Book,
   BookHistory,
+  BookLibraryBranchMapping,
   BookRating,
   BookReview,
   User,
@@ -21,6 +22,7 @@ const searchBooks: Controller = async (req: Request, res: Response, next: NextFu
   try {
     const { name, bookID, page = 1, pageSize = 10 } = req.query as unknown as ICustomQuery
     const { branchID } = req.body
+
     const skip = (page - 1) * pageSize
     const { token } = await authUtils.validateAuthorizationHeader(req.headers)
     const verifiedToken = await authUtils.verifyAccessToken(token)
@@ -37,14 +39,15 @@ const searchBooks: Controller = async (req: Request, res: Response, next: NextFu
       if (name) searchQuery.$or.push({ name: new RegExp(name, 'i') })
     }
 
-    const user = await User.findOne({ _id: verifiedToken._id }).exec()
+    const user = await User.findOne({ _id: verifiedToken._id, deletedAt: null }).exec()
     if (!user) {
       throw new HttpError(messageConstant.USER_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
     const userLibraryBranchMapping = await UserLibraryBranchMapping.findOne({
       userID: user._id,
-      branchID: branchID
+      branchID,
+      deletedAt: null
     }).exec()
 
     if (!userLibraryBranchMapping) {
@@ -66,12 +69,7 @@ const searchBooks: Controller = async (req: Request, res: Response, next: NextFu
     const searchPipeline = [
       { $match: searchQuery },
       {
-        $lookup: {
-          from: 'authors',
-          localField: 'author',
-          foreignField: '_id',
-          as: 'authorDetails'
-        }
+        $lookup: { from: 'authors', localField: 'author', foreignField: '_id', as: 'authorDetails' }
       },
       { $unwind: '$authorDetails' },
       {
@@ -84,7 +82,8 @@ const searchBooks: Controller = async (req: Request, res: Response, next: NextFu
       },
       {
         $match: {
-          'branchMappings.libraryBranchID': branchID
+          'branchMappings.libraryBranchID': branchID,
+          'branchMappings.deletedAt': null
         }
       },
       {
@@ -95,6 +94,7 @@ const searchBooks: Controller = async (req: Request, res: Response, next: NextFu
           as: 'libraryDetails'
         }
       },
+      { $match: { 'libraryDetails.deletedAt': null } },
       {
         $addFields: {
           libraryDetails: {
@@ -107,21 +107,13 @@ const searchBooks: Controller = async (req: Request, res: Response, next: NextFu
         }
       },
       {
-        $lookup: {
-          from: 'bookratings',
-          localField: '_id',
-          foreignField: 'bookID',
-          as: 'ratings'
-        }
+        $lookup: { from: 'bookratings', localField: '_id', foreignField: 'bookID', as: 'ratings' }
       },
+      { $match: { 'ratings.deletedAt': null } },
       {
-        $lookup: {
-          from: 'bookreviews',
-          localField: '_id',
-          foreignField: 'bookID',
-          as: 'reviews'
-        }
+        $lookup: { from: 'bookreviews', localField: '_id', foreignField: 'bookID', as: 'reviews' }
       },
+      { $match: { 'reviews.deletedAt': null } },
       {
         $addFields: {
           rating: { $avg: '$ratings.rating' },
@@ -180,18 +172,20 @@ const getAllBookDetails: Controller = async (req: Request, res: Response, next: 
   try {
     const { page = 1, pageSize = 10 } = req.query as unknown as ICustomQuery
     const { branchID } = req.body
+
     const skip = (page - 1) * pageSize
     const { token } = await authUtils.validateAuthorizationHeader(req.headers)
     const verifiedToken = await authUtils.verifyAccessToken(token)
 
-    const user = await User.findOne({ _id: verifiedToken._id }).exec()
+    const user = await User.findOne({ _id: verifiedToken._id, deletedAt: null }).exec()
     if (!user) {
       throw new HttpError(messageConstant.USER_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
     const userLibraryBranchMapping = await UserLibraryBranchMapping.findOne({
       userID: user._id,
-      branchID: branchID
+      branchID,
+      deletedAt: null
     }).exec()
 
     if (!userLibraryBranchMapping) {
@@ -229,21 +223,13 @@ const getAllBookDetails: Controller = async (req: Request, res: Response, next: 
         }
       },
       {
-        $lookup: {
-          from: 'bookratings',
-          localField: '_id',
-          foreignField: 'bookID',
-          as: 'ratings'
-        }
+        $lookup: { from: 'bookratings', localField: '_id', foreignField: 'bookID', as: 'ratings' }
       },
+      { $match: { 'ratings.deletedAt': null } },
       {
-        $lookup: {
-          from: 'bookreviews',
-          localField: '_id',
-          foreignField: 'bookID',
-          as: 'reviews'
-        }
+        $lookup: { from: 'bookreviews', localField: '_id', foreignField: 'bookID', as: 'reviews' }
       },
+      { $match: { 'reviews.deletedAt': null } },
       {
         $lookup: {
           from: 'authors',
@@ -252,6 +238,7 @@ const getAllBookDetails: Controller = async (req: Request, res: Response, next: 
           as: 'authorDetails'
         }
       },
+      { $match: { 'authorDetails.deletedAt': null } },
       { $unwind: '$authorDetails' },
       {
         $addFields: {
@@ -289,7 +276,8 @@ const getAllBookDetails: Controller = async (req: Request, res: Response, next: 
       },
       {
         $match: {
-          'libraryMappings.libraryBranchID': branchID
+          'libraryMappings.libraryBranchID': branchID,
+          'libraryMappings.deletedAt': null
         }
       },
       {
@@ -298,6 +286,11 @@ const getAllBookDetails: Controller = async (req: Request, res: Response, next: 
           localField: 'libraryMappings.libraryBranchID',
           foreignField: '_id',
           as: 'libraryDetails'
+        }
+      },
+      {
+        $match: {
+          'libraryDetails.deletedAt': null
         }
       },
       {
@@ -346,12 +339,41 @@ const addBookReview: Controller = async (req: Request, res: Response, next: Next
 
     const { bookID, review } = req.body
 
-    const book = await Book.findOne({ bookID })
+    const book = await Book.findOne({ bookID, deletedAt: null })
     if (!book) {
       throw new HttpError(messageConstant.BOOK_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
-    const existingReview = await BookReview.findOne({ userID: verifiedToken._id, bookID: book._id })
+    // Check if the user is associated with a branch
+    const userBranchMapping = await UserLibraryBranchMapping.findOne({
+      userID: verifiedToken._id,
+      deletedAt: null
+    })
+    if (!userBranchMapping) {
+      throw new HttpError(
+        messageConstant.USER_NOT_ASSIGNED_TO_BRANCH,
+        httpStatusConstant.BAD_REQUEST
+      )
+    }
+
+    // Check if the book is available in the user's branch
+    const bookBranchMapping = await BookLibraryBranchMapping.findOne({
+      bookID,
+      libraryBranchID: userBranchMapping.branchID,
+      deletedAt: null
+    })
+    if (!bookBranchMapping) {
+      throw new HttpError(
+        messageConstant.BOOK_NOT_AVAILABLE_IN_BRANCH,
+        httpStatusConstant.BAD_REQUEST
+      )
+    }
+
+    const existingReview = await BookReview.findOne({
+      userID: verifiedToken._id,
+      bookID: book._id,
+      deletedAt: null
+    })
     if (existingReview) {
       throw new HttpError(messageConstant.REVIEW_ALREADY_EXIST, httpStatusConstant.BAD_REQUEST)
     }
@@ -386,12 +408,41 @@ const addBookRating: Controller = async (req: Request, res: Response, next: Next
     const verifiedToken = await authUtils.verifyAccessToken(token)
     const { bookID, rating } = req.body
 
-    const book = await Book.findOne({ bookID })
+    const book = await Book.findOne({ bookID, deletedAt: null })
     if (!book) {
       throw new HttpError(messageConstant.BOOK_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
 
-    const existingRating = await BookRating.findOne({ userID: verifiedToken._id, bookID: book._id })
+    // Check if the user is associated with a branch
+    const userBranchMapping = await UserLibraryBranchMapping.findOne({
+      userID: verifiedToken._id,
+      deletedAt: null
+    })
+    if (!userBranchMapping) {
+      throw new HttpError(
+        messageConstant.USER_NOT_ASSIGNED_TO_BRANCH,
+        httpStatusConstant.BAD_REQUEST
+      )
+    }
+
+    // Check if the book is available in the user's branch
+    const bookBranchMapping = await BookLibraryBranchMapping.findOne({
+      bookID,
+      libraryBranchID: userBranchMapping.branchID,
+      deletedAt: null
+    })
+    if (!bookBranchMapping) {
+      throw new HttpError(
+        messageConstant.BOOK_NOT_AVAILABLE_IN_BRANCH,
+        httpStatusConstant.BAD_REQUEST
+      )
+    }
+
+    const existingRating = await BookRating.findOne({
+      userID: verifiedToken._id,
+      bookID: book._id,
+      deletedAt: null
+    })
     if (existingRating) {
       throw new HttpError(messageConstant.RATING_ALREADY_EXIST, httpStatusConstant.BAD_REQUEST)
     }
@@ -425,7 +476,10 @@ const getBookIssueHistory: Controller = async (req: Request, res: Response, next
     const { token } = await authUtils.validateAuthorizationHeader(req.headers)
     const verifiedToken = await authUtils.verifyAccessToken(token)
 
-    const bookHistories = (await BookHistory.find({ userID: verifiedToken?._id }).populate({
+    const bookHistories = (await BookHistory.find({
+      userID: verifiedToken?._id,
+      deletedAt: null
+    }).populate({
       path: 'userID bookID issuedBy submittedBy',
       select: 'email firstname lastname bookID name charges firstname lastname firstname lastname'
     })) as unknown as IBookHistory[]
@@ -477,12 +531,16 @@ const getSummary: Controller = async (req: Request, res: Response, next: NextFun
     const { token } = await authUtils.validateAuthorizationHeader(req.headers)
     const verifiedToken = await authUtils.verifyAccessToken(token)
 
-    const user = await User.findById({ _id: verifiedToken._id })
+    const user = await User.findOne({ _id: verifiedToken._id, deletedAt: null })
 
-    const totalIssuedBooks = await BookHistory.countDocuments({ userID: user?._id })
+    const totalIssuedBooks = await BookHistory.countDocuments({
+      userID: user?._id,
+      deletedAt: null
+    })
     const totalSubmittedBooks = await BookHistory.countDocuments({
       userID: user?._id,
-      submitDate: { $exists: true, $ne: null }
+      submitDate: { $exists: true, $ne: null },
+      deletedAt: null
     })
 
     if (totalIssuedBooks === undefined || totalSubmittedBooks === undefined) {

@@ -24,7 +24,7 @@ const addCardHolder = async (req: Request, res: Response, next: NextFunction) =>
   try {
     const { email } = req.params
 
-    const user = await User.findOne({ email })
+    const user = await User.findOne({ email, deletedAt: null })
     if (!user) {
       throw new HttpError(messageConstant.USER_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
@@ -66,7 +66,7 @@ const addCardHolder = async (req: Request, res: Response, next: NextFunction) =>
       throw new HttpError(messageConstant.CARD_HOLDER_FAILED, httpStatusConstant.BAD_REQUEST)
     }
 
-    await User.updateOne({ email }, { $set: { cardHolderId: cardholder.id } })
+    await User.updateOne({ email, deletedAt: null }, { $set: { cardHolderId: cardholder.id } })
 
     return responseHandlerUtils.responseHandler(res, {
       statusCode: httpStatusConstant.OK,
@@ -85,7 +85,7 @@ const addIssueCard = async (req: Request, res: Response, next: NextFunction) => 
   try {
     const { email } = req.params
 
-    const user = await User.findOne({ email })
+    const user = await User.findOne({ email, deletedAt: null })
     if (!user) {
       throw new HttpError(messageConstant.USER_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
@@ -124,7 +124,8 @@ const addIssueCard = async (req: Request, res: Response, next: NextFunction) => 
       expirationMonth: card.exp_month,
       expirationYear: card.exp_year,
       cardLastFour: hashedLastFourDigits,
-      isDefault: true
+      isDefault: true,
+      deletedAt: null
     })
 
     if (!newPaymentCard) {
@@ -180,7 +181,7 @@ const addPaymentCardPage: Controller = async (req: Request, res: Response, next:
   try {
     const { email } = req.params
 
-    const user = await User.findOne({ email })
+    const user = await User.findOne({ email, deletedAt: null })
     if (!user) {
       throw new HttpError(messageConstant.USER_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
@@ -218,7 +219,7 @@ const addPaymentCard = async (req: Request, res: Response, next: NextFunction) =
       )
     }
 
-    const user = await User.findOne({ email })
+    const user = await User.findOne({ email, deletedAt: null })
     if (!user) {
       throw new HttpError(messageConstant.USER_NOT_FOUND, httpStatusConstant.BAD_REQUEST)
     }
@@ -229,7 +230,8 @@ const addPaymentCard = async (req: Request, res: Response, next: NextFunction) =
       cardID,
       cardBrand,
       expirationMonth,
-      expirationYear
+      expirationYear,
+      deletedAt: null
     })
 
     if (paymentCardExists) {
@@ -245,7 +247,7 @@ const addPaymentCard = async (req: Request, res: Response, next: NextFunction) =
     }
 
     const updateUser = await User.updateOne(
-      { email: user?.email },
+      { email: user?.email, deletedAt: null },
       { $set: { stripeCustomerID: customer.id } }
     )
     if (!updateUser) {
@@ -267,7 +269,8 @@ const addPaymentCard = async (req: Request, res: Response, next: NextFunction) =
       expirationMonth,
       expirationYear,
       cardLastFour: hashedLastFourDigits,
-      isDefault
+      isDefault,
+      deletedAt: null
     })
     if (!newPaymentCard) {
       throw new HttpError(
@@ -341,7 +344,7 @@ const payCharges: Controller = async (req: Request, res: Response, next: NextFun
         httpStatusConstant.BAD_REQUEST
       )
     }
-    const user = await User.findById({ _id: verifiedToken?._id })
+    const user = await User.findOne({ _id: verifiedToken?._id, deletedAt: null })
 
     if (Number(amount) < 50) {
       throw new HttpError(messageConstant.MINIMUM_CHARGE_INVALID, httpStatusConstant.BAD_REQUEST)
@@ -352,7 +355,8 @@ const payCharges: Controller = async (req: Request, res: Response, next: NextFun
       cardID,
       cardBrand,
       expirationMonth,
-      expirationYear
+      expirationYear,
+      deletedAt: null
     })
     if (!paymentCard) {
       throw new HttpError(messageConstant.NO_PAYMENT_CARDS_FOUND, httpStatusConstant.BAD_REQUEST)

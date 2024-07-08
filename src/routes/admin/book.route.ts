@@ -4,7 +4,6 @@ import { adminBookController } from '../../controllers'
 import { adminBookSchema } from '../../validations'
 import { userAuthMiddleware, roleAuthMiddleware } from '../../middlewares'
 import { UserType } from '../../types'
-// import { multerConfigUtils } from '../../utils'
 
 const router: Router = express.Router()
 
@@ -45,14 +44,12 @@ router.delete(
 )
 router.post(
   '/upload-book-photo/:bookID',
-  // multerConfigUtils.upload.single('bookPhoto'),
   roleAuthMiddleware.checkUserRole(UserType.Admin),
   userAuthMiddleware.authMiddleware,
   adminBookController.uploadBookPhoto
 )
 router.put(
   '/upload-book-cover-photo/:bookID',
-  // multerConfigUtils.upload.single('bookCoverPhoto'),
   roleAuthMiddleware.checkUserRole(UserType.Admin),
   userAuthMiddleware.authMiddleware,
   adminBookController.uploadBookCoverPhoto

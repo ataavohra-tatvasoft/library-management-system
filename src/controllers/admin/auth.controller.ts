@@ -93,7 +93,7 @@ const generateNewAccessToken: Controller = async (
       throw new HttpError(messageConstant.INVALID_TOKEN_TYPE, httpStatusConstant.INVALID_TOKEN)
     }
 
-    const admin = await User.findOne({ email: validatedToken.email })
+    const admin = await User.findOne({ email: validatedToken.email, deletedAt: null })
 
     const newAccessToken = jwt.sign(
       {

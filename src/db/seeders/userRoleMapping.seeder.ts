@@ -6,8 +6,8 @@ export const seedUserRoleMapping = async (insertedRoles: IRole[], insertedUsers:
   await UserRoleMapping.deleteMany({})
   loggerUtils.logger.info('Deleted all user role mappings!')
   const userRoleMappings: IUserRoleMapping[] = [
-    { userID: insertedUsers[0]._id, roleID: insertedRoles[0]._id },
-    { userID: insertedUsers[1]._id, roleID: insertedRoles[1]._id }
+    { userID: { _id: insertedUsers[0]._id! }, roleID: { _id: insertedRoles[0]._id! } },
+    { userID: { _id: insertedUsers[1]._id! }, roleID: { _id: insertedRoles[1]._id! } }
   ]
 
   await UserRoleMapping.insertMany(userRoleMappings)

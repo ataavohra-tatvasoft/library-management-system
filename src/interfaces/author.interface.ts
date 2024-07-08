@@ -8,4 +8,5 @@ export interface IAuthor {
   website?: string
   email?: string
   address?: string
+  deletedAt?: Date
 }

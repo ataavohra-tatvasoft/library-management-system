@@ -57,23 +57,24 @@ const registerNewUser = {
 }
 
 const updateUserProfile = {
-  body: Joi.object().keys({
-    password: Joi.string()
-      .min(5)
-      .optional()
-      // eslint-disable-next-line no-useless-escape
-      .pattern(/^(?=.*[A-Z])(?=.*[!@#$%^&*()_+\-=?{|}\[\]:\'\";,.<>\/\\|\s]).+$/),
-    confirmPassword: Joi.ref('password'),
-    firstname: Joi.string().optional().allow(''),
-    lastname: Joi.string().optional().allow(''),
-    dateOfBirth: Joi.string().optional().allow(null),
-    mobileNumber: Joi.string().optional().allow(null),
-    address: Joi.string().optional().allow(''),
-    city: Joi.string().optional().allow(''),
-    state: Joi.string().optional().allow('')
-  })
+  body: Joi.object()
+    .keys({
+      password: Joi.string()
+        .min(5)
+        .optional()
+        // eslint-disable-next-line no-useless-escape
+        .pattern(/^(?=.*[A-Z])(?=.*[!@#$%^&*()_+\-=?{|}\[\]:\'\";,.<>\/\\|\s]).+$/),
+      confirmPassword: Joi.ref('password'),
+      firstname: Joi.string().optional().allow(''),
+      lastname: Joi.string().optional().allow(''),
+      dateOfBirth: Joi.string().optional().allow(null),
+      mobileNumber: Joi.string().optional().allow(null),
+      address: Joi.string().optional().allow(''),
+      city: Joi.string().optional().allow(''),
+      state: Joi.string().optional().allow('')
+    })
+    .min(1)
 }
-
 const uploadUserProfilePhoto = {
   params: Joi.object().keys({
     email: Joi.string().email().trim().required()

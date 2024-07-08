@@ -16,6 +16,11 @@ const userRoleMappingSchema: Schema<IUserRoleMapping, UserRoleMappingModel> = ne
     type: Schema.Types.ObjectId,
     ref: 'roles',
     required: true
+  },
+  deletedAt: {
+    type: Date,
+    allownull: true,
+    default: null
   }
 })
 

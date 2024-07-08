@@ -19,9 +19,10 @@ const checkUserRole =
         })
       }
 
-      const userRoleMappings = await UserRoleMapping.find({ userID: verifiedToken._id }).populate(
-        'roleID'
-      )
+      const userRoleMappings = await UserRoleMapping.find({
+        userID: verifiedToken._id,
+        deletedAt: null
+      }).populate('roleID')
 
       if (!userRoleMappings || userRoleMappings.length === 0) {
         throw new HttpError(

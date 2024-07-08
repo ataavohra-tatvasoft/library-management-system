@@ -22,5 +22,5 @@ export interface IBook {
   quantityAvailable: number
   numberOfFreeDays: number
   description: string
-  deletedAt: Date
+  deletedAt?: Date
 }

@@ -2,7 +2,6 @@ import { Joi } from 'celebrate'
 
 const addBook = {
   body: Joi.object().keys({
-    branchName: Joi.string().required().trim(),
     bookID: Joi.string().required().length(13).trim(),
     name: Joi.string().required().min(3).max(50).trim(),
     authorEmail: Joi.string().required().trim().email(),
@@ -41,8 +40,7 @@ const updateBook = {
     subscriptionDays: Joi.number().positive().optional().allow(null),
     quantityAvailable: Joi.number().integer().min(0).optional().allow(null),
     numberOfFreeDays: Joi.number().integer().min(0).optional().allow(null),
-    description: Joi.string().optional().allow(''),
-    branchName: Joi.string().optional().trim().allow('')
+    description: Joi.string().optional().allow('')
   })
 }
 

@@ -11,7 +11,8 @@ const issueBookToUser = {
   body: Joi.object().keys({
     bookID: Joi.string().required().min(13).max(13).trim().required(),
     email: Joi.string().email().required(),
-    issueDate: Joi.string().isoDate().required()
+    issueDate: Joi.string().isoDate().required(),
+    branchID: Joi.string().required()
   })
 }
 
@@ -19,7 +20,8 @@ const submitBookForUser = {
   body: Joi.object().keys({
     bookID: Joi.string().required().min(13).max(13).trim().required(),
     email: Joi.string().email().required(),
-    submitDate: Joi.string().required().isoDate()
+    submitDate: Joi.string().required().isoDate(),
+    branchID: Joi.string().required()
   })
 }
 

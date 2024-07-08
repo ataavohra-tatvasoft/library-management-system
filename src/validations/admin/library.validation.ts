@@ -23,11 +23,13 @@ const updateBranchDetails = {
     branchID: Joi.string().required()
   },
 
-  body: Joi.object().keys({
-    name: Joi.string().allow(''),
-    address: Joi.string().allow(''),
-    phoneNumber: Joi.string().allow(null)
-  })
+  body: Joi.object()
+    .keys({
+      name: Joi.string().allow(''),
+      address: Joi.string().allow(''),
+      phoneNumber: Joi.string().allow(null)
+    })
+    .min(1)
 }
 
 const deactivateDeleteBranch = {

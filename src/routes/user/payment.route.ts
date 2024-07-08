@@ -31,7 +31,6 @@ router.get('/template/add-payment-card/:email', userPaymentController.addPayment
 router.post(
   '/add-payment-card/:email',
   celebrate(userPaymentSchema.addPaymentCard),
-  // userAuthMiddleware.authMiddleware,
   userPaymentController.addPaymentCard
 )
 router.get(

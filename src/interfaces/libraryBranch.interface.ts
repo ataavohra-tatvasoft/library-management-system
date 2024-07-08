@@ -6,5 +6,5 @@ export interface ILibraryBranch {
   name: string
   address: string
   phoneNumber: string
-  deletedAt: Date
+  deletedAt?: Date
 }

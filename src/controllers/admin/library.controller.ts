@@ -16,7 +16,8 @@ const registerNewBranch: Controller = async (req: Request, res: Response, next: 
     const isBranchExists = await LibraryBranch.findOne({
       branchID,
       name,
-      phoneNumber
+      phoneNumber,
+      deletedAt: null
     })
     if (isBranchExists) {
       throw new HttpError(messageConstant.LIBRARY_BRANCH_EXISTS, httpStatusConstant.BAD_REQUEST)
@@ -114,7 +115,7 @@ const updateBranchDetails: Controller = async (req: Request, res: Response, next
     const { branchID } = req.params
     const { name, address, phoneNumber } = req.body
 
-    const branch = await LibraryBranch.findOne({ branchID })
+    const branch = await LibraryBranch.findOne({ branchID, deletedAt: null })
     if (!branch) {
       throw new HttpError(messageConstant.LIBRARY_BRANCH_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
@@ -125,9 +126,13 @@ const updateBranchDetails: Controller = async (req: Request, res: Response, next
       ...(phoneNumber && { phoneNumber: BigInt(phoneNumber) })
     }
 
-    const updatedBranch = await LibraryBranch.findOneAndUpdate({ branchID }, updatedData, {
-      new: true
-    })
+    const updatedBranch = await LibraryBranch.findOneAndUpdate(
+      { branchID, deletedAt: null },
+      updatedData,
+      {
+        new: true
+      }
+    )
     if (!updatedBranch) {
       throw new HttpError(
         messageConstant.ERROR_UPDATING_LIBRARY_BRANCH,
@@ -157,7 +162,7 @@ const deactivateBranch: Controller = async (req: Request, res: Response, next: N
     }
 
     const updatedBranch = await LibraryBranch.findOneAndUpdate(
-      { branchID },
+      { branchID, deletedAt: null },
       { $set: { deletedAt: Date.now() } },
       { new: true }
     )

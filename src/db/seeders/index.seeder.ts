@@ -11,6 +11,7 @@ import { seedRoles } from './role.seeder'
 import { seedUserRoleMapping } from './userRoleMapping.seeder'
 import { seedAuthors } from './author.seeder'
 import { seedBookLibraryBranchMapping } from './bookLibraryBranchMapping.seeder'
+import { seedUserLibraryBranchMapping } from './userLibraryBranchMapping.seeder'
 
 const seedData = async () => {
   try {
@@ -24,6 +25,7 @@ const seedData = async () => {
     const insertedRoles = await seedRoles()
     const insertedUsers = await seedUsers()
 
+    await seedUserLibraryBranchMapping(insertedUsers, insertedLibraryBranches)
     await seedBookLibraryBranchMapping(insertedBooks, insertedLibraryBranches)
     await seedUserRoleMapping(insertedRoles, insertedUsers)
     await seedBookGalleries(insertedBooks)

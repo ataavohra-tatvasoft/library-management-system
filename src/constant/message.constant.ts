@@ -4,7 +4,7 @@ export const messageConstant = {
   DB_CONNECTED: 'MongoDB database connected',
   COLLECTION_CONNECTION_ERROR: 'Error while connecting to database for collection',
 
-  //Import Export (Google sheet to database and vice versa) messages
+  // Import Export (Google sheet to database and vice versa) messages
   DATA_ADDED_SUCCESSFULLY: 'Data added successfully',
   NO_DATA_FOUND: 'No data found',
   ERROR_INSERTING_DATA: 'Error while inserting data ',
@@ -43,7 +43,7 @@ export const messageConstant = {
   ADMIN_NOT_FOUND: 'Admin not found ',
   ERROR_UPDATING_ADMIN: 'Error while updating admin',
 
-  //Librarian Messages
+  // Librarian Messages
   LIBRARIAN_NOT_FOUND: 'Librarian not found',
 
   // Book Messages
@@ -133,10 +133,10 @@ export const messageConstant = {
   // Payment Template Messages
   ERROR_ADD_PAYMENT_CARD_TEMPLATE: 'Error in add payment card template',
 
-  //Multer messages
+  // Multer messages
   INVALID_UPLOAD_ROUTE: 'Invalid upload route',
 
-  //Library messages
+  // Library messages
   LIBRARY_BRANCH_NOT_FOUND: 'Library branch not found',
   LIBRARY_BRANCH_EXISTS: 'Library branch already exists',
   ERROR_CREATING_LIBRARY_BRANCH: 'Error creating library branch',
@@ -147,6 +147,6 @@ export const messageConstant = {
   LIBRARY_BRANCH_DELETED_SOFT: 'Library branch deleted (soft)',
   LIBRARY_BRANCH_DELETED_HARD: 'Library branch deleted (hard)',
 
-  //Role messages
+  // Role messages
   ROLE_NOT_FOUND: 'Role not found'
 }

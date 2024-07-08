@@ -37,21 +37,23 @@ const updateUserDetails = {
     email: Joi.string().required()
   },
 
-  body: Joi.object().keys({
-    password: Joi.string()
-      .min(5)
-      .optional()
-      // eslint-disable-next-line no-useless-escape
-      .pattern(/^(?=.*[A-Z])(?=.*[!@#$%^&*()_+\-=?{|}\[\]:\'\";,.<>\/\\|\s]).+$/),
-    confirmPassword: Joi.ref('password'),
-    firstname: Joi.string().allow(''),
-    lastname: Joi.string().allow(''),
-    dateOfBirth: Joi.string().allow(null),
-    mobileNumber: Joi.string().allow(null),
-    address: Joi.string().allow(''),
-    city: Joi.string().allow(''),
-    state: Joi.string().allow('')
-  })
+  body: Joi.object()
+    .keys({
+      password: Joi.string()
+        .min(5)
+        .optional()
+        // eslint-disable-next-line no-useless-escape
+        .pattern(/^(?=.*[A-Z])(?=.*[!@#$%^&*()_+\-=?{|}\[\]:\'\";,.<>\/\\|\s]).+$/),
+      confirmPassword: Joi.ref('password'),
+      firstname: Joi.string().allow(''),
+      lastname: Joi.string().allow(''),
+      dateOfBirth: Joi.string().allow(null),
+      mobileNumber: Joi.string().allow(null),
+      address: Joi.string().allow(''),
+      city: Joi.string().allow(''),
+      state: Joi.string().allow('')
+    })
+    .min(1)
 }
 
 const deactivateDeleteUser = {
