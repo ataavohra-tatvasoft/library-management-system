@@ -1,21 +1,50 @@
 {
-    "compilerOptions": {
-        "target": "ES6", // Target JavaScript version (e.g., "es2015", "esnext")
-        "module": "CommonJS", // Module system (e.g., "commonjs", "amd", "esnext")
-        "strict": true, // Enable strict mode for type checking
-        "noImplicitAny": true, // Disallow implicit 'any' type
-        "esModuleInterop": true, // Enable interop with ES modules
-        "allowJs": true, // Allow compiling JavaScript files
-        "sourceMap": true, // Generate source maps for debugging
-        "experimentalDecorators": true /* Enable experimental support for legacy experimental decorators. */,
-        "emitDecoratorMetadata": true /* Emit design-type metadata for decorated declarations in source files. */,
-        "outDir": "build", // Output directory for compiled JavaScript files (optional)
-        "moduleResolution": "Node",
-        "skipLibCheck": true,
-        "forceConsistentCasingInFileNames": true
-    },
-    "ts-node": {
-        "esm": true,
-        "experimentalSpecifierResolution": "node"
-    }
+  "compilerOptions": {
+    // The JavaScript language version to use. ES6 includes features like let/const, arrow functions, etc.
+    "target": "ES6",
+
+    // The module system to use in the compiled output. CommonJS is the standard for Node.js.
+    "module": "CommonJS",
+
+    // Enable all strict type-checking options.
+    "strict": true,
+
+    // Raise an error on expressions and declarations with an implied 'any' type.
+    "noImplicitAny": true,
+
+    // Enables emit interoperability between CommonJS and ES Modules using the default import.
+    "esModuleInterop": true,
+
+    // Allow JavaScript files to be compiled.
+    "allowJs": true,
+
+    // Generates corresponding '.map' files that map the generated JavaScript code back to the TypeScript source.
+    "sourceMap": true,
+
+    // Enables experimental support for decorators, which are used to annotate and modify classes and properties.
+    "experimentalDecorators": true,
+
+    // Emits additional metadata for decorators, used by libraries like TypeORM and Angular.
+    "emitDecoratorMetadata": true,
+
+    // Redirect output structure to the directory. This allows you to keep your source files separate from the compiled output.
+    "outDir": "build",
+
+    // Specifies how TypeScript looks up a file from a module import. 'Node' mimics Node.js' resolution logic.
+    "moduleResolution": "Node",
+
+    // Skip type checking of declaration files (*.d.ts).
+    "skipLibCheck": true,
+
+    // Disallow inconsistently-cased references to the same file.
+    "forceConsistentCasingInFileNames": true
+  },
+
+  "ts-node": {
+    // Enable ESM (ECMAScript Module) support in ts-node.
+    "esm": true,
+
+    // Enables a custom, experimental implementation of Node.js' ESM resolution algorithm.
+    "experimentalSpecifierResolution": "node"
+  }
 }

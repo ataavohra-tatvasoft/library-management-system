@@ -1,42 +1,67 @@
 import { dbConfig } from '../../config'
-import { seedUsers } from './user.seeder'
-import { seedBooks } from './book.seeder'
-import { seedBookGalleries } from './bookGallery.seeder'
-import { seedBookRatings } from './bookRating.seeder'
-import { seedBookReviews } from './bookReview.seeder'
-import { seedLibraryBranches } from './libraryBranch.seeder'
-import { BookHistory, PaymentCard } from '../models'
+import {
+  Author,
+  Book,
+  BookGallery,
+  BookHistory,
+  BookLibraryBranchMapping,
+  BookRating,
+  BookReview,
+  LibraryBranch,
+  PaymentCard,
+  Role,
+  User,
+  UserLibraryBranchMapping,
+  UserRoleMapping
+} from '../models'
 import { loggerUtils } from '../../utils'
 import { seedRoles } from './role.seeder'
-import { seedUserRoleMapping } from './userRoleMapping.seeder'
-import { seedAuthors } from './author.seeder'
-import { seedBookLibraryBranchMapping } from './bookLibraryBranchMapping.seeder'
-import { seedUserLibraryBranchMapping } from './userLibraryBranchMapping.seeder'
 
 const seedData = async () => {
   try {
     await dbConfig.connectToDatabase()
     loggerUtils.logger.info('Connected to database')
 
-    seedAuthors
-    const insertedAuthors = await seedAuthors()
-    const insertedBooks = await seedBooks(insertedAuthors)
-    const insertedLibraryBranches = await seedLibraryBranches()
-    const insertedRoles = await seedRoles()
-    const insertedUsers = await seedUsers()
+    await Author.deleteMany()
+    loggerUtils.logger.info('Deleted previous authors!')
 
-    await seedUserLibraryBranchMapping(insertedUsers, insertedLibraryBranches)
-    await seedBookLibraryBranchMapping(insertedBooks, insertedLibraryBranches)
-    await seedUserRoleMapping(insertedRoles, insertedUsers)
-    await seedBookGalleries(insertedBooks)
-    await seedBookRatings(insertedBooks, insertedUsers)
-    await seedBookReviews(insertedBooks, insertedUsers)
+    await Book.deleteMany()
+    loggerUtils.logger.info('Deleted previous books!')
+
+    await BookGallery.deleteMany()
+    loggerUtils.logger.info('Deleted previous book galleries!')
 
     await BookHistory.deleteMany()
-    loggerUtils.logger.info('Deleted previous book history!')
+    loggerUtils.logger.info('Deleted previous book histories!')
+
+    await BookLibraryBranchMapping.deleteMany()
+    loggerUtils.logger.info('Deleted previous book - library branch mappings!')
+
+    await BookRating.deleteMany()
+    loggerUtils.logger.info('Deleted previous book ratings!')
+
+    await BookReview.deleteMany()
+    loggerUtils.logger.info('Deleted previous book reviews!')
+
+    await LibraryBranch.deleteMany()
+    loggerUtils.logger.info('Deleted previous library branches!')
 
     await PaymentCard.deleteMany()
     loggerUtils.logger.info('Deleted previous payment cards!')
+
+    await Role.deleteMany()
+    loggerUtils.logger.info('Deleted previous roles!')
+
+    await User.deleteMany()
+    loggerUtils.logger.info('Deleted previous users!')
+
+    await UserLibraryBranchMapping.deleteMany()
+    loggerUtils.logger.info('Deleted previous user - library branch mappings!')
+
+    await UserRoleMapping.deleteMany()
+    loggerUtils.logger.info('Deleted previous user - role mappings!')
+
+    await seedRoles()
 
     // eslint-disable-next-line no-undef
     process.exit(0)

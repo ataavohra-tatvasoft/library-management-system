@@ -7,11 +7,11 @@ const prettierPlugin = require('eslint-plugin-prettier') // eslint-disable-line 
 module.exports = [
   js.configs.recommended,
   {
-    // files: ['**/*.ts'],
+    files: ['**/*.ts'],
     languageOptions: {
       parser: tsParser,
-      ecmaVersion: 2015,
-      // ecmaVersion: 2020,
+      // ecmaVersion: 2015,
+      ecmaVersion: 2020,
       sourceType: 'module',
       globals: {
         console: 'readonly',
