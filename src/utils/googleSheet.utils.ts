@@ -1,3 +1,4 @@
+/* eslint-disable camelcase */
 import { OAuth2Client } from 'google-auth-library'
 import { google } from 'googleapis'
 import axios from 'axios'
@@ -13,13 +14,9 @@ const authorize = async (): Promise<OAuth2Client> => {
   )
 
   const responseTokens = await axios.post(String(envConfig.googleTokenPath), {
-    // eslint-disable-next-line camelcase
     client_id: String(envConfig.googleClientID),
-    // eslint-disable-next-line camelcase
     client_secret: String(envConfig.googleClientSecret),
-    // eslint-disable-next-line camelcase
     refresh_token: String(envConfig.googleRefreshToken),
-    // eslint-disable-next-line camelcase
     grant_type: 'refresh_token'
   })
 
@@ -29,8 +26,8 @@ const authorize = async (): Promise<OAuth2Client> => {
       httpStatusConstant.INTERNAL_SERVER_ERROR
     )
   }
+
   const tokens = {
-    // eslint-disable-next-line camelcase
     access_token: responseTokens.data.access_token
   }
 
@@ -38,7 +35,6 @@ const authorize = async (): Promise<OAuth2Client> => {
     oAuth2Client.setCredentials(tokens)
   } else {
     const authorizationUrl = oAuth2Client.generateAuthUrl({
-      // eslint-disable-next-line camelcase
       access_type: 'offline',
       scope: responseTokens.data.scope
     })
@@ -63,6 +59,7 @@ const fetchSheetData = async (spreadsheetId: string, range: string): Promise<any
 
 const getSheetName = async (spreadsheetId: string, sheetname: string): Promise<string> => {
   const auth = await authorize()
+
   const sheets = google.sheets({ version: 'v4', auth })
 
   const response = await sheets.spreadsheets.get({

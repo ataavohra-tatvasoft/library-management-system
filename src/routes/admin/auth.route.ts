@@ -8,7 +8,7 @@ import { UserType } from '../../types'
 const router: Router = express.Router()
 
 router.post('/login', celebrate(adminAuthSchema.login), adminAuthController.login)
-router.get('/get-access-token', adminAuthController.generateNewAccessToken)
+router.get('/new/access-token', adminAuthController.generateNewAccessToken)
 router.post('/logout', celebrate(adminAuthSchema.logout), adminAuthController.logout)
 router.post(
   '/forgot-password',
@@ -18,15 +18,15 @@ router.post(
 router.post(
   '/reset-password',
   celebrate(adminAuthSchema.resetPassword),
-  roleAuthMiddleware.checkUserRole(UserType.Admin),
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.Admin),
   adminAuthController.resetPassword
 )
 router.put(
-  '/update-profile',
+  '/profile',
   celebrate(adminAuthSchema.updateAdminProfile),
-  roleAuthMiddleware.checkUserRole(UserType.Admin),
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.Admin),
   adminAuthController.updateAdminProfile
 )
 

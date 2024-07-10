@@ -7,8 +7,8 @@ import {
   UserLibraryBranchMapping,
   LibraryBranch
 } from '../../db/models'
-import { authUtils, helperFunctionsUtils, responseHandlerUtils } from '../../utils'
-import { Controller } from '../../interfaces'
+import { helperFunctionsUtils, responseHandlerUtils } from '../../utils'
+import { Controller } from '../../types'
 import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '../../constant'
 import { HttpError } from '../../libs'
 import { ICustomQuery } from '../../interfaces'
@@ -100,9 +100,6 @@ const getIssuedBooksList: Controller = async (req: Request, res: Response, next:
  */
 const issueBookToUser: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { token } = await authUtils.validateAuthorizationHeader(req.headers)
-    const verifiedToken = await authUtils.verifyAccessToken(token)
-
     const { bookID, email, issueDate, branchID } = req.body
 
     const book = await Book.findOne({ bookID, deletedAt: null }).populate('author').exec()
@@ -220,7 +217,7 @@ const issueBookToUser: Controller = async (req: Request, res: Response, next: Ne
     const logHistory = await BookHistory.create({
       bookID: book._id,
       userID: user._id,
-      issuedBy: verifiedToken?._id,
+      issuedBy: req.user._id,
       issueDate: issueDate ? new Date(issueDate) : undefined
     })
 
@@ -243,8 +240,6 @@ const issueBookToUser: Controller = async (req: Request, res: Response, next: Ne
 const submitBookForUser: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const DAY_IN_MILLISECONDS = 1000 * 60 * 60 * 24
-    const { token } = await authUtils.validateAuthorizationHeader(req.headers)
-    const verifiedToken = await authUtils.verifyAccessToken(token)
     const { bookID, email, submitDate, branchID } = req.body
 
     const book = await Book.findOne({ bookID, deletedAt: null }).exec()
@@ -346,7 +341,7 @@ const submitBookForUser: Controller = async (req: Request, res: Response, next: 
         submitDate: null
       },
       {
-        submittedBy: verifiedToken?._id,
+        submittedBy: req.user._id,
         submitDate: submitDate ? new Date(submitDate) : undefined
       }
     ).exec()

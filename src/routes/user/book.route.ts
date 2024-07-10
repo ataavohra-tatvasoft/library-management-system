@@ -8,64 +8,64 @@ import { UserType } from '../../types'
 const router: Router = express.Router()
 
 router.get(
-  '/search-book',
+  '/book/search',
   celebrate(userBookSchema.searchBooks),
-  roleAuthMiddleware.checkUserRole(UserType.User),
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.User),
   userBookController.searchBooks
 )
 router.get(
-  '/book-details',
+  '/book/details',
   celebrate(userBookSchema.getAllBookDetails),
-  roleAuthMiddleware.checkUserRole(UserType.User),
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.User),
   userBookController.getAllBookDetails
 )
 router.post(
-  '/book/add-review',
+  '/book/review',
   celebrate(userBookSchema.addBookReview),
-  roleAuthMiddleware.checkUserRole(UserType.User),
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.User),
   userBookController.addBookReview
 )
 router.post(
-  '/book/add-rating',
+  '/book/rating',
   celebrate(userBookSchema.addBookRating),
-  roleAuthMiddleware.checkUserRole(UserType.User),
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.User),
   userBookController.addBookRating
 )
 router.get(
-  '/book/issue-book-history',
-  roleAuthMiddleware.checkUserRole(UserType.User),
+  '/book/issued/history',
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.User),
   userBookController.getBookIssueHistory
 )
 router.get(
   '/summary',
-  roleAuthMiddleware.checkUserRole(UserType.User),
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.User),
   userBookController.getSummary
 )
 router.get(
-  '/book-ratings-summary/:bookID',
+  '/book/ratings/:bookID',
   celebrate(userBookSchema.getBookRatingsSummary),
-  roleAuthMiddleware.checkUserRole(UserType.User),
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.User),
   userBookController.getBookRatingsSummary
 )
 router.get(
-  '/book-reviews-summary/:bookID',
+  '/book/reviews/:bookID',
   celebrate(userBookSchema.getBookReviewsSummary),
-  roleAuthMiddleware.checkUserRole(UserType.User),
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.User),
   userBookController.getBookReviewsSummary
 )
 router.get(
-  '/user-report',
+  '/user/report',
   celebrate(userBookSchema.getReport),
-  roleAuthMiddleware.checkUserRole(UserType.User),
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.User),
   userBookController.getReport
 )
 

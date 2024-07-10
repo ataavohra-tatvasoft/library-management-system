@@ -9,7 +9,7 @@ import { UserType } from '../../types'
 const router: Router = express.Router()
 
 router.post('/login', celebrate(userAuthSchema.login), userAuthController.login)
-router.get('/get-access-token', userAuthController.generateNewAccessToken)
+router.get('/new/access-token', userAuthController.generateNewAccessToken)
 router.post('/logout', userAuthMiddleware.authMiddleware, userAuthController.logout)
 router.post(
   '/forgot-password',
@@ -19,8 +19,8 @@ router.post(
 router.post(
   '/reset-password',
   celebrate(userAuthSchema.resetPassword),
-  roleAuthMiddleware.checkUserRole(UserType.User),
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.User),
   userAuthController.resetPassword
 )
 router.post(
@@ -29,17 +29,17 @@ router.post(
   userAuthController.registerNewUser
 )
 router.put(
-  '/update-profile',
+  '/profile',
   celebrate(userAuthSchema.updateUserProfile),
-  roleAuthMiddleware.checkUserRole(UserType.User),
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.User),
   userAuthController.updateUserProfile
 )
 router.put(
-  '/upload-profile-photo/:email',
+  '/upload/profile-photo/:email',
   celebrate(userAuthSchema.uploadUserProfilePhoto),
-  roleAuthMiddleware.checkUserRole(UserType.User),
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.User),
   userAuthMiddleware.uploadProfilePhotoAuth,
   multerConfigUtils.upload.single('profilePhoto'),
   userAuthController.uploadUserProfilePhoto

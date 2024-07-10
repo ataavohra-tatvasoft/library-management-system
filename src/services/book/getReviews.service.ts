@@ -3,7 +3,7 @@ import { Book, BookReview } from '../../db/models'
 import { HttpError } from '../../libs'
 
 async function getReviews(
-  bookID: number,
+  bookID: string,
   skip: number,
   limit: number
 ): Promise<{ bookReviews: { username: string; review: any }[]; length: number }> {
@@ -12,7 +12,7 @@ async function getReviews(
     if (!book) {
       throw new HttpError(messageConstant.BOOK_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
-
+    console.log(skip, limit)
     const reviews = await BookReview.find({ bookID: book._id, deletedAt: null })
       .skip(skip)
       .limit(limit)
@@ -20,6 +20,7 @@ async function getReviews(
         path: 'userID',
         select: 'email firstname lastname'
       })
+
     if (!reviews?.length) {
       throw new HttpError(messageConstant.NO_REVIEWS_FOUND, httpStatusConstant.NOT_FOUND)
     }
@@ -35,7 +36,7 @@ async function getReviews(
   }
 }
 
-async function getReviewsCount(bookID: number): Promise<number> {
+async function getReviewsCount(bookID: string): Promise<number> {
   {
     const book = await Book.findOne({ bookID, deletedAt: null })
     if (!book) {

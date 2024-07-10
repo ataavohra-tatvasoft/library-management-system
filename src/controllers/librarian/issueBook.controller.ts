@@ -7,8 +7,8 @@ import {
   UserLibraryBranchMapping,
   LibraryBranch
 } from '../../db/models'
-import { authUtils, helperFunctionsUtils, responseHandlerUtils } from '../../utils'
-import { Controller } from '../../interfaces'
+import { helperFunctionsUtils, responseHandlerUtils } from '../../utils'
+import { Controller } from '../../types'
 import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '../../constant'
 import { HttpError } from '../../libs'
 import { ICustomQuery } from '../../interfaces'
@@ -21,10 +21,7 @@ const getIssuedBooksList: Controller = async (req: Request, res: Response, next:
     const { page = 1, pageSize = 10 } = req.query as unknown as ICustomQuery
     const skip = (page - 1) * pageSize
 
-    const { token } = await authUtils.validateAuthorizationHeader(req.headers)
-    const verifiedToken = await authUtils.verifyAccessToken(token)
-
-    const librarian = await User.findOne({ _id: verifiedToken._id, deletedAt: null })
+    const librarian = await User.findOne({ _id: req.user._id, deletedAt: null })
     if (!librarian || !librarian.libraryBranchID) {
       throw new HttpError(
         messageConstant.USER_NOT_ASSIGNED_TO_BRANCH,
@@ -114,12 +111,9 @@ const getIssuedBooksList: Controller = async (req: Request, res: Response, next:
  */
 const issueBookToUser: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { token } = await authUtils.validateAuthorizationHeader(req.headers)
-    const verifiedToken = await authUtils.verifyAccessToken(token)
-
     const { bookID, email, issueDate, branchID } = req.body
 
-    const librarian = await User.findOne({ _id: verifiedToken._id, deletedAt: null })
+    const librarian = await User.findOne({ _id: req.user._id, deletedAt: null })
 
     if (!librarian || !librarian.libraryBranchID) {
       throw new HttpError(
@@ -250,7 +244,7 @@ const issueBookToUser: Controller = async (req: Request, res: Response, next: Ne
     const logHistory = await BookHistory.create({
       bookID: book._id,
       userID: user._id,
-      issuedBy: verifiedToken?._id,
+      issuedBy: req.user._id,
       issueDate: issueDate ? new Date(issueDate) : undefined
     })
 
@@ -273,11 +267,9 @@ const issueBookToUser: Controller = async (req: Request, res: Response, next: Ne
 const submitBookForUser: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const DAY_IN_MILLISECONDS = 1000 * 60 * 60 * 24
-    const { token } = await authUtils.validateAuthorizationHeader(req.headers)
-    const verifiedToken = await authUtils.verifyAccessToken(token)
     const { bookID, email, submitDate, branchID } = req.body
 
-    const librarian = await User.findOne({ _id: verifiedToken._id, deletedAt: null })
+    const librarian = await User.findOne({ _id: req.user._id, deletedAt: null })
     if (!librarian || !librarian.libraryBranchID) {
       throw new HttpError(
         messageConstant.USER_NOT_ASSIGNED_TO_BRANCH,
@@ -392,7 +384,7 @@ const submitBookForUser: Controller = async (req: Request, res: Response, next: 
         submitDate: null
       },
       {
-        submittedBy: verifiedToken?._id,
+        submittedBy: req.user._id,
         submitDate: submitDate ? new Date(submitDate) : undefined
       }
     ).exec()

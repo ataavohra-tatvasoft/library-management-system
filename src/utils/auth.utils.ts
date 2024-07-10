@@ -2,7 +2,7 @@ import { createClient } from 'redis'
 import crypto from 'crypto'
 import jwt from 'jsonwebtoken'
 import { envConfig } from '../config'
-import { VerifiedToken } from '../interfaces'
+import { IVerifiedToken } from '../interfaces'
 import { HttpError } from '../libs'
 import { httpErrorMessageConstant, httpStatusConstant, messageConstant } from '../constant'
 
@@ -19,9 +19,9 @@ async function validateAuthorizationHeader(headers: {
     return { token }
   }
 }
-async function verifyAccessToken(token: string): Promise<VerifiedToken> {
+async function verifyAccessToken(token: string): Promise<IVerifiedToken> {
   try {
-    return jwt.verify(token, envConfig.jwtSecretKey as string) as VerifiedToken
+    return jwt.verify(token, envConfig.jwtSecretKey as string) as IVerifiedToken
   } catch (error) {
     if (error instanceof jwt.JsonWebTokenError) {
       if (error.name === 'TokenExpiredError') {
@@ -36,9 +36,9 @@ async function verifyAccessToken(token: string): Promise<VerifiedToken> {
     throw error
   }
 }
-async function verifyRefreshToken(token: string): Promise<VerifiedToken> {
+async function verifyRefreshToken(token: string): Promise<IVerifiedToken> {
   try {
-    return jwt.verify(token, envConfig.jwtSecretKey as string) as VerifiedToken
+    return jwt.verify(token, envConfig.jwtSecretKey as string) as IVerifiedToken
   } catch (error) {
     if (error instanceof jwt.JsonWebTokenError) {
       if (error.name === 'TokenExpiredError') {

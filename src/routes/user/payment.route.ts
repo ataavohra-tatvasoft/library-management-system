@@ -8,43 +8,43 @@ import { UserType } from '../../types'
 const router: Router = express.Router()
 
 router.put(
-  '/add-card-holder/:email',
+  '/add/card-holder/:email',
   celebrate(userPaymentSchema.addCardHolder),
-  roleAuthMiddleware.checkUserRole(UserType.User),
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.User),
   userPaymentController.addCardHolder
 )
 router.post(
-  '/add-issue-card/:email',
+  '/issue-card/:email',
   celebrate(userPaymentSchema.addIssueCard),
-  roleAuthMiddleware.checkUserRole(UserType.User),
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.User),
   userPaymentController.addIssueCard
 )
 router.get(
-  '/get-add-card-link',
-  roleAuthMiddleware.checkUserRole(UserType.User),
+  '/link/add-card',
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.User),
   userPaymentController.getAddCardLink
 )
-router.get('/template/add-payment-card/:email', userPaymentController.addPaymentCardPage)
+router.get('/template/payment-card/:email', userPaymentController.addPaymentCardPage)
 router.post(
-  '/add-payment-card/:email',
+  '/payment-card/:email',
   celebrate(userPaymentSchema.addPaymentCard),
   userPaymentController.addPaymentCard
 )
 router.get(
-  '/payment-card-list',
+  '/payment-card/list',
   celebrate(userPaymentSchema.paymentCardsList),
-  roleAuthMiddleware.checkUserRole(UserType.User),
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.User),
   userPaymentController.paymentCardsList
 )
 router.put(
   '/pay-charges',
   celebrate(userPaymentSchema.payCharges),
-  roleAuthMiddleware.checkUserRole(UserType.User),
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.User),
   userPaymentController.payCharges
 )
 

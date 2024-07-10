@@ -1,6 +1,6 @@
-import { HttpErrorDetails } from '../interfaces'
+import { IHttpErrorDetails } from '../interfaces'
 
-export class HttpError extends Error implements HttpErrorDetails {
+export class HttpError extends Error implements IHttpErrorDetails {
   statusCode: number
   message: string
 

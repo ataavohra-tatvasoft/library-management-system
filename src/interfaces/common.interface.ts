@@ -1,16 +1,12 @@
-import { Request, Response, NextFunction } from 'express'
 import { ObjectId } from 'mongoose'
 
-// eslint-disable-next-line no-unused-vars
-export type Controller = (req: Request, res: Response, next: NextFunction) => Promise<any>
-
-export interface VerifiedToken {
+export interface IVerifiedToken {
   _id: ObjectId
   email: string
   tokenType: string
 }
 
-export interface formattedResponse {
+export interface IFormattedResponse {
   code: number
   message?: string
   data?: any
@@ -22,11 +18,11 @@ export interface formattedResponse {
     | any[]
 }
 
-export interface CelebrateErrorDetails {
+export interface ICelebrateErrorDetails {
   message: string
 }
 
-export interface HttpErrorDetails {
+export interface IHttpErrorDetails {
   statusCode: number
   message: string
 }

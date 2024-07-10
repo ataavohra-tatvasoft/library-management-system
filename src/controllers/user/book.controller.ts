@@ -9,11 +9,12 @@ import {
   UserLibraryBranchMapping
 } from '../../db/models'
 import { httpErrorMessageConstant, httpStatusConstant, messageConstant } from '../../constant'
-import { Controller, IBookHistory } from '../../interfaces'
-import { authUtils, helperFunctionsUtils, responseHandlerUtils } from '../../utils'
+import { IBookHistory } from '../../interfaces'
+import { helperFunctionsUtils, responseHandlerUtils } from '../../utils'
 import { getRatingService, getReviewService } from '../../services/book'
 import { HttpError } from '../../libs'
 import { ICustomQuery } from '../../interfaces'
+import { Controller } from '../../types'
 
 /**
  * @description Searches for active books by name, ID, or both (returns details & aggregates).
@@ -24,8 +25,6 @@ const searchBooks: Controller = async (req: Request, res: Response, next: NextFu
     const { branchID } = req.body
 
     const skip = (page - 1) * pageSize
-    const { token } = await authUtils.validateAuthorizationHeader(req.headers)
-    const verifiedToken = await authUtils.verifyAccessToken(token)
 
     const searchQuery: { deletedAt: Date | null } & {
       $or?: { bookID?: string; name?: RegExp }[]
@@ -39,7 +38,7 @@ const searchBooks: Controller = async (req: Request, res: Response, next: NextFu
       if (name) searchQuery.$or.push({ name: new RegExp(name, 'i') })
     }
 
-    const user = await User.findOne({ _id: verifiedToken._id, deletedAt: null }).exec()
+    const user = await User.findOne({ _id: req.user._id, deletedAt: null }).exec()
     if (!user) {
       throw new HttpError(messageConstant.USER_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
@@ -161,7 +160,7 @@ const searchBooks: Controller = async (req: Request, res: Response, next: NextFu
       }
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 
@@ -174,10 +173,8 @@ const getAllBookDetails: Controller = async (req: Request, res: Response, next: 
     const { branchID } = req.body
 
     const skip = (page - 1) * pageSize
-    const { token } = await authUtils.validateAuthorizationHeader(req.headers)
-    const verifiedToken = await authUtils.verifyAccessToken(token)
 
-    const user = await User.findOne({ _id: verifiedToken._id, deletedAt: null }).exec()
+    const user = await User.findOne({ _id: req.user._id, deletedAt: null }).exec()
     if (!user) {
       throw new HttpError(messageConstant.USER_NOT_FOUND, httpStatusConstant.NOT_FOUND)
     }
@@ -325,7 +322,7 @@ const getAllBookDetails: Controller = async (req: Request, res: Response, next: 
       }
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 
@@ -334,9 +331,6 @@ const getAllBookDetails: Controller = async (req: Request, res: Response, next: 
  */
 const addBookReview: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { token } = await authUtils.validateAuthorizationHeader(req.headers)
-    const verifiedToken = await authUtils.verifyAccessToken(token)
-
     const { bookID, review } = req.body
 
     const book = await Book.findOne({ bookID, deletedAt: null })
@@ -346,7 +340,7 @@ const addBookReview: Controller = async (req: Request, res: Response, next: Next
 
     // Check if the user is associated with a branch
     const userBranchMapping = await UserLibraryBranchMapping.findOne({
-      userID: verifiedToken._id,
+      userID: req.user._id,
       deletedAt: null
     })
     if (!userBranchMapping) {
@@ -370,7 +364,7 @@ const addBookReview: Controller = async (req: Request, res: Response, next: Next
     }
 
     const existingReview = await BookReview.findOne({
-      userID: verifiedToken._id,
+      userID: req.user._id,
       bookID: book._id,
       deletedAt: null
     })
@@ -379,7 +373,7 @@ const addBookReview: Controller = async (req: Request, res: Response, next: Next
     }
 
     const newReview = await BookReview.create({
-      userID: verifiedToken._id,
+      userID: req.user._id,
       bookID: book._id,
       review
     })
@@ -395,7 +389,7 @@ const addBookReview: Controller = async (req: Request, res: Response, next: Next
       message: httpErrorMessageConstant.SUCCESSFUL
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 
@@ -404,8 +398,6 @@ const addBookReview: Controller = async (req: Request, res: Response, next: Next
  */
 const addBookRating: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { token } = await authUtils.validateAuthorizationHeader(req.headers)
-    const verifiedToken = await authUtils.verifyAccessToken(token)
     const { bookID, rating } = req.body
 
     const book = await Book.findOne({ bookID, deletedAt: null })
@@ -415,7 +407,7 @@ const addBookRating: Controller = async (req: Request, res: Response, next: Next
 
     // Check if the user is associated with a branch
     const userBranchMapping = await UserLibraryBranchMapping.findOne({
-      userID: verifiedToken._id,
+      userID: req.user._id,
       deletedAt: null
     })
     if (!userBranchMapping) {
@@ -439,7 +431,7 @@ const addBookRating: Controller = async (req: Request, res: Response, next: Next
     }
 
     const existingRating = await BookRating.findOne({
-      userID: verifiedToken._id,
+      userID: req.user._id,
       bookID: book._id,
       deletedAt: null
     })
@@ -448,7 +440,7 @@ const addBookRating: Controller = async (req: Request, res: Response, next: Next
     }
 
     const newRating = await BookRating.create({
-      userID: verifiedToken._id,
+      userID: req.user._id,
       bookID: book._id,
       rating
     })
@@ -464,7 +456,7 @@ const addBookRating: Controller = async (req: Request, res: Response, next: Next
       message: httpErrorMessageConstant.SUCCESSFUL
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 
@@ -473,11 +465,8 @@ const addBookRating: Controller = async (req: Request, res: Response, next: Next
  */
 const getBookIssueHistory: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { token } = await authUtils.validateAuthorizationHeader(req.headers)
-    const verifiedToken = await authUtils.verifyAccessToken(token)
-
     const bookHistories = (await BookHistory.find({
-      userID: verifiedToken?._id,
+      userID: req.user._id,
       deletedAt: null
     }).populate({
       path: 'userID bookID issuedBy submittedBy',
@@ -519,7 +508,7 @@ const getBookIssueHistory: Controller = async (req: Request, res: Response, next
       }
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 
@@ -528,10 +517,7 @@ const getBookIssueHistory: Controller = async (req: Request, res: Response, next
  */
 const getSummary: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { token } = await authUtils.validateAuthorizationHeader(req.headers)
-    const verifiedToken = await authUtils.verifyAccessToken(token)
-
-    const user = await User.findOne({ _id: verifiedToken._id, deletedAt: null })
+    const user = await User.findOne({ _id: req.user._id, deletedAt: null })
 
     const totalIssuedBooks = await BookHistory.countDocuments({
       userID: user?._id,
@@ -563,7 +549,7 @@ const getSummary: Controller = async (req: Request, res: Response, next: NextFun
       }
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 
@@ -588,7 +574,7 @@ const getBookRatingsSummary: Controller = async (
       data: ratingsSummary
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 
@@ -605,14 +591,14 @@ const getBookReviewsSummary: Controller = async (
     const { page = 1, pageSize = 10 } = req.query as unknown as ICustomQuery
     const skip = (page - 1) * pageSize
 
-    const totalReviews = await getReviewService.getReviewsCount(Number(bookID))
+    const totalReviews = await getReviewService.getReviewsCount(String(bookID))
     const totalPages = Math.ceil(totalReviews / pageSize)
 
     if (page > totalPages) {
       throw new HttpError(messageConstant.INVALID_PAGE_NUMBER, httpStatusConstant.BAD_REQUEST)
     }
 
-    const reviews = await getReviewService.getReviews(Number(bookID), skip, pageSize)
+    const reviews = await getReviewService.getReviews(String(bookID), skip, pageSize)
 
     if (!reviews?.length) {
       throw new HttpError(messageConstant.NO_REVIEWS_FOUND, httpStatusConstant.NOT_FOUND)
@@ -631,7 +617,7 @@ const getBookReviewsSummary: Controller = async (
       message: httpErrorMessageConstant.SUCCESSFUL
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 
@@ -651,9 +637,6 @@ const getReport: Controller = async (req: Request, res: Response, next: NextFunc
     let start: Date | undefined
     let end: Date | undefined
 
-    const { token } = await authUtils.validateAuthorizationHeader(req.headers)
-    const verifiedToken = await authUtils.verifyAccessToken(token)
-
     await helperFunctionsUtils.validateDateRange(
       startDate ? startDate : undefined,
       endDate ? endDate : undefined,
@@ -670,7 +653,7 @@ const getReport: Controller = async (req: Request, res: Response, next: NextFunc
     }
 
     const filter: any = {
-      userID: verifiedToken._id,
+      userID: req.user._id,
       deletedAt: null
     }
 
@@ -754,7 +737,7 @@ const getReport: Controller = async (req: Request, res: Response, next: NextFunc
       message: httpErrorMessageConstant.SUCCESSFUL
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 

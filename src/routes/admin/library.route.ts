@@ -8,38 +8,38 @@ import { UserType } from '../../types'
 const router: Router = express.Router()
 
 router.post(
-  '/create-library-branch',
+  '/library-branch',
   celebrate(adminLibraryBranchSchema.registerNewBranch),
-  roleAuthMiddleware.checkUserRole(UserType.Admin),
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.Admin),
   adminLibraryBranchController.registerNewBranch
 )
 router.get(
-  '/library-branch-list',
+  '/library-branch/list',
   celebrate(adminLibraryBranchSchema.getActiveBranchesList),
-  roleAuthMiddleware.checkUserRole(UserType.Admin),
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.Admin),
   adminLibraryBranchController.getActiveBranchesList
 )
 router.put(
-  '/update-library-branch/:branchID',
+  '/library-branch/:branchID',
   celebrate(adminLibraryBranchSchema.updateBranchDetails),
-  roleAuthMiddleware.checkUserRole(UserType.Admin),
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.Admin),
   adminLibraryBranchController.updateBranchDetails
 )
 router.put(
-  '/soft-delete-library-branch/:branchID',
+  '/soft-delete/library-branch/:branchID',
   celebrate(adminLibraryBranchSchema.deactivateDeleteBranch),
-  roleAuthMiddleware.checkUserRole(UserType.Admin),
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.Admin),
   adminLibraryBranchController.deactivateBranch
 )
 router.delete(
-  '/hard-delete-library-branch/:branchID',
+  '/hard-delete/library-branch/:branchID',
   celebrate(adminLibraryBranchSchema.deactivateDeleteBranch),
-  roleAuthMiddleware.checkUserRole(UserType.Admin),
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.Admin),
   adminLibraryBranchController.deleteBranchPermanently
 )
 

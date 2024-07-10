@@ -3,7 +3,7 @@ import Stripe from 'stripe'
 import { CelebrateError, isCelebrateError } from 'celebrate'
 import { loggerUtils } from '../utils'
 import { httpErrorMessageConstant, httpStatusConstant } from '../constant'
-import { CelebrateErrorDetails, formattedResponse } from '../interfaces'
+import { ICelebrateErrorDetails, IFormattedResponse } from '../interfaces'
 
 interface ResponseHandlerOptions {
   statusCode: number
@@ -16,7 +16,7 @@ async function responseHandler(res: Response, options: ResponseHandlerOptions) {
   const { statusCode, data, message, error } = options
 
   try {
-    const formattedResponse: formattedResponse = {
+    const formattedResponse: IFormattedResponse = {
       code: statusCode,
       message
     }
@@ -32,7 +32,7 @@ async function responseHandler(res: Response, options: ResponseHandlerOptions) {
 
     if (isCelebrateError(error)) {
       const celebrateError = error as CelebrateError
-      const errorDetails: CelebrateErrorDetails[] = []
+      const errorDetails: ICelebrateErrorDetails[] = []
 
       celebrateError.details.forEach((value, key) => {
         errorDetails.push({

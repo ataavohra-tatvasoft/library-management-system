@@ -1,16 +1,11 @@
+/* eslint-disable camelcase */
 import { Request, Response, NextFunction } from 'express'
 import bcrypt from 'bcrypt'
 import Stripe from 'stripe'
 import { User, PaymentCard } from '../../db/models'
 import { httpErrorMessageConstant, httpStatusConstant, messageConstant } from '../../constant'
-import { Controller } from '../../interfaces'
-import {
-  authUtils,
-  ejsCompilerUtils,
-  paymentUtils,
-  responseHandlerUtils,
-  sendMailUtils
-} from '../../utils'
+import { Controller } from '../../types'
+import { ejsCompilerUtils, paymentUtils, responseHandlerUtils, sendMailUtils } from '../../utils'
 import { envConfig } from '../../config'
 import { HttpError } from '../../libs'
 import { ICustomQuery } from '../../interfaces'
@@ -39,14 +34,11 @@ const addCardHolder = async (req: Request, res: Response, next: NextFunction) =>
     const cardholder = await STRIPE.issuing.cardholders.create({
       name: `${user.firstname} ${user.lastname}`,
       email: user.email,
-      // eslint-disable-next-line camelcase
       phone_number: String(user.mobileNumber),
       status: 'active',
       type: 'individual',
       individual: {
-        // eslint-disable-next-line camelcase
         first_name: user.firstname,
-        // eslint-disable-next-line camelcase
         last_name: user.lastname,
         dob: { day: 1, month: 11, year: 2003 }
       },
@@ -55,7 +47,6 @@ const addCardHolder = async (req: Request, res: Response, next: NextFunction) =>
           line1: '123 Main Street',
           city: 'San Francisco',
           state: 'CA',
-          // eslint-disable-next-line camelcase
           postal_code: 'EC1Y 8SY',
           country: 'GB'
         }
@@ -74,7 +65,7 @@ const addCardHolder = async (req: Request, res: Response, next: NextFunction) =>
       data: cardholder
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 
@@ -102,7 +93,6 @@ const addIssueCard = async (req: Request, res: Response, next: NextFunction) => 
     const paymentMethod = await STRIPE.paymentMethods.create({
       type: 'card',
       card: { token: cardActivated.id },
-      // eslint-disable-next-line camelcase
       billing_details: { email: user.email }
     })
 
@@ -141,7 +131,7 @@ const addIssueCard = async (req: Request, res: Response, next: NextFunction) => 
       data: cardActivated
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 
@@ -150,17 +140,14 @@ const addIssueCard = async (req: Request, res: Response, next: NextFunction) => 
  */
 const getAddCardLink: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { token } = await authUtils.validateAuthorizationHeader(req.headers)
-    const verifiedToken = await authUtils.verifyAccessToken(token)
-
-    const addCardLink = `http://${envConfig.serverHost}:${envConfig.serverPort}/user/template/add-payment-card/${verifiedToken?.email}`
+    const addCardLink = `http://${envConfig.serverHost}:${envConfig.serverPort}/user/template/add-payment-card/${req.user.email}`
 
     const html = await ejsCompilerUtils.compileTemplate('getAddCardLink', {
       link: addCardLink
     })
 
     await sendMailUtils.sendEmail({
-      to: verifiedToken?.email,
+      to: req.user.email,
       subject: 'Add Payment Card Link',
       html
     })
@@ -170,7 +157,7 @@ const getAddCardLink: Controller = async (req: Request, res: Response, next: Nex
       message: httpErrorMessageConstant.SUCCESSFUL
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 
@@ -199,7 +186,7 @@ const addPaymentCardPage: Controller = async (req: Request, res: Response, next:
     res.send(html)
     return res.end()
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 
@@ -284,7 +271,7 @@ const addPaymentCard = async (req: Request, res: Response, next: NextFunction) =
       message: messageConstant.PAYMENT_CARD_ADDED_SUCCESSFULLY
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 
@@ -294,8 +281,6 @@ const addPaymentCard = async (req: Request, res: Response, next: NextFunction) =
 const paymentCardsList: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { page = 1, pageSize = 10 } = req.query as unknown as ICustomQuery
-    const { token } = await authUtils.validateAuthorizationHeader(req.headers)
-    const verifiedToken = await authUtils.verifyAccessToken(token)
     const skip = (page - 1) * pageSize
 
     const totalBooksCount = await PaymentCard.countDocuments({ deletedAt: null })
@@ -309,7 +294,7 @@ const paymentCardsList: Controller = async (req: Request, res: Response, next: N
       throw new HttpError(messageConstant.INVALID_PAGE_NUMBER, httpStatusConstant.BAD_REQUEST)
     }
 
-    const paymentCardLists = await PaymentCard.find({ userID: verifiedToken?._id, deletedAt: null })
+    const paymentCardLists = await PaymentCard.find({ userID: req.user._id, deletedAt: null })
       .skip(skip)
       .limit(pageSize)
     if (!paymentCardLists?.length) {
@@ -324,7 +309,7 @@ const paymentCardsList: Controller = async (req: Request, res: Response, next: N
       }
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 
@@ -333,9 +318,6 @@ const paymentCardsList: Controller = async (req: Request, res: Response, next: N
  */
 const payCharges: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { token } = await authUtils.validateAuthorizationHeader(req.headers)
-    const verifiedToken = await authUtils.verifyAccessToken(token)
-
     const { amount, cardID, cardBrand, expirationMonth, expirationYear, cardLastFour } = req.body
 
     if (!amount || !cardID || !cardBrand || !expirationMonth || !expirationYear || !cardLastFour) {
@@ -344,7 +326,7 @@ const payCharges: Controller = async (req: Request, res: Response, next: NextFun
         httpStatusConstant.BAD_REQUEST
       )
     }
-    const user = await User.findOne({ _id: verifiedToken?._id, deletedAt: null })
+    const user = await User.findOne({ _id: req.user._id, deletedAt: null })
 
     if (Number(amount) < 50) {
       throw new HttpError(messageConstant.MINIMUM_CHARGE_INVALID, httpStatusConstant.BAD_REQUEST)
@@ -370,17 +352,14 @@ const payCharges: Controller = async (req: Request, res: Response, next: NextFun
     const paymentIntent = await STRIPE.paymentIntents.create({
       amount: Number(amount) * 100,
       currency: 'inr',
-      // eslint-disable-next-line camelcase
       automatic_payment_methods: {
         enabled: true,
-        // eslint-disable-next-line camelcase
         allow_redirects: 'never'
       },
       customer: user?.stripeCustomerID
     })
 
     const confirmResult = await STRIPE.paymentIntents.confirm(paymentIntent.id, {
-      // eslint-disable-next-line camelcase
       payment_method: String(paymentCard.paymentMethodID)
     })
     switch (confirmResult.status) {
@@ -438,7 +417,7 @@ const payCharges: Controller = async (req: Request, res: Response, next: NextFun
       }
     }
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 

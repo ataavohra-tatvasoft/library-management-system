@@ -1,9 +1,9 @@
-const js = require('@eslint/js') // eslint-disable-line no-undef
-const tsPlugin = require('@typescript-eslint/eslint-plugin') // eslint-disable-line no-undef
-const tsParser = require('@typescript-eslint/parser') // eslint-disable-line no-undef
-const prettierPlugin = require('eslint-plugin-prettier') // eslint-disable-line no-undef
+/* eslint-disable no-undef */
+const js = require('@eslint/js')
+const tsPlugin = require('@typescript-eslint/eslint-plugin')
+const tsParser = require('@typescript-eslint/parser')
+const prettierPlugin = require('eslint-plugin-prettier')
 
-// eslint-disable-next-line no-undef
 module.exports = [
   js.configs.recommended,
   {

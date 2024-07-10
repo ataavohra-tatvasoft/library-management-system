@@ -4,16 +4,14 @@ import bcrypt from 'bcrypt'
 import * as crypto from 'crypto'
 import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '../../constant'
 import { User } from '../../db/models'
-import { authUtils, ejsCompilerUtils, sendMailUtils } from '../../utils'
-import { Controller } from '../../interfaces'
+import { authUtils, ejsCompilerUtils, sendMailUtils, responseHandlerUtils } from '../../utils'
+import { Controller } from '../../types'
 import { envConfig } from '../../config'
-import responseHandlerUtils from '../../utils/responseHandler.utils'
 import { HttpError } from '../../libs'
 
 /**
  * @description Authenticates admin using email/password and returns JWT token (if valid).
  */
-
 const login: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email, password } = req.body
@@ -137,7 +135,7 @@ const logout: Controller = async (req: Request, res: Response, next: NextFunctio
       message: httpErrorMessageConstant.SUCCESSFUL
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 
@@ -229,9 +227,6 @@ const resetPassword: Controller = async (req: Request, res: Response, next: Next
  */
 const updateAdminProfile: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { token } = await authUtils.validateAuthorizationHeader(req.headers)
-    const verifiedToken = await authUtils.verifyAccessToken(token)
-
     const { password, firstname, lastname, dateOfBirth, mobileNumber, address, city, state } =
       req.body
     const hashedPassword = password ? await bcrypt.hash(password, 10) : undefined
@@ -248,7 +243,7 @@ const updateAdminProfile: Controller = async (req: Request, res: Response, next:
     }
 
     const updatedProfile = await User.findOneAndUpdate(
-      { email: verifiedToken.email },
+      { email: req.user.email },
       updatedAdminData,
       { new: true }
     )

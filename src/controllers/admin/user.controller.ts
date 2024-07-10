@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
 import bcrypt from 'bcrypt'
 import { User } from '../../db/models'
-import { Controller } from '../../interfaces'
+import { Controller } from '../../types'
 import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '../../constant'
 import { helperFunctionsUtils, responseHandlerUtils } from '../../utils'
 import { envConfig } from '../../config'

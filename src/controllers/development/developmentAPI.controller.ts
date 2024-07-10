@@ -1,4 +1,4 @@
-import { Request, Response } from 'express'
+import { NextFunction, Request, Response } from 'express'
 import { dbConfig } from '../../config'
 import {
   Author,
@@ -11,16 +11,13 @@ import {
   Role,
   User,
   UserLibraryBranchMapping,
-  UserRoleMapping,
-  BookHistory,
-  PaymentCard
+  UserRoleMapping
 } from '../../db/models'
-import { helperFunctionsUtils, loggerUtils } from '../../utils'
+import { helperFunctionsUtils, loggerUtils, responseHandlerUtils } from '../../utils'
 import {
   IAuthor,
   IBook,
   IBookLibraryBranchMapping,
-  IRole,
   IUser,
   ILibraryBranch,
   IUserLibraryBranchMapping,
@@ -28,17 +25,16 @@ import {
 } from '../../interfaces'
 import { hash } from 'bcrypt'
 import { UserType } from '../../types'
+import { httpStatusConstant, messageConstant } from '../../constant'
 
 const SALT_ROUNDS = 10
 
-const seedDatabase = async (req: Request, res: Response) => {
+const seedDatabase = async (req: Request, res: Response, next: NextFunction) => {
   try {
     await dbConfig.connectToDatabase()
     loggerUtils.logger.info('Connected to database')
 
     // Seed Authors
-    await Author.deleteMany({})
-    loggerUtils.logger.info('Deleted all authors!')
 
     const authors: IAuthor[] = [
       {
@@ -127,8 +123,6 @@ const seedDatabase = async (req: Request, res: Response) => {
     loggerUtils.logger.info('Inserted new authors!')
 
     // Seed Books
-    await Book.deleteMany({})
-    loggerUtils.logger.info('Deleted all books!')
 
     const books: IBook[] = [
       {
@@ -215,8 +209,6 @@ const seedDatabase = async (req: Request, res: Response) => {
     loggerUtils.logger.info('Inserted new books!')
 
     // Seed Book Galleries
-    await BookGallery.deleteMany({})
-    loggerUtils.logger.info('Deleted all book gallery entries!')
 
     const bookGalleryEntries = insertedBooks.map((book, index) => ({
       bookID: book._id,
@@ -228,8 +220,6 @@ const seedDatabase = async (req: Request, res: Response) => {
     loggerUtils.logger.info('Inserted new book gallery entries!')
 
     // Seed Library Branches
-    await LibraryBranch.deleteMany({})
-    loggerUtils.logger.info('Deleted all library branches!')
 
     const libraryBranches: ILibraryBranch[] = [
       {
@@ -274,28 +264,7 @@ const seedDatabase = async (req: Request, res: Response) => {
       await LibraryBranch.insertMany(libraryBranches)
     loggerUtils.logger.info('Inserted new library branches!')
 
-    // Seed Roles
-    await Role.deleteMany({})
-    loggerUtils.logger.info('Deleted all roles!')
-
-    const roles: IRole[] = [
-      {
-        role: UserType.User
-      },
-      {
-        role: UserType.Admin
-      },
-      {
-        role: UserType.Librarian
-      }
-    ]
-
-    const insertedRoles = await Role.insertMany(roles)
-    loggerUtils.logger.info('Inserted new roles!')
-
     // Seed Users
-    await User.deleteMany({})
-    loggerUtils.logger.info('Deleted all users!')
 
     const users = [
       {
@@ -331,8 +300,6 @@ const seedDatabase = async (req: Request, res: Response) => {
     loggerUtils.logger.info('Inserted new users!')
 
     // Seed User-Library Branch Mapping
-    await UserLibraryBranchMapping.deleteMany({})
-    loggerUtils.logger.info('Deleted all user role mappings!')
 
     const userLibraryBranchMappings: IUserLibraryBranchMapping[] = [
       {
@@ -354,8 +321,6 @@ const seedDatabase = async (req: Request, res: Response) => {
     loggerUtils.logger.info('Inserted new user role mappings!')
 
     // Seed Book-Library Branch Mapping
-    await BookLibraryBranchMapping.deleteMany({})
-    loggerUtils.logger.info('Deleted all book-library branch mappings!')
 
     const bookLibraryBranchMappings: IBookLibraryBranchMapping[] = [
       {
@@ -388,20 +353,19 @@ const seedDatabase = async (req: Request, res: Response) => {
     loggerUtils.logger.info('Inserted new book-library branch mappings!')
 
     // Seed User-Role Mapping
-    await UserRoleMapping.deleteMany({})
-    loggerUtils.logger.info('Deleted all user role mappings!')
+
+    const userRole = await Role.findOne({ role: UserType.User })
+    const adminRole = await Role.findOne({ role: UserType.Admin })
 
     const userRoleMappings: IUserRoleMapping[] = [
-      { userID: { _id: insertedUsers[0]._id! }, roleID: { _id: insertedRoles[0]._id! } },
-      { userID: { _id: insertedUsers[1]._id! }, roleID: { _id: insertedRoles[1]._id! } }
+      { userID: { _id: insertedUsers[0]._id! }, roleID: { _id: userRole?._id! } },
+      { userID: { _id: insertedUsers[1]._id! }, roleID: { _id: adminRole?._id! } }
     ]
 
     await UserRoleMapping.insertMany(userRoleMappings)
     loggerUtils.logger.info('Inserted new user role mappings!')
 
     // Seed Book Ratings
-    await BookRating.deleteMany({})
-    loggerUtils.logger.info('Deleted all ratings!')
 
     const ratings = [
       {
@@ -435,8 +399,6 @@ const seedDatabase = async (req: Request, res: Response) => {
     loggerUtils.logger.info('Inserted new ratings!')
 
     // Seed Book Reviews
-    await BookReview.deleteMany({})
-    loggerUtils.logger.info('Deleted all reviews!')
 
     const reviews = [
       {
@@ -464,17 +426,12 @@ const seedDatabase = async (req: Request, res: Response) => {
     await BookReview.insertMany(reviews)
     loggerUtils.logger.info('Inserted new reviews!')
 
-    // Clear Book History and Payment Cards
-    await BookHistory.deleteMany({})
-    loggerUtils.logger.info('Deleted previous book history!')
-
-    await PaymentCard.deleteMany({})
-    loggerUtils.logger.info('Deleted previous payment cards!')
-
-    res.status(200).json({ message: 'Database seeded successfully!' })
+    return responseHandlerUtils.responseHandler(res, {
+      statusCode: httpStatusConstant.OK,
+      message: messageConstant.SAMPLE_DATA_ADDED
+    })
   } catch (error) {
-    loggerUtils.logger.error('Error seeding data:', error)
-    res.status(500).json({ message: 'Error seeding data', error })
+    next(error)
   }
 }
 

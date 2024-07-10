@@ -8,10 +8,10 @@ import { UserType } from '../../types'
 const router: Router = express.Router()
 
 router.post(
-  '/create-librarian',
+  '/librarian',
   celebrate(adminLibrarianSchema.signupLibrarian),
-  roleAuthMiddleware.checkUserRole(UserType.Admin),
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.Admin),
   adminLibrarianController.signupLibrarian
 )
 

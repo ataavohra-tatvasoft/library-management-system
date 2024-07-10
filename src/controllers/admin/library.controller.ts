@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express'
-import { Controller } from '../../interfaces'
+import { Controller } from '../../types'
 import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '../../constant'
 import { responseHandlerUtils } from '../../utils'
 import { HttpError } from '../../libs'

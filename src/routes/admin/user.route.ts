@@ -8,38 +8,38 @@ import { UserType } from '../../types'
 const router: Router = express.Router()
 
 router.post(
-  '/create-user',
+  '/user',
   celebrate(adminUserSchema.registerUser),
-  roleAuthMiddleware.checkUserRole(UserType.Admin),
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.Admin),
   adminUserController.registerUser
 )
 router.get(
-  '/user-list',
+  '/user/list',
   celebrate(adminUserSchema.getActiveUsersList),
-  roleAuthMiddleware.checkUserRole(UserType.Admin),
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.Admin),
   adminUserController.getActiveUsersList
 )
 router.put(
-  '/update-user/:email',
+  '/user/:email',
   celebrate(adminUserSchema.updateUserDetails),
-  roleAuthMiddleware.checkUserRole(UserType.Admin),
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.Admin),
   adminUserController.updateUserDetails
 )
 router.put(
-  '/soft-delete-user/:email',
+  '/soft-delete/user/:email',
   celebrate(adminUserSchema.deactivateDeleteUser),
-  roleAuthMiddleware.checkUserRole(UserType.Admin),
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.Admin),
   adminUserController.deactivateUser
 )
 router.delete(
-  '/hard-delete-user/:email',
+  '/hard-delete/user/:email',
   celebrate(adminUserSchema.deactivateDeleteUser),
-  roleAuthMiddleware.checkUserRole(UserType.Admin),
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.Admin),
   adminUserController.deleteUserPermanently
 )
 

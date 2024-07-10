@@ -7,8 +7,7 @@ async function createStripeCustomer(user: IUser): Promise<Stripe.Customer | null
 
   try {
     const existingCustomer = await stripe.customers.list({
-      email: user.email,
-      limit: 1
+      email: user.email
     })
 
     if (existingCustomer.data.length > 0) {

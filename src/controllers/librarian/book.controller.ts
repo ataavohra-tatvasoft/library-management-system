@@ -1,10 +1,10 @@
 import { Request, Response, NextFunction } from 'express'
 import { Author, Book, BookLibraryBranchMapping, LibraryBranch, User } from '../../db/models'
-import { Controller } from '../../interfaces'
+import { Controller } from '../../types'
 import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '../../constant'
 import { HttpError } from '../../libs'
 import { ICustomQuery } from '../../interfaces'
-import { authUtils, responseHandlerUtils } from '../../utils'
+import { responseHandlerUtils } from '../../utils'
 
 /**
  * @description Adds a new book to the library (checks for duplicates).
@@ -97,10 +97,7 @@ const listBooks: Controller = async (req: Request, res: Response, next: NextFunc
     let { page = 1, pageSize = 10 } = req.query as unknown as ICustomQuery
     const skip = (page - 1) * pageSize
 
-    const { token } = await authUtils.validateAuthorizationHeader(req.headers)
-    const verifiedToken = await authUtils.verifyAccessToken(token)
-
-    const librarian = await User.findOne({ _id: verifiedToken._id, deletedAt: null })
+    const librarian = await User.findOne({ _id: req.user._id, deletedAt: null })
     if (!librarian || !librarian.libraryBranchID) {
       throw new HttpError(
         messageConstant.USER_NOT_ASSIGNED_TO_BRANCH,
@@ -184,11 +181,9 @@ const updateBook: Controller = async (req: Request, res: Response, next: NextFun
       description
     } = req.body
 
-    const { token } = await authUtils.validateAuthorizationHeader(req.headers)
-    const verifiedToken = await authUtils.verifyAccessToken(token)
     let author
 
-    const librarian = await User.findOne({ _id: verifiedToken._id, deletedAt: null })
+    const librarian = await User.findOne({ _id: req.user._id, deletedAt: null })
     if (!librarian || !librarian.libraryBranchID) {
       throw new HttpError(
         messageConstant.USER_NOT_ASSIGNED_TO_BRANCH,
@@ -277,10 +272,7 @@ const softDeleteBook: Controller = async (req: Request, res: Response, next: Nex
   try {
     const { bookID } = req.params
 
-    const { token } = await authUtils.validateAuthorizationHeader(req.headers)
-    const verifiedToken = await authUtils.verifyAccessToken(token)
-
-    const librarian = await User.findOne({ _id: verifiedToken._id, deletedAt: null })
+    const librarian = await User.findOne({ _id: req.user._id, deletedAt: null })
     if (!librarian || !librarian.libraryBranchID) {
       throw new HttpError(
         messageConstant.USER_NOT_ASSIGNED_TO_BRANCH,
@@ -333,10 +325,7 @@ const hardDeleteBook: Controller = async (req: Request, res: Response, next: Nex
   try {
     const { bookID } = req.params
 
-    const { token } = await authUtils.validateAuthorizationHeader(req.headers)
-    const verifiedToken = await authUtils.verifyAccessToken(token)
-
-    const librarian = await User.findOne({ _id: verifiedToken._id })
+    const librarian = await User.findOne({ _id: req.user._id })
     if (!librarian || !librarian.libraryBranchID) {
       throw new HttpError(
         messageConstant.USER_NOT_ASSIGNED_TO_BRANCH,

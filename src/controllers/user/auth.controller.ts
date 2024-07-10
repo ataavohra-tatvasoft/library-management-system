@@ -4,7 +4,7 @@ import bcrypt from 'bcrypt'
 import * as crypto from 'crypto'
 import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '../../constant'
 import { User } from '../../db/models'
-import { Controller } from '../../interfaces'
+import { Controller } from '../../types'
 import {
   authUtils,
   ejsCompilerUtils,
@@ -65,7 +65,7 @@ const login: Controller = async (req: Request, res: Response, next: NextFunction
       message: httpErrorMessageConstant.SUCCESSFUL
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 
@@ -119,7 +119,7 @@ const generateNewAccessToken: Controller = async (
       message: httpErrorMessageConstant.SUCCESSFUL
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 
@@ -141,7 +141,7 @@ const logout: Controller = async (req: Request, res: Response, next: NextFunctio
       message: httpErrorMessageConstant.SUCCESSFUL
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 
@@ -178,7 +178,7 @@ const forgotPassword: Controller = async (req: Request, res: Response, next: Nex
       message: httpErrorMessageConstant.SUCCESSFUL
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 
@@ -221,7 +221,7 @@ const resetPassword: Controller = async (req: Request, res: Response, next: Next
       message: httpErrorMessageConstant.SUCCESSFUL
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 
@@ -271,7 +271,7 @@ const registerNewUser: Controller = async (req: Request, res: Response, next: Ne
       message: httpErrorMessageConstant.SUCCESSFUL
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 
@@ -280,8 +280,6 @@ const registerNewUser: Controller = async (req: Request, res: Response, next: Ne
  */
 const updateUserProfile: Controller = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { token } = await authUtils.validateAuthorizationHeader(req.headers)
-    const verifiedToken = await authUtils.verifyAccessToken(token)
     const { password, firstname, lastname, dateOfBirth, mobileNumber, address, city, state } =
       req.body
 
@@ -299,7 +297,7 @@ const updateUserProfile: Controller = async (req: Request, res: Response, next: 
     }
 
     const updatedUser = await User.findOneAndUpdate(
-      { email: verifiedToken?.email, deletedAt: null },
+      { email: req.user.email, deletedAt: null },
       updateData,
       {
         new: true
@@ -317,7 +315,7 @@ const updateUserProfile: Controller = async (req: Request, res: Response, next: 
       message: httpErrorMessageConstant.SUCCESSFUL
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 
@@ -330,17 +328,14 @@ const uploadUserProfilePhoto: Controller = async (
   next: NextFunction
 ) => {
   try {
-    const { token } = await authUtils.validateAuthorizationHeader(req.headers)
-    const verifiedToken = await authUtils.verifyAccessToken(token)
-
     if (!req.file) {
-      throw new HttpError(messageConstant.FILE_NOT_UPLOADED, httpStatusConstant.BAD_REQUEST)
+      throw new HttpError(messageConstant.FILE_NOT_FOUND, httpStatusConstant.BAD_REQUEST)
     }
 
     const profilePhotoPath = req.file.path
 
     const uploadFile = await User.findOneAndUpdate(
-      { email: verifiedToken?.email, deletedAt: null },
+      { email: req.user.email, deletedAt: null },
       {
         profilePhoto: profilePhotoPath
       },
@@ -356,7 +351,7 @@ const uploadUserProfilePhoto: Controller = async (
       message: httpErrorMessageConstant.SUCCESSFUL
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 

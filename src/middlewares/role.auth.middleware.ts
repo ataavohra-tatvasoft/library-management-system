@@ -1,17 +1,13 @@
 import { Request, Response, NextFunction } from 'express'
 import { User, UserRoleMapping } from '../db/models'
 import { UserType } from '../types'
-import { authUtils } from '../utils'
 import { httpStatusConstant, messageConstant } from '../constant'
 import { HttpError } from '../libs'
 
 const checkUserRole =
   (requiredRole: UserType) => async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { token } = await authUtils.validateAuthorizationHeader(req.headers)
-      const verifiedToken = await authUtils.verifyAccessToken(token)
-
-      const user = await User.findOne({ email: verifiedToken.email, deletedAt: null })
+      const user = await User.findOne({ email: req.user.email, deletedAt: null })
       if (!user) {
         return res.status(httpStatusConstant.NOT_FOUND).json({
           status: false,
@@ -20,7 +16,7 @@ const checkUserRole =
       }
 
       const userRoleMappings = await UserRoleMapping.find({
-        userID: verifiedToken._id,
+        userID: req.user._id,
         deletedAt: null
       }).populate('roleID')
 

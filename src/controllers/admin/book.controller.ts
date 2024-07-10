@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
 import { Author, Book, BookGallery } from '../../db/models'
-import { Controller } from '../../interfaces'
+import { Controller } from '../../types'
 import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '../../constant'
 import {
   databaseUtils,
@@ -12,6 +12,7 @@ import { getRatingService, getReviewService } from '../../services/book'
 import { dbConfig } from '../../config'
 import { HttpError } from '../../libs'
 import { ICustomQuery } from '../../interfaces'
+import { ObjectId } from 'mongodb'
 
 /**
  * @description Adds a new book to the library (checks for duplicates).
@@ -285,7 +286,7 @@ const uploadBookPhoto: Controller = async (req: Request, res: Response, next: Ne
     }
 
     if (!req.file) {
-      throw new HttpError(messageConstant.FILE_NOT_UPLOADED, httpStatusConstant.BAD_REQUEST)
+      throw new HttpError(messageConstant.FILE_NOT_FOUND, httpStatusConstant.BAD_REQUEST)
     }
 
     multerConfigUtils.upload.single('bookPhoto')
@@ -328,7 +329,7 @@ const uploadBookCoverPhoto: Controller = async (
     }
 
     if (!req.file) {
-      throw new HttpError(messageConstant.FILE_NOT_UPLOADED, httpStatusConstant.BAD_REQUEST)
+      throw new HttpError(messageConstant.FILE_NOT_FOUND, httpStatusConstant.BAD_REQUEST)
     }
 
     multerConfigUtils.upload.single('bookCoverPhoto')
@@ -407,13 +408,14 @@ const getReviewsSummary: Controller = async (req: Request, res: Response, next: 
   try {
     const { bookID } = req.params
     const { page = 1, pageSize = 10 } = req.query as unknown as ICustomQuery
+    const skip = (page - 1) * pageSize
 
     const book = await Book.findOne({ bookID, deletedAt: null })
     if (!book) {
       throw new HttpError(messageConstant.BOOK_NOT_EXISTS, httpStatusConstant.NOT_FOUND)
     }
 
-    const reviewsSummary = await getReviewService.getReviews(Number(book.bookID), page, pageSize)
+    const reviewsSummary = await getReviewService.getReviews(String(book.bookID), skip, pageSize)
     if (!reviewsSummary) {
       throw new HttpError(messageConstant.NO_REVIEWS_FOUND, httpStatusConstant.NOT_FOUND)
     }
@@ -465,23 +467,19 @@ const importBookSpreadSheet: Controller = async (
 
     const formattedData = data
       .map((row: any) => {
-        try {
-          return {
-            bookID: row[0],
-            name: row[1],
-            author: row[2],
-            charges: Number(row[3]),
-            issueCount: Number(row[4]),
-            submitCount: Number(row[5]),
-            publishedDate: new Date(row[6]),
-            subscriptionDays: Number(row[7]),
-            quantityAvailable: Number(row[8]),
-            numberOfFreeDays: Number(row[9]),
-            description: row[10],
-            deletedAt: row[12] === String(null) ? null : new Date(row[11])
-          }
-        } catch (error) {
-          console.error('Error formatting data row:', error)
+        return {
+          bookID: row[0],
+          name: row[1],
+          author: ObjectId.createFromHexString(row[2]),
+          charges: Number(row[3]),
+          issueCount: Number(row[4]),
+          submitCount: Number(row[5]),
+          publishedDate: new Date(row[6]),
+          subscriptionDays: Number(row[7]),
+          quantityAvailable: Number(row[8]),
+          numberOfFreeDays: Number(row[9]),
+          description: row[10],
+          deletedAt: row[12] === String(null) ? null : new Date(row[11])
         }
       })
       .filter(Boolean)
@@ -501,7 +499,7 @@ const importBookSpreadSheet: Controller = async (
       message: messageConstant.DATA_ADDED_SUCCESSFULLY
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 
@@ -598,7 +596,7 @@ const exportDataToSpreadsheet: Controller = async (
       message: messageConstant.DATA_EXPORTED_SUCCESSFULLY
     })
   } catch (error) {
-    return next(error)
+    next(error)
   }
 }
 

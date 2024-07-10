@@ -8,38 +8,38 @@ import { UserType } from '../../types'
 const router: Router = express.Router()
 
 router.post(
-  '/add-book',
+  '/book',
   celebrate(librarianBookSchema.addBook),
-  roleAuthMiddleware.checkUserRole(UserType.Librarian),
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.Librarian),
   librarianBookController.addBook
 )
 router.get(
-  '/book-list',
+  '/book/list',
   celebrate(librarianBookSchema.listBooks),
-  roleAuthMiddleware.checkUserRole(UserType.Librarian),
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.Librarian),
   librarianBookController.listBooks
 )
 router.put(
-  '/update-book/:bookID',
+  '/book/:bookID',
   celebrate(librarianBookSchema.updateBook),
-  roleAuthMiddleware.checkUserRole(UserType.Librarian),
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.Librarian),
   librarianBookController.updateBook
 )
 router.put(
-  '/soft-delete-book/:bookID',
+  '/soft-delete/book/:bookID',
   celebrate(librarianBookSchema.deleteBook),
-  roleAuthMiddleware.checkUserRole(UserType.Librarian),
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.Librarian),
   librarianBookController.softDeleteBook
 )
 router.delete(
-  '/hard-delete-book/:bookID',
+  '/hard-delete/book/:bookID',
   celebrate(librarianBookSchema.deleteBook),
-  roleAuthMiddleware.checkUserRole(UserType.Librarian),
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.Librarian),
   librarianBookController.hardDeleteBook
 )
 

@@ -8,78 +8,78 @@ import { UserType } from '../../types'
 const router: Router = express.Router()
 
 router.post(
-  '/add-book',
+  '/book',
   celebrate(adminBookSchema.addBook),
-  roleAuthMiddleware.checkUserRole(UserType.Admin),
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.Admin),
   adminBookController.addBook
 )
 router.get(
-  '/book-list',
+  '/book/list',
   celebrate(adminBookSchema.listBooks),
-  roleAuthMiddleware.checkUserRole(UserType.Admin),
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.Admin),
   adminBookController.listBooks
 )
 router.put(
-  '/update-book/:bookID',
+  '/book/:bookID',
   celebrate(adminBookSchema.updateBook),
-  roleAuthMiddleware.checkUserRole(UserType.Admin),
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.Admin),
   adminBookController.updateBook
 )
 router.put(
-  '/soft-delete-book/:bookID',
+  '/soft-delete/book/:bookID',
   celebrate(adminBookSchema.deleteBook),
-  roleAuthMiddleware.checkUserRole(UserType.Admin),
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.Admin),
   adminBookController.softDeleteBook
 )
 router.delete(
-  '/hard-delete-book/:bookID',
+  '/hard-delete/book/:bookID',
   celebrate(adminBookSchema.deleteBook),
-  roleAuthMiddleware.checkUserRole(UserType.Admin),
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.Admin),
   adminBookController.hardDeleteBook
 )
 router.post(
-  '/upload-book-photo/:bookID',
-  roleAuthMiddleware.checkUserRole(UserType.Admin),
+  '/book/photo/:bookID',
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.Admin),
   adminBookController.uploadBookPhoto
 )
 router.put(
-  '/upload-book-cover-photo/:bookID',
-  roleAuthMiddleware.checkUserRole(UserType.Admin),
+  '/book/cover-photo/:bookID',
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.Admin),
   adminBookController.uploadBookCoverPhoto
 )
 router.get(
-  '/book-ratings-summary/:bookID',
+  '/book/ratings/:bookID',
   celebrate(adminBookSchema.getRatingsSummary),
-  roleAuthMiddleware.checkUserRole(UserType.Admin),
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.Admin),
   adminBookController.getRatingsSummary
 )
 router.get(
-  '/book-reviews-summary/:bookID',
+  '/book/reviews/:bookID',
   celebrate(adminBookSchema.getReviewsSummary),
-  roleAuthMiddleware.checkUserRole(UserType.Admin),
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.Admin),
   adminBookController.getReviewsSummary
 )
 router.put(
-  '/spreadsheet-import-books',
+  '/import/book',
   celebrate(adminBookSchema.importExportBookSpreadSheet),
-  roleAuthMiddleware.checkUserRole(UserType.Admin),
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.Admin),
   adminBookController.importBookSpreadSheet
 )
 router.get(
-  '/spreadsheet-export-books',
+  '/export/book',
   celebrate(adminBookSchema.importExportBookSpreadSheet),
-  roleAuthMiddleware.checkUserRole(UserType.Admin),
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.Admin),
   adminBookController.exportDataToSpreadsheet
 )
 

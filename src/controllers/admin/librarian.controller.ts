@@ -1,10 +1,10 @@
 import { Request, Response, NextFunction } from 'express'
-import { Controller, IUserRoleMapping } from '../../interfaces'
+import { IUserRoleMapping } from '../../interfaces'
 import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '../../constant'
 import { responseHandlerUtils } from '../../utils'
 import { HttpError } from '../../libs'
 import { User, Role, UserRoleMapping, LibraryBranch } from '../../db/models'
-import { UserType } from '../../types'
+import { UserType, Controller } from '../../types'
 
 /**
  * @description Signs up a new librarian user if it doesn't already exist and assigns the librarian role.

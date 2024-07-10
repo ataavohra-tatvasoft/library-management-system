@@ -3,6 +3,7 @@ export const messageConstant = {
   CONNECTION_ERROR: 'Error while connecting to database',
   DB_CONNECTED: 'MongoDB database connected',
   COLLECTION_CONNECTION_ERROR: 'Error while connecting to database for collection',
+  SAMPLE_DATA_ADDED: 'Sample data added for testing',
 
   // Import Export (Google sheet to database and vice versa) messages
   DATA_ADDED_SUCCESSFULLY: 'Data added successfully',
@@ -126,6 +127,7 @@ export const messageConstant = {
   CARD_SAVED: 'Issue card saved successfully',
 
   // File Upload Messages
+  FILE_NOT_FOUND: 'File not found',
   FILE_NOT_UPLOADED: 'File not uploaded',
   ERROR_UPLOAD_FILE: 'Error while uploading file',
   ERROR_READING_FILE: 'Error while reading file',

@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 import { dbConfig } from '../../config'
 import {
   Author,
@@ -63,11 +64,9 @@ const seedData = async () => {
 
     await seedRoles()
 
-    // eslint-disable-next-line no-undef
     process.exit(0)
   } catch (error) {
     loggerUtils.logger.error('Error seeding data:', error)
-    // eslint-disable-next-line no-undef
     process.exit(1)
   }
 }

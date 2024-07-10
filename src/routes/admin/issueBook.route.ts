@@ -8,24 +8,24 @@ import { UserType } from '../../types'
 const router: Router = express.Router()
 
 router.get(
-  '/issue-book-list',
+  '/book/issued/list',
   celebrate(adminIssueBookSchema.getIssuedBooksList),
-  roleAuthMiddleware.checkUserRole(UserType.Admin),
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.Admin),
   adminIssueBookController.getIssuedBooksList
 )
 router.put(
-  '/issue-book',
+  '/book/issue',
   celebrate(adminIssueBookSchema.issueBookToUser),
-  roleAuthMiddleware.checkUserRole(UserType.Admin),
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.Admin),
   adminIssueBookController.issueBookToUser
 )
 router.put(
-  '/submit-book',
+  '/book/submit',
   celebrate(adminIssueBookSchema.submitBookForUser),
-  roleAuthMiddleware.checkUserRole(UserType.Admin),
   userAuthMiddleware.authMiddleware,
+  roleAuthMiddleware.checkUserRole(UserType.Admin),
   adminIssueBookController.submitBookForUser
 )
 

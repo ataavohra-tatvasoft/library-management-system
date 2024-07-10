@@ -1,3 +1,4 @@
+/* eslint-disable no-useless-escape */
 import { Joi } from 'celebrate'
 
 const registerUser = {
@@ -10,7 +11,6 @@ const registerUser = {
     password: Joi.string()
       .min(5)
       .optional()
-      // eslint-disable-next-line no-useless-escape
       .pattern(/^(?=.*[A-Z])(?=.*[!@#$%^&*()_+\-=?{|}\[\]:\'\";,.<>\/\\|\s]).+$/),
     confirmPassword: Joi.ref('password'),
     firstname: Joi.string().max(8).min(3).required(),
@@ -42,7 +42,6 @@ const updateUserDetails = {
       password: Joi.string()
         .min(5)
         .optional()
-        // eslint-disable-next-line no-useless-escape
         .pattern(/^(?=.*[A-Z])(?=.*[!@#$%^&*()_+\-=?{|}\[\]:\'\";,.<>\/\\|\s]).+$/),
       confirmPassword: Joi.ref('password'),
       firstname: Joi.string().allow(''),
