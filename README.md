@@ -55,7 +55,7 @@ To install and run the project locally, follow these steps:
 
 ## Usage
 
-- [Admin Module](#Adminfunctionalitiesinclude:)
+- Admin Module:
 
   - Registering and managing users.
   - Managing books (add, update, delete).
@@ -66,7 +66,7 @@ To install and run the project locally, follow these steps:
   - Add, update and delete library branch as well librarian.
   - Admin authentication and profile management.
 
-- [User Module](#Userfunctionalitiesinclude:)
+- User Module:
 
   - Searching and browsing books in their respective branch.
   - Issuing and returning books through librarian.
@@ -75,7 +75,7 @@ To install and run the project locally, follow these steps:
   - Managing personal profiles and payment information.
   - User authentication and profile management.
 
-- [Librarian Module](#Librarianfunctionalitiesinclude:)
+- Librarian Module:
   - Add, update and delete books in their library branch.
   - Issuing and returning books for users.
   - Managing personal profile information.
@@ -83,7 +83,7 @@ To install and run the project locally, follow these steps:
 
 ## Support
 
-- [Upcoming features and improvements](#Upcomingfeaturesandimprovements)
+- Upcoming features and improvements:
 
   - Enhanced user interface.
   - Integration with external library systems.
