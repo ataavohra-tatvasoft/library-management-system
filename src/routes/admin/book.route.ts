@@ -2,85 +2,88 @@ import express, { Router } from 'express'
 import { celebrate } from 'celebrate'
 import { adminBookController } from '../../controllers'
 import { adminBookSchema } from '../../validations'
-import { userAuthMiddleware, roleAuthMiddleware } from '../../middlewares'
+import { userAuthMiddleware, roleAuthMiddleware, wrapperMiddleware } from '../../middlewares'
 import { UserType } from '../../types'
+import { multerConfigUtils } from '../../utils'
 
 const router: Router = express.Router()
 
 router.post(
   '/book',
   celebrate(adminBookSchema.addBook),
-  userAuthMiddleware.authMiddleware,
+  userAuthMiddleware.auth,
   roleAuthMiddleware.checkUserRole(UserType.Admin),
-  adminBookController.addBook
+  wrapperMiddleware.wrapController(adminBookController.addBook)
 )
 router.get(
   '/book/list',
   celebrate(adminBookSchema.listBooks),
-  userAuthMiddleware.authMiddleware,
+  userAuthMiddleware.auth,
   roleAuthMiddleware.checkUserRole(UserType.Admin),
-  adminBookController.listBooks
+  wrapperMiddleware.wrapController(adminBookController.listBooks)
 )
 router.put(
   '/book/:bookID',
   celebrate(adminBookSchema.updateBook),
-  userAuthMiddleware.authMiddleware,
+  userAuthMiddleware.auth,
   roleAuthMiddleware.checkUserRole(UserType.Admin),
-  adminBookController.updateBook
+  wrapperMiddleware.wrapController(adminBookController.updateBook)
 )
 router.put(
   '/soft-delete/book/:bookID',
   celebrate(adminBookSchema.deleteBook),
-  userAuthMiddleware.authMiddleware,
+  userAuthMiddleware.auth,
   roleAuthMiddleware.checkUserRole(UserType.Admin),
-  adminBookController.softDeleteBook
+  wrapperMiddleware.wrapController(adminBookController.softDeleteBook)
 )
 router.delete(
   '/hard-delete/book/:bookID',
   celebrate(adminBookSchema.deleteBook),
-  userAuthMiddleware.authMiddleware,
+  userAuthMiddleware.auth,
   roleAuthMiddleware.checkUserRole(UserType.Admin),
-  adminBookController.hardDeleteBook
+  wrapperMiddleware.wrapController(adminBookController.hardDeleteBook)
 )
 router.post(
   '/book/photo/:bookID',
-  userAuthMiddleware.authMiddleware,
+  userAuthMiddleware.auth,
   roleAuthMiddleware.checkUserRole(UserType.Admin),
-  adminBookController.uploadBookPhoto
+  multerConfigUtils.upload.single('bookPhoto'),
+  wrapperMiddleware.wrapController(adminBookController.uploadBookPhoto)
 )
 router.put(
   '/book/cover-photo/:bookID',
-  userAuthMiddleware.authMiddleware,
+  userAuthMiddleware.auth,
   roleAuthMiddleware.checkUserRole(UserType.Admin),
-  adminBookController.uploadBookCoverPhoto
+  multerConfigUtils.upload.single('bookCoverPhoto'),
+  wrapperMiddleware.wrapController(adminBookController.uploadBookCoverPhoto)
 )
 router.get(
   '/book/ratings/:bookID',
   celebrate(adminBookSchema.getRatingsSummary),
-  userAuthMiddleware.authMiddleware,
+  userAuthMiddleware.auth,
   roleAuthMiddleware.checkUserRole(UserType.Admin),
-  adminBookController.getRatingsSummary
+  wrapperMiddleware.wrapController(adminBookController.getRatingsSummary)
 )
 router.get(
   '/book/reviews/:bookID',
   celebrate(adminBookSchema.getReviewsSummary),
-  userAuthMiddleware.authMiddleware,
+  userAuthMiddleware.auth,
   roleAuthMiddleware.checkUserRole(UserType.Admin),
-  adminBookController.getReviewsSummary
+  wrapperMiddleware.wrapController(adminBookController.getReviewsSummary)
 )
 router.put(
   '/import/book',
   celebrate(adminBookSchema.importExportBookSpreadSheet),
-  userAuthMiddleware.authMiddleware,
+  userAuthMiddleware.auth,
   roleAuthMiddleware.checkUserRole(UserType.Admin),
-  adminBookController.importBookSpreadSheet
+  wrapperMiddleware.wrapController(adminBookController.importBookSpreadSheet)
 )
 router.get(
   '/export/book',
   celebrate(adminBookSchema.importExportBookSpreadSheet),
-  userAuthMiddleware.authMiddleware,
+  userAuthMiddleware.auth,
   roleAuthMiddleware.checkUserRole(UserType.Admin),
-  adminBookController.exportDataToSpreadsheet
+  wrapperMiddleware.wrapController(adminBookController.exportDataToSpreadsheet)
 )
 
 export default router

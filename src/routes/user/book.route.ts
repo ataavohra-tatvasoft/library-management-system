@@ -2,7 +2,7 @@ import express, { Router } from 'express'
 import { celebrate } from 'celebrate'
 import { userBookController } from '../../controllers'
 import { userBookSchema } from '../../validations'
-import { roleAuthMiddleware, userAuthMiddleware } from '../../middlewares'
+import { roleAuthMiddleware, userAuthMiddleware, wrapperMiddleware } from '../../middlewares'
 import { UserType } from '../../types'
 
 const router: Router = express.Router()
@@ -10,63 +10,63 @@ const router: Router = express.Router()
 router.get(
   '/book/search',
   celebrate(userBookSchema.searchBooks),
-  userAuthMiddleware.authMiddleware,
+  userAuthMiddleware.auth,
   roleAuthMiddleware.checkUserRole(UserType.User),
-  userBookController.searchBooks
+  wrapperMiddleware.wrapController(userBookController.searchBooks)
 )
 router.get(
   '/book/details',
   celebrate(userBookSchema.getAllBookDetails),
-  userAuthMiddleware.authMiddleware,
+  userAuthMiddleware.auth,
   roleAuthMiddleware.checkUserRole(UserType.User),
-  userBookController.getAllBookDetails
+  wrapperMiddleware.wrapController(userBookController.getAllBookDetails)
 )
 router.post(
   '/book/review',
   celebrate(userBookSchema.addBookReview),
-  userAuthMiddleware.authMiddleware,
+  userAuthMiddleware.auth,
   roleAuthMiddleware.checkUserRole(UserType.User),
-  userBookController.addBookReview
+  wrapperMiddleware.wrapController(userBookController.addBookReview)
 )
 router.post(
   '/book/rating',
   celebrate(userBookSchema.addBookRating),
-  userAuthMiddleware.authMiddleware,
+  userAuthMiddleware.auth,
   roleAuthMiddleware.checkUserRole(UserType.User),
-  userBookController.addBookRating
+  wrapperMiddleware.wrapController(userBookController.addBookRating)
 )
 router.get(
   '/book/issued/history',
-  userAuthMiddleware.authMiddleware,
+  userAuthMiddleware.auth,
   roleAuthMiddleware.checkUserRole(UserType.User),
-  userBookController.getBookIssueHistory
+  wrapperMiddleware.wrapController(userBookController.getBookIssueHistory)
 )
 router.get(
   '/summary',
-  userAuthMiddleware.authMiddleware,
+  userAuthMiddleware.auth,
   roleAuthMiddleware.checkUserRole(UserType.User),
-  userBookController.getSummary
+  wrapperMiddleware.wrapController(userBookController.getSummary)
 )
 router.get(
   '/book/ratings/:bookID',
   celebrate(userBookSchema.getBookRatingsSummary),
-  userAuthMiddleware.authMiddleware,
+  userAuthMiddleware.auth,
   roleAuthMiddleware.checkUserRole(UserType.User),
-  userBookController.getBookRatingsSummary
+  wrapperMiddleware.wrapController(userBookController.getBookRatingsSummary)
 )
 router.get(
   '/book/reviews/:bookID',
   celebrate(userBookSchema.getBookReviewsSummary),
-  userAuthMiddleware.authMiddleware,
+  userAuthMiddleware.auth,
   roleAuthMiddleware.checkUserRole(UserType.User),
-  userBookController.getBookReviewsSummary
+  wrapperMiddleware.wrapController(userBookController.getBookReviewsSummary)
 )
 router.get(
   '/user/report',
   celebrate(userBookSchema.getReport),
-  userAuthMiddleware.authMiddleware,
+  userAuthMiddleware.auth,
   roleAuthMiddleware.checkUserRole(UserType.User),
-  userBookController.getReport
+  wrapperMiddleware.wrapController(userBookController.getReport)
 )
 
 export default router

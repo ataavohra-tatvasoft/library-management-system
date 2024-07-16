@@ -5,7 +5,7 @@ import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '.
 import { authUtils } from '../utils'
 import { HttpError } from '../libs'
 
-const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+const auth = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { token } = await authUtils.validateAuthorizationHeader(req.headers)
     const radisClient = await authUtils.createRedisClient()
@@ -61,6 +61,6 @@ const uploadProfilePhotoAuth = async (req: Request, res: Response, next: NextFun
 }
 
 export default {
-  authMiddleware,
+  auth,
   uploadProfilePhotoAuth
 }

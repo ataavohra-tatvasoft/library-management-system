@@ -8,9 +8,9 @@ const userUploadDirectory = path.join('public', 'uploads', 'user')
 const bookUploadDirectory = path.join('public', 'uploads', 'book')
 
 const getUploadDirectory = (url: string): string => {
-  if (url.includes('/upload-profile-photo')) {
+  if (url.includes('/upload/profile-photo')) {
     return userUploadDirectory
-  } else if (url.includes('/upload-book-photo') || url.includes('/upload-book-cover-photo')) {
+  } else if (url.includes('/book/photo') || url.includes('/book/cover-photo')) {
     return bookUploadDirectory
   } else {
     throw new HttpError(messageConstant.INVALID_UPLOAD_ROUTE, httpStatusConstant.BAD_REQUEST)
@@ -26,11 +26,11 @@ const generateUniqueFileName = (
   const baseFileName = file.fieldname
   let uniqueName: string
 
-  if (url.includes('/upload-profile-photo')) {
+  if (url.includes('/upload/profile-photo')) {
     uniqueName = `user-${params.email}-profilePhoto.${extension}`
-  } else if (url.includes('/upload-book-photo')) {
+  } else if (url.includes('/book/photo')) {
     uniqueName = `bookID-${params.bookID}-${baseFileName}.${extension}`
-  } else if (url.includes('/upload-book-cover-photo')) {
+  } else if (url.includes('/book/cover-photo')) {
     uniqueName = `bookID-${params.bookID}-coverImage.${extension}`
   } else {
     uniqueName = `${baseFileName}.${extension}`

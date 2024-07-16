@@ -19,6 +19,7 @@ const registerUser = {
     mobileNumber: Joi.string()
       .pattern(/^\d{10}$/)
       .required(),
+    gender: Joi.string().valid('male', 'female').required(),
     address: Joi.string().max(15).min(5).required(),
     city: Joi.string().min(5).required(),
     state: Joi.string().min(5).required()

@@ -25,8 +25,8 @@ export const messageConstant = {
   USER_NOT_EXISTS: 'User not exists',
   USER_DELETED_SOFT: 'User deleted(soft)',
   USER_DELETED_HARD: 'User deleted(hard)',
-  ERROR_SIGNING_USER: 'Error signing user ',
-  ERROR_UPDATING_USER: 'Error updating user ',
+  ERROR_SIGNING_USER: 'Error signing user',
+  ERROR_UPDATING_USER: 'Error updating user',
   ERROR_DELETING_USER: 'Error deleting user',
   ERROR_UPDATING_PROFILE: 'Error updating profile',
   ERROR_CREATING_USER: 'Error creating user',
@@ -38,7 +38,7 @@ export const messageConstant = {
   NO_ACTIVE_USERS_FOUND: 'No active users found',
   USER_ROLE_MAPPING_NOT_FOUND: 'User role mapping not found',
   USER_DOES_NOT_HAVE_REQUIRED_ROLE: 'User does not have the required role',
-  USER_NOT_ASSIGNED_TO_BRANCH: 'User not assigned to that branch',
+  USER_NOT_ASSIGNED_TO_BRANCH: 'User not assigned to branch',
 
   // Admin Messages
   ADMIN_NOT_FOUND: 'Admin not found ',
@@ -46,6 +46,7 @@ export const messageConstant = {
 
   // Librarian Messages
   LIBRARIAN_NOT_FOUND: 'Librarian not found',
+  INVALID_LIBRARIAN: 'Invalid librarian',
 
   // Book Messages
   BOOK_NOT_FOUND: 'Book not found',
@@ -54,30 +55,30 @@ export const messageConstant = {
   BOOK_DELETED_SOFT: 'Book deleted(Soft)',
   BOOK_DELETED_HARD: 'Book deleted(Hard)',
   BOOK_OUT_OF_STOCK: 'Book out of stock',
-  BOOK_LIMIT_EXCEEDED: 'User cannot have more than 5 books issued',
   BOOK_NOT_ISSUED: 'Book is not issued to this user',
   ERROR_CREATING_BOOK: 'Error creating book',
   ERROR_LISTING_BOOK: 'Error listing book',
   ERROR_UPDATING_BOOK: 'Error updating book',
   ERROR_DELETING_BOOK: 'Error deleting book',
   BOOK_HISTORY_NOT_FOUND: 'Book history not found',
-  NO_ISSUED_BOOK_FOUND: 'No issued books found',
   INVALID_PAGE_NUMBER: 'Page number must be less than total pages',
-  CANNOT_ISSUE_SAME_BOOK: 'User cannot issue the same book again',
   ERROR_COUNTING_BOOKS: 'Error while counting books',
   ERROR_LOGGING_HISTORY: 'Error logging history',
   NO_BOOKS_FOUND: 'No books found',
-  NO_ISSUED_BOOKS_FOUND: 'No issued books found',
+  NO_BOOKS_IN_THIS_BRANCH: 'No books found in this branch',
   ERROR_CREATING_BOOK_LIBRARY_BRANCH_MAPPING: 'Error creating book and library branch mapping',
   BOOK_NOT_AVAILABLE_IN_BRANCH: 'Book not available in this branch',
 
   // Book Issue/Return Messages
-  SUBMIT_INVALID: 'submit date is invalid, kindly check',
   SUBMIT_DATE_INVALID: 'Submit date cannot be before to the issue date',
   OUTSTANDING_DUE_CHARGES:
     'User has outstanding due charges. Please clear them before issuing a book.',
   ISSUE_DATE_INVALID: 'Issue date should not be of past',
   ERROR_ASSIGNING_BOOK: 'Error assigning book',
+  BOOK_LIMIT_EXCEEDED: 'User cannot have more than 5 books issued',
+  NO_ISSUED_BOOK_FOUND: 'No issued books found',
+  CANNOT_ISSUE_SAME_BOOK: 'User cannot issue the same book again',
+  NO_ISSUED_BOOKS_FOUND: 'No issued books found',
 
   // Book Review/Rating Messages
   REVIEW_ALREADY_EXIST: 'Review done already',
@@ -95,7 +96,7 @@ export const messageConstant = {
   INVALID_DATE_FORMAT: 'Invalid date format',
   INVALID_TOKEN_TYPE: 'Invalid token type',
   INVALID_RESET_TOKEN: 'Invalid reset token',
-  INVALID_SUBMIT_DATE: 'Invalid submit date',
+  INVALID_SUBMIT_DATE: 'Invalid submit date, kindly check',
   REFRESH_TOKEN_EXPIRED: 'Refresh token expired, kindly login again',
   INVALID_DATE_RANGE: 'Invalid date range',
 

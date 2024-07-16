@@ -19,16 +19,16 @@ const fileStorage: StorageEngine = multer.diskStorage({
       const uploadDirectory = multerUtils.getUploadDirectory(req.url)
       let finalFileName = uniqueName
 
-      if (req.url.includes('/upload-profile-photo')) {
+      if (req.url.includes('/upload/profile-photo')) {
         await multerUtils.deleteExistingProfilePhoto(uploadDirectory, req.params.email)
         finalFileName = uniqueName
-      } else if (req.url.includes('/upload-book-cover-photo')) {
+      } else if (req.url.includes('/book/cover-photo')) {
         await multerUtils.deleteExistingCoverPhoto(uploadDirectory, req.params.bookID)
         finalFileName = `bookID-${req.params.bookID}-coverImage.${file.originalname.split('.').pop()}`
       } else {
         let counter = 1
         while (existsSync(path.join(uploadDirectory, finalFileName))) {
-          if (req.url.includes('/upload-book-photo')) {
+          if (req.url.includes('/book/photo')) {
             finalFileName = `bookID-${req.params.bookID}-${file.fieldname}-${counter}.${file.originalname.split('.').pop()}`
           } else {
             finalFileName = `${file.fieldname}-${counter}.${file.originalname.split('.').pop()}`

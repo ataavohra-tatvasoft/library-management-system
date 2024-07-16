@@ -4,7 +4,7 @@
 
 ## Description
 
-This project is a library management system designed to facilitate efficient administration and user interactions with library resources. It includes separate modules for administrators and users, each with specific functionalities and access levels. Users can manage their book interactions through a user API, while administrators have broader control over library operations and user management.
+This project is a library management system designed to facilitate efficient administration, and user interactions with library resources. It includes separate modules for administrators, librarians and users, each with specific functionalities and access levels. Users can manage their book interactions through a user API, while administrators have broader control over library operations, librarian and user management whereas librarians can efficienly manage resources in their respective library branches.
 
 ## Badges
 
@@ -12,91 +12,103 @@ This project is a library management system designed to facilitate efficient adm
 
 ## Visuals
 
-Include any relevant visuals here, such as screenshots or diagrams.
+`Screenshots of postman collection for getting visual interpretation of the API's which you can integrate in your front-end.`
+
+- ![Screenshot](/home/pci57/Pictures/Screenshots/postman_1.png)
+- ![Screenshot](/home/pci57/Pictures/Screenshots/postman_2.png)
+- ![Screenshot](/home/pci57/Pictures/Screenshots/postman_3.png)
+- ![Screenshot](/home/pci57/Pictures/Screenshots/postman_4.png)
 
 ## Installation
 
 To install and run the project locally, follow these steps:
 
 1. Clone the repository:
-   ```bash
-   git clone https://gitlab.anasource.com/mukesh-thakur-ts/trainee-project.git
-   cd trainee-project
-   ```
-2. Install dependencies:
-   -npm install
 
+   ```bash
+   git clone https://github.com/ataavohra-tatvasoft/library-management-system.git
+   ```
+
+2. Install dependencies:
+   `npm install`
 3. Set up environment variables (if required).
 
 4. Lint the code and solve linting errors
-   -npm run lint & npm run lint:fix
+   `npm run lint` & `npm run lint:fix`
 
 5. Seed the database:
-   -npm run seed
+   `npm run seed`
 
-6. Build the project:
-   -npm run build
+6. Run development API if sample data needed:
+   `{{base_url}}/development/development-api`
 
-7. Start the server:
+7. Build the project:
+   `npm run build`
+
+8. Start the server:
 
    \*With nodemon
-   -npm run dev:watch
+   `npm run dev:watch`
 
    \*Without nodemon
-   -npm run dev
+   `npm run dev`
 
 ## Usage
 
-Admin Module
-Admin functionalities include:
+- [Admin Module](#Adminfunctionalitiesinclude:)
 
--Registering and managing users.
--Managing books (add, update, delete).
--Managing book issues and returns.
--Uploading book photos.
--Importing/exporting data from Google Sheets.
--User authentication and profile management.
+  - Registering and managing users.
+  - Managing books (add, update, delete).
+  - Managing book issues and returns.
+  - Uploading book photos.
+  - Get detailed analysis of books.
+  - Importing/exporting data from Google Sheets.
+  - Add, update and delete library branch as well librarian.
+  - Admin authentication and profile management.
 
-User Module
-User functionalities include:
+- [User Module](#Userfunctionalitiesinclude:)
 
--Searching and browsing books.
--Issuing and returning books.
--Writing reviews and rating books.
--Managing personal profiles and payment information.
--User authentication and profile management.
--For detailed API documentation, refer to API Documentation.
+  - Searching and browsing books in their respective branch.
+  - Issuing and returning books through librarian.
+  - Writing reviews and rate books.
+  - Get detailed report on their issued book history as well as detailed information about book.
+  - Managing personal profiles and payment information.
+  - User authentication and profile management.
+
+- [Librarian Module](#Librarianfunctionalitiesinclude:)
+  - Add, update and delete books in their library branch.
+  - Issuing and returning books for users.
+  - Managing personal profile information.
+  - Librarian authentication and profile management.
 
 ## Support
 
-Upcoming features and improvements:
+- [Upcoming features and improvements](#Upcomingfeaturesandimprovements)
 
--Enhanced user interface.
--Integration with external library systems.
--Advanced analytics and reporting.
+  - Enhanced user interface.
+  - Integration with external library systems.
+  - Advanced analytics and reporting.
 
 ## Roadmap
 
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+`If you have ideas for releases in the future, it is a good idea to list them in the README.`
 
 ## Contributing
 
-We welcome contributions! Please follow these guidelines:
+- We welcome contributions! Please follow these guidelines:
 
--Fork the repository and create your branch from main.
--Ensure your code follows our coding standards.
--Submit a pull request detailing your changes.
+  - Fork the repository and create your branch from main.
+  - Ensure your code follows our coding standards.
+  - Submit a pull request detailing your changes.
 
 ## Authors and acknowledgment
 
-Ataa Vohra - Lead Developer
+`Ataa Vohra - Lead Developer`
 
 ## License
 
-This project is licensed under the ISC License. See the LICENSE file for details.
+`This project is licensed under the ISC License. See the LICENSE file for details.`
 
 ## Project status
 
-Development is ongoing with regular updates and improvements.
-
--You can replace placeholders like `[link-to-your-api-docs]` with actual links to your API documentation or other relevant resources. This template provides a comprehensive structure based on your project's requirements and includes necessary sections from your provided instructions.
+`Development is ongoing with regular updates and improvements.`

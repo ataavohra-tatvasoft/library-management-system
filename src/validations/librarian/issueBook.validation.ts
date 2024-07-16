@@ -8,16 +8,20 @@ const getIssuedBooksList = {
 }
 
 const issueBookToUser = {
+  params: Joi.object({
+    bookID: Joi.string().required()
+  }),
   body: Joi.object({
-    bookID: Joi.string().required(),
     email: Joi.string().email().required(),
     issueDate: Joi.date().iso(),
     branchID: Joi.string().required()
   })
 }
 const submitBookForUser = {
+  params: Joi.object({
+    bookID: Joi.string().required()
+  }),
   body: Joi.object({
-    bookID: Joi.string().required(),
     email: Joi.string().email().required(),
     submitDate: Joi.date().iso(),
     branchID: Joi.string().required()

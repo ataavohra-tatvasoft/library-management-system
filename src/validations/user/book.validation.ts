@@ -6,6 +6,9 @@ const searchBooks = {
     pageSize: Joi.number().integer().min(1).optional().default(10),
     name: Joi.string().optional().allow('', null).min(3).max(50).trim(),
     bookID: Joi.string().optional().trim().allow(null)
+  }),
+  body: Joi.object({
+    branchID: Joi.string().required()
   })
 }
 

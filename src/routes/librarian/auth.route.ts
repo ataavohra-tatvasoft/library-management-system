@@ -2,25 +2,36 @@ import express, { Router } from 'express'
 import { celebrate } from 'celebrate'
 import { adminAuthController } from '../../controllers'
 import { adminAuthSchema } from '../../validations'
-import { userAuthMiddleware, roleAuthMiddleware } from '../../middlewares'
+import { userAuthMiddleware, roleAuthMiddleware, wrapperMiddleware } from '../../middlewares'
 import { UserType } from '../../types'
 
 const router: Router = express.Router()
 
-router.post('/login', celebrate(adminAuthSchema.login), adminAuthController.login)
-router.get('/new/access-token', adminAuthController.generateNewAccessToken)
-router.post('/logout', celebrate(adminAuthSchema.logout), adminAuthController.logout)
+router.post(
+  '/login',
+  celebrate(adminAuthSchema.login),
+  wrapperMiddleware.wrapController(adminAuthController.login)
+)
+router.get(
+  '/new/access-token',
+  wrapperMiddleware.wrapController(adminAuthController.generateNewAccessToken)
+)
+router.post(
+  '/logout',
+  celebrate(adminAuthSchema.logout),
+  wrapperMiddleware.wrapController(adminAuthController.logout)
+)
 router.post(
   '/forgot-password',
   celebrate(adminAuthSchema.forgotPassword),
-  adminAuthController.forgotPassword
+  wrapperMiddleware.wrapController(adminAuthController.forgotPassword)
 )
 router.post(
   '/reset-password',
   celebrate(adminAuthSchema.resetPassword),
-  userAuthMiddleware.authMiddleware,
+  userAuthMiddleware.auth,
   roleAuthMiddleware.checkUserRole(UserType.Librarian),
-  adminAuthController.resetPassword
+  wrapperMiddleware.wrapController(adminAuthController.resetPassword)
 )
 
 export default router

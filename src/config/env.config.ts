@@ -23,7 +23,7 @@ export default {
   stripeApiKey: process.env.STRIPE_API_KEY,
   googleClientID: process.env.GOOGLE_CLIENT_ID,
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
-  googleTokenPath: process.env.GOOGLE_TOKEN_PATH,
   googleRedirectUri: process.env.GOOGLE_REDIRECT_URIS,
+  googleTokenPath: process.env.GOOGLE_TOKEN_PATH,
   googleRefreshToken: process.env.GOOGLE_REFRESH_TOKEN
 }

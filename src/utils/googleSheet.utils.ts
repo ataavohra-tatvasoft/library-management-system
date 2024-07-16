@@ -1,7 +1,7 @@
 /* eslint-disable camelcase */
 import { OAuth2Client } from 'google-auth-library'
 import { google } from 'googleapis'
-import axios from 'axios'
+// import axios from 'axios'
 import { envConfig } from '../config'
 import { HttpError } from '../libs'
 import { httpStatusConstant, messageConstant } from '../constant'
@@ -13,33 +13,41 @@ const authorize = async (): Promise<OAuth2Client> => {
     String(envConfig.googleRedirectUri)
   )
 
-  const responseTokens = await axios.post(String(envConfig.googleTokenPath), {
-    client_id: String(envConfig.googleClientID),
-    client_secret: String(envConfig.googleClientSecret),
-    refresh_token: String(envConfig.googleRefreshToken),
-    grant_type: 'refresh_token'
-  })
+  /** Below code stopped working for authorization due to changes and updations from Google Cloud Console, will find new way to authorize it from backend */
 
-  if (!responseTokens) {
-    throw new HttpError(
-      messageConstant.ERROR_FETCHING_TOKEN,
-      httpStatusConstant.INTERNAL_SERVER_ERROR
-    )
-  }
+  // const responseTokens = await axios.post(String(envConfig.googleTokenPath), {
+  //   client_secret: String(envConfig.googleClientSecret),
+  //   grant_type: 'refresh_token',
+  //   refresh_token: String(envConfig.googleRefreshToken),
+  //   client_id: String(envConfig.googleClientID)
+  // })
 
+  // if (!responseTokens) {
+  //   throw new HttpError(
+  //     messageConstant.ERROR_FETCHING_TOKEN,
+  //     httpStatusConstant.INTERNAL_SERVER_ERROR
+  //   )
+  // }
+
+  // const tokens = {
+  //   access_token: responseTokens.data.access_token
+  // }
+
+  /**Currently below is working by getting token from OAuth 2.0 Playground*/
   const tokens = {
-    access_token: responseTokens.data.access_token
+    access_token:
+      'ya29.a0AXooCgtpFokVEFlW1A70GQNCDzIIJbD5HDLoDjVufbio8vjDCJk3dXGnc2iIioj3YXAw1STwOijFI3WPbPaDsQLF_MA-YOgXfkRCyoIbJeOUNN02wpJmUlYVg2ZamPjSn2jhfFgi5Hc0er8Fne9IMSNwSdfjS385eUMDaCgYKAa0SARMSFQHGX2Mine3_GE-EgMhjV-RWwn_XBA0171'
   }
 
   if (tokens) {
     oAuth2Client.setCredentials(tokens)
   } else {
-    const authorizationUrl = oAuth2Client.generateAuthUrl({
-      access_type: 'offline',
-      scope: responseTokens.data.scope
-    })
-
-    console.log('Authorize this app by visiting this url:', authorizationUrl)
+    /** Below code stopped working for authorization due to changes and updations from Google Cloud Console, will find new way to authorize it from backend */
+    // const authorizationUrl = oAuth2Client.generateAuthUrl({
+    //   access_type: 'offline',
+    //   scope: responseTokens.data.scope
+    // })
+    // console.log('Authorize this app by visiting this url:', authorizationUrl)
   }
 
   return oAuth2Client

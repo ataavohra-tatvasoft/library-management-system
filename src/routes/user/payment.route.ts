@@ -2,7 +2,7 @@ import express, { Router } from 'express'
 import { celebrate } from 'celebrate'
 import { userPaymentController } from '../../controllers'
 import { userPaymentSchema } from '../../validations'
-import { roleAuthMiddleware, userAuthMiddleware } from '../../middlewares'
+import { roleAuthMiddleware, userAuthMiddleware, wrapperMiddleware } from '../../middlewares'
 import { UserType } from '../../types'
 
 const router: Router = express.Router()
@@ -10,42 +10,45 @@ const router: Router = express.Router()
 router.put(
   '/add/card-holder/:email',
   celebrate(userPaymentSchema.addCardHolder),
-  userAuthMiddleware.authMiddleware,
+  userAuthMiddleware.auth,
   roleAuthMiddleware.checkUserRole(UserType.User),
-  userPaymentController.addCardHolder
+  wrapperMiddleware.wrapController(userPaymentController.addCardHolder)
 )
 router.post(
   '/issue-card/:email',
   celebrate(userPaymentSchema.addIssueCard),
-  userAuthMiddleware.authMiddleware,
+  userAuthMiddleware.auth,
   roleAuthMiddleware.checkUserRole(UserType.User),
-  userPaymentController.addIssueCard
+  wrapperMiddleware.wrapController(userPaymentController.addIssueCard)
 )
 router.get(
   '/link/add-card',
-  userAuthMiddleware.authMiddleware,
+  userAuthMiddleware.auth,
   roleAuthMiddleware.checkUserRole(UserType.User),
-  userPaymentController.getAddCardLink
+  wrapperMiddleware.wrapController(userPaymentController.getAddCardLink)
 )
-router.get('/template/payment-card/:email', userPaymentController.addPaymentCardPage)
+router.get(
+  '/template/payment-card/:email',
+  wrapperMiddleware.wrapController(userPaymentController.addPaymentCardPage)
+)
 router.post(
   '/payment-card/:email',
   celebrate(userPaymentSchema.addPaymentCard),
-  userPaymentController.addPaymentCard
+  wrapperMiddleware.wrapController(userPaymentController.addPaymentCard)
 )
 router.get(
   '/payment-card/list',
   celebrate(userPaymentSchema.paymentCardsList),
-  userAuthMiddleware.authMiddleware,
+  userAuthMiddleware.auth,
   roleAuthMiddleware.checkUserRole(UserType.User),
-  userPaymentController.paymentCardsList
+  wrapperMiddleware.wrapController(userPaymentController.paymentCardsList)
 )
 router.put(
   '/pay-charges',
   celebrate(userPaymentSchema.payCharges),
-  userAuthMiddleware.authMiddleware,
+  userAuthMiddleware.auth,
   roleAuthMiddleware.checkUserRole(UserType.User),
-  userPaymentController.payCharges
+  wrapperMiddleware.wrapController(userPaymentController.payCharges)
 )
 
 export default router

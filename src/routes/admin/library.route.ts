@@ -2,7 +2,7 @@ import express, { Router } from 'express'
 import { celebrate } from 'celebrate'
 import { adminLibraryBranchController } from '../../controllers'
 import { adminLibraryBranchSchema } from '../../validations'
-import { userAuthMiddleware, roleAuthMiddleware } from '../../middlewares'
+import { userAuthMiddleware, roleAuthMiddleware, wrapperMiddleware } from '../../middlewares'
 import { UserType } from '../../types'
 
 const router: Router = express.Router()
@@ -10,37 +10,37 @@ const router: Router = express.Router()
 router.post(
   '/library-branch',
   celebrate(adminLibraryBranchSchema.registerNewBranch),
-  userAuthMiddleware.authMiddleware,
+  userAuthMiddleware.auth,
   roleAuthMiddleware.checkUserRole(UserType.Admin),
-  adminLibraryBranchController.registerNewBranch
+  wrapperMiddleware.wrapController(adminLibraryBranchController.registerNewBranch)
 )
 router.get(
   '/library-branch/list',
   celebrate(adminLibraryBranchSchema.getActiveBranchesList),
-  userAuthMiddleware.authMiddleware,
+  userAuthMiddleware.auth,
   roleAuthMiddleware.checkUserRole(UserType.Admin),
-  adminLibraryBranchController.getActiveBranchesList
+  wrapperMiddleware.wrapController(adminLibraryBranchController.getActiveBranchesList)
 )
 router.put(
   '/library-branch/:branchID',
   celebrate(adminLibraryBranchSchema.updateBranchDetails),
-  userAuthMiddleware.authMiddleware,
+  userAuthMiddleware.auth,
   roleAuthMiddleware.checkUserRole(UserType.Admin),
-  adminLibraryBranchController.updateBranchDetails
+  wrapperMiddleware.wrapController(adminLibraryBranchController.updateBranchDetails)
 )
 router.put(
-  '/soft-delete/library-branch/:branchID',
+  '/library-branch/soft-delete/:branchID',
   celebrate(adminLibraryBranchSchema.deactivateDeleteBranch),
-  userAuthMiddleware.authMiddleware,
+  userAuthMiddleware.auth,
   roleAuthMiddleware.checkUserRole(UserType.Admin),
-  adminLibraryBranchController.deactivateBranch
+  wrapperMiddleware.wrapController(adminLibraryBranchController.deactivateBranch)
 )
 router.delete(
-  '/hard-delete/library-branch/:branchID',
+  '/library-branch/hard-delete/:branchID',
   celebrate(adminLibraryBranchSchema.deactivateDeleteBranch),
-  userAuthMiddleware.authMiddleware,
+  userAuthMiddleware.auth,
   roleAuthMiddleware.checkUserRole(UserType.Admin),
-  adminLibraryBranchController.deleteBranchPermanently
+  wrapperMiddleware.wrapController(adminLibraryBranchController.deleteBranchPermanently)
 )
 
 export default router

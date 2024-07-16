@@ -2,45 +2,45 @@ import express, { Router } from 'express'
 import { celebrate } from 'celebrate'
 import { adminUserController } from '../../controllers'
 import { adminUserSchema } from '../../validations'
-import { userAuthMiddleware, roleAuthMiddleware } from '../../middlewares'
+import { userAuthMiddleware, roleAuthMiddleware, wrapperMiddleware } from '../../middlewares'
 import { UserType } from '../../types'
 
 const router: Router = express.Router()
 
 router.post(
-  '/user',
+  '/user/add',
   celebrate(adminUserSchema.registerUser),
-  userAuthMiddleware.authMiddleware,
+  userAuthMiddleware.auth,
   roleAuthMiddleware.checkUserRole(UserType.Admin),
-  adminUserController.registerUser
+  wrapperMiddleware.wrapController(adminUserController.registerUser)
 )
 router.get(
   '/user/list',
   celebrate(adminUserSchema.getActiveUsersList),
-  userAuthMiddleware.authMiddleware,
+  userAuthMiddleware.auth,
   roleAuthMiddleware.checkUserRole(UserType.Admin),
-  adminUserController.getActiveUsersList
+  wrapperMiddleware.wrapController(adminUserController.getActiveUsersList)
 )
 router.put(
   '/user/:email',
   celebrate(adminUserSchema.updateUserDetails),
-  userAuthMiddleware.authMiddleware,
+  userAuthMiddleware.auth,
   roleAuthMiddleware.checkUserRole(UserType.Admin),
-  adminUserController.updateUserDetails
+  wrapperMiddleware.wrapController(adminUserController.updateUserDetails)
 )
 router.put(
-  '/soft-delete/user/:email',
+  '/user/soft-delete/:email',
   celebrate(adminUserSchema.deactivateDeleteUser),
-  userAuthMiddleware.authMiddleware,
+  userAuthMiddleware.auth,
   roleAuthMiddleware.checkUserRole(UserType.Admin),
-  adminUserController.deactivateUser
+  wrapperMiddleware.wrapController(adminUserController.deactivateUser)
 )
 router.delete(
-  '/hard-delete/user/:email',
+  '/user/hard-delete/:email',
   celebrate(adminUserSchema.deactivateDeleteUser),
-  userAuthMiddleware.authMiddleware,
+  userAuthMiddleware.auth,
   roleAuthMiddleware.checkUserRole(UserType.Admin),
-  adminUserController.deleteUserPermanently
+  wrapperMiddleware.wrapController(adminUserController.deleteUserPermanently)
 )
 
 export default router

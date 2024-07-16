@@ -6,7 +6,7 @@ export interface IAuthor {
   lastname: string
   bio: string
   website?: string
-  email?: string
+  email: string
   address?: string
   deletedAt?: Date
 }
