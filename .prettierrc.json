@@ -1,10 +1,18 @@
 {
-    "printWidth": 100,
-    "tabWidth": 2,
-    "singleQuote": true,
-    "semi": false,
-    "trailingComma": "none",
-    "bracketSpacing": true,
-    "arrowParens": "always",
-    "endOfLine": "lf"
+  "printWidth": 100,
+  "tabWidth": 2,
+  "singleQuote": true,
+  "semi": false,
+  "trailingComma": "none",
+  "bracketSpacing": true,
+  "arrowParens": "always",
+  "endOfLine": "lf",
+  "overrides": [
+    {
+      "files": ".env",
+      "options": {
+        "parser": "babel"
+      }
+    }
+  ]
 }
