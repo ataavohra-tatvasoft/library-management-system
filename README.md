@@ -6,6 +6,13 @@
 
 This project is a library management system designed to facilitate efficient administration, and user interactions with library resources. It includes separate modules for administrators, librarians and users, each with specific functionalities and access levels. Users can manage their book interactions through a user API, while administrators have broader control over library operations, librarian and user management whereas librarians can efficienly manage resources in their respective library branches.
 
+## Technologies Used
+
+- Typescript
+- Javascript
+- NodeJs
+- MongoDB
+
 ## Badges
 
 [![License](https://img.shields.io/badge/license-ISC-blue.svg)](https://opensource.org/licenses/ISC)
@@ -99,11 +106,11 @@ To install and run the project locally, follow these steps:
 
 ## Authors and acknowledgment
 
-`Ataa Vohra - Lead Developer`
+- Ataa Vohra - Lead Developer
 
 ## License
 
-`This project is licensed under the ISC License. See the LICENSE file for details.`
+- This project is licensed under the ISC License. See the LICENSE file for details.
 
 ## Project status
 
