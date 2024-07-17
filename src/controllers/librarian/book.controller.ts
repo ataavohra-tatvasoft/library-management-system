@@ -58,7 +58,6 @@ const addBook: Controller = async (req: Request, res: Response) => {
       address: authorAddress
     })
   } else {
-    // Update author information if it exists
     await Author.updateOne(
       { email: authorEmail, deletedAt: null },
       {
@@ -235,7 +234,6 @@ const updateBook: Controller = async (req: Request, res: Response) => {
         address: authorAddress
       })
     } else {
-      // Update author information if it exists
       await Author.updateOne(
         { email: authorEmail, deletedAt: null },
         {
@@ -307,7 +305,6 @@ const softDeleteBook: Controller = async (req: Request, res: Response) => {
     { $set: { deletedAt: Date.now() } },
     { new: true }
   )
-
   if (!softDeletedBook) {
     throw new HttpError(
       messageConstant.ERROR_DELETING_BOOK,

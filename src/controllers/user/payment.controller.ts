@@ -10,7 +10,7 @@ import { envConfig } from '../../config'
 import { HttpError } from '../../libs'
 import { ICustomQuery } from '../../interfaces'
 
-const STRIPE = new Stripe(String(envConfig.stripeApiKey))
+const STRIPE = new Stripe(String(envConfig.stripeSecretKey))
 
 /**
  * @description Adds a cardholder for the user
@@ -161,7 +161,7 @@ const addPaymentCardPage: Controller = async (req: Request, res: Response) => {
 
   const data = {
     link: link,
-    publicKey: `pk_test_51PV91OI98oGzZ2rhhlIN1zSTzZ1CjyOjN48dks6cqt0u7Oeu4YOBv7E79JFTE6IMPJbGvUngfQm5OCOfBJB3b2uO00rZPlWkTm`
+    publicKey: `${envConfig.stripePublishableKey}`
   }
 
   const html = await ejsCompilerUtils.compileTemplate('addPaymentCard', data)

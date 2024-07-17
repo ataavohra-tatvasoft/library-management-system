@@ -27,13 +27,8 @@ const getIssuedBooksList: Controller = async (req: Request, res: Response) => {
 
   const branchID = librarian.libraryBranchID
 
-  const issuedBooksAggregationPipeline = [
-    {
-      $match: {
-        'books.issueDate': { $ne: null },
-        'books.branchID': branchID
-      }
-    },
+  const basePipeline = [
+    { $match: { 'books.issueDate': { $ne: null }, 'books.branchID': branchID } },
     { $unwind: '$books' },
     {
       $lookup: {
@@ -43,9 +38,7 @@ const getIssuedBooksList: Controller = async (req: Request, res: Response) => {
         as: 'booksInfo'
       }
     },
-    {
-      $unwind: '$booksInfo'
-    },
+    { $unwind: '$booksInfo' },
     {
       $addFields: {
         bookDetails: {
@@ -71,15 +64,7 @@ const getIssuedBooksList: Controller = async (req: Request, res: Response) => {
       $lookup: {
         from: 'authors',
         let: { authorID: '$booksInfo.author' },
-        pipeline: [
-          {
-            $match: {
-              $expr: {
-                $and: [{ $eq: ['$_id', '$$authorID'] }]
-              }
-            }
-          }
-        ],
+        pipeline: [{ $match: { $expr: { $eq: ['$_id', '$$authorID'] } } }],
         as: 'authors'
       }
     },
@@ -104,9 +89,7 @@ const getIssuedBooksList: Controller = async (req: Request, res: Response) => {
         as: 'branchDetails'
       }
     },
-    {
-      $unwind: '$branchDetails'
-    },
+    { $unwind: '$branchDetails' },
     {
       $project: {
         bookDetails: 1,
@@ -118,18 +101,16 @@ const getIssuedBooksList: Controller = async (req: Request, res: Response) => {
     }
   ]
 
-  const issuedBooks = await User.aggregate(issuedBooksAggregationPipeline)
+  const issuedBooks = await User.aggregate([...basePipeline])
     .skip(skip)
     .limit(pageSize)
 
-  if (!issuedBooks?.length) {
+  if (!issuedBooks.length) {
     throw new HttpError(messageConstant.NO_ISSUED_BOOK_FOUND, httpStatusConstant.NOT_FOUND)
   }
 
-  const totalIssuedBooksPipeline = [...issuedBooksAggregationPipeline]
-  const totalIssuedBooks = await User.aggregate(totalIssuedBooksPipeline)
-
-  const total = totalIssuedBooks?.length || 0
+  const totalIssuedBooks = await User.aggregate([...basePipeline])
+  const total = totalIssuedBooks.length
   const totalPages = Math.ceil(total / pageSize)
 
   if (page > totalPages) {

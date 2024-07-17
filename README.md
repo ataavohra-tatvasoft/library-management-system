@@ -14,10 +14,10 @@ This project is a library management system designed to facilitate efficient adm
 
 `Screenshots of postman collection for getting visual interpretation of the API's which you can integrate in your front-end.`
 
-- ![Screenshot](/home/pci57/Pictures/Screenshots/postman_1.png)
-- ![Screenshot](/home/pci57/Pictures/Screenshots/postman_2.png)
-- ![Screenshot](/home/pci57/Pictures/Screenshots/postman_3.png)
-- ![Screenshot](/home/pci57/Pictures/Screenshots/postman_4.png)
+- ![Screenshot](./public/images/screenshots/postman_1.png)
+- ![Screenshot](./public/images/screenshots/postman_2.png)
+- ![Screenshot](./public/images/screenshots/postman_3.png)
+- ![Screenshot](./public/images/screenshots/postman_4.png)
 
 ## Installation
 
@@ -88,10 +88,6 @@ To install and run the project locally, follow these steps:
   - Enhanced user interface.
   - Integration with external library systems.
   - Advanced analytics and reporting.
-
-## Roadmap
-
-`If you have ideas for releases in the future, it is a good idea to list them in the README.`
 
 ## Contributing
 

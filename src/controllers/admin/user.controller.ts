@@ -141,6 +141,7 @@ const updateUserDetails: Controller = async (req: Request, res: Response) => {
   const updatedUser = await User.findOneAndUpdate({ email, deletedAt: null }, updatedData, {
     new: true
   })
+
   if (!updatedUser) {
     throw new HttpError(
       messageConstant.ERROR_UPDATING_USER,

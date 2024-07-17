@@ -119,8 +119,6 @@ const issueBookToUser: Controller = async (req: Request, res: Response) => {
     deletedAt: null
   }).exec()
 
-  console.log(userLibraryBranchMapping)
-
   if (!userLibraryBranchMapping) {
     throw new HttpError(messageConstant.USER_NOT_ASSIGNED_TO_BRANCH, httpStatusConstant.BAD_REQUEST)
   }

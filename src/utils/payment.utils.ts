@@ -3,7 +3,7 @@ import { envConfig } from '../config'
 import { IUser } from '../interfaces'
 
 async function createStripeCustomer(user: IUser): Promise<Stripe.Customer | null> {
-  const stripe = new Stripe(String(envConfig.stripeApiKey))
+  const stripe = new Stripe(String(envConfig.stripeSecretKey))
 
   try {
     const existingCustomer = await stripe.customers.list({
@@ -33,7 +33,7 @@ async function createStripePaymentMethod(
   }
 ): Promise<Stripe.PaymentMethod | null> {
   try {
-    const stripe = new Stripe(String(envConfig.stripeApiKey))
+    const stripe = new Stripe(String(envConfig.stripeSecretKey))
     const paymentMethod = await stripe.paymentMethods.create({
       type: 'card',
       card: { token: cardDetails.token }

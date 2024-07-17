@@ -393,7 +393,6 @@ const importBookSpreadSheet: Controller = async (req: Request, res: Response) =>
   const sheetName = await googleSheetUtils.getSheetName(sheetID, sheetname)
 
   const data = await googleSheetUtils.fetchSheetData(sheetID, String(`${sheetName}!A2:Z`))
-
   if (!data) {
     throw new HttpError(messageConstant.NO_DATA_FOUND, httpStatusConstant.NOT_FOUND)
   }

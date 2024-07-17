@@ -210,7 +210,6 @@ const getAllBookDetails: Controller = async (req: Request, res: Response) => {
   }
 
   const bookIDs = libraryBooks.map((book) => book.bookID)
-  console.log(bookIDs)
 
   const aggregationPipeline = [
     { $match: { _id: { $in: bookIDs }, deletedAt: null } },
