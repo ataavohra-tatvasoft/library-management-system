@@ -5,8 +5,7 @@ import path from 'path'
 import { dbConfig, envConfig } from './src/config'
 import { messageConstant } from './src/constant'
 import routes from './src/routes'
-import { errorHandlerUtils, loggerUtils } from './src/utils'
-import { nodeCronUtils } from './src/utils'
+import { errorHandlerUtils, loggerUtils, nodeCronUtils } from './src/utils'
 
 /**
  * Function to create and configure the Express app.

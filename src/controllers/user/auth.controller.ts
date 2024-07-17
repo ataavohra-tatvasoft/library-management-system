@@ -114,8 +114,8 @@ const generateNewAccessToken: Controller = async (req: Request, res: Response) =
 const logout: Controller = async (req: Request, res: Response) => {
   const { accessToken, refreshToken } = req.body
 
-  await authUtils.verifyRefreshToken(refreshToken)
   await authUtils.verifyAccessToken(accessToken)
+  await authUtils.verifyRefreshToken(refreshToken)
 
   await authUtils.blockToken(accessToken, 'access')
   await authUtils.blockToken(refreshToken, 'refresh')

@@ -447,10 +447,24 @@ const getBookIssueHistory: Controller = async (req: Request, res: Response) => {
   const bookHistories = (await BookHistory.find({
     userID: req.user._id,
     deletedAt: null
-  }).populate({
-    path: 'userID bookID issuedBy submittedBy',
-    select: 'email firstname lastname bookID name charges firstname lastname firstname lastname'
-  })) as unknown as IBookHistory[]
+  }).populate([
+    {
+      path: 'userID',
+      select: 'email firstname lastname'
+    },
+    {
+      path: 'bookID',
+      select: 'bookID name charges'
+    },
+    {
+      path: 'issuedBy',
+      select: 'firstname lastname'
+    },
+    {
+      path: 'submittedBy',
+      select: 'firstname lastname'
+    }
+  ])) as IBookHistory[]
 
   if (!bookHistories?.length) {
     throw new HttpError(messageConstant.BOOK_HISTORY_NOT_FOUND, httpStatusConstant.NOT_FOUND)
@@ -460,9 +474,9 @@ const getBookIssueHistory: Controller = async (req: Request, res: Response) => {
     const bookID = history.bookID.bookID
     const bookName = history.bookID.name
     const issuedBy = history.issuedBy.firstname + ' ' + history.issuedBy.lastname
-    const submittedBy = history.submittedBy.firstname + ' ' + history.submittedBy.lastname
+    const submittedBy = history?.submittedBy?.firstname + ' ' + history?.submittedBy?.lastname
     const issueDate = new Date(history.issueDate)
-    const submitDate = history.submitDate ? new Date(history.submitDate) : null
+    const submitDate = history?.submitDate ? new Date(history?.submitDate) : null
     const usedDays = submitDate
       ? Math.ceil((submitDate.getTime() - issueDate.getTime()) / (1000 * 60 * 60 * 24))
       : null

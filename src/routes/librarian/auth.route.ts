@@ -33,5 +33,12 @@ router.post(
   roleAuthMiddleware.checkUserRole(UserType.Librarian),
   wrapperMiddleware.wrapController(adminAuthController.resetPassword)
 )
+router.put(
+  '/profile',
+  celebrate(adminAuthSchema.updateAdminProfile),
+  userAuthMiddleware.auth,
+  roleAuthMiddleware.checkUserRole(UserType.Librarian),
+  wrapperMiddleware.wrapController(adminAuthController.updateAdminProfile)
+)
 
 export default router

@@ -26,5 +26,6 @@ export default {
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
   googleRedirectUri: process.env.GOOGLE_REDIRECT_URIS,
   googleTokenPath: process.env.GOOGLE_TOKEN_PATH,
+  googleAccessToken: process.env.GOOGLE_ACCESS_TOKEN,
   googleRefreshToken: process.env.GOOGLE_REFRESH_TOKEN
 }

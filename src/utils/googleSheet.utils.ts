@@ -35,8 +35,7 @@ const authorize = async (): Promise<OAuth2Client> => {
 
   /**Currently below is working by getting token from OAuth 2.0 Playground*/
   const tokens = {
-    access_token:
-      'ya29.a0AXooCgtpFokVEFlW1A70GQNCDzIIJbD5HDLoDjVufbio8vjDCJk3dXGnc2iIioj3YXAw1STwOijFI3WPbPaDsQLF_MA-YOgXfkRCyoIbJeOUNN02wpJmUlYVg2ZamPjSn2jhfFgi5Hc0er8Fne9IMSNwSdfjS385eUMDaCgYKAa0SARMSFQHGX2Mine3_GE-EgMhjV-RWwn_XBA0171'
+    access_token: String(envConfig.googleAccessToken)
   }
 
   if (tokens) {

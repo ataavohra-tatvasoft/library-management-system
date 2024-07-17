@@ -425,7 +425,6 @@ const importBookSpreadSheet: Controller = async (req: Request, res: Response) =>
 
   for (const book of formattedData) {
     const existingBook = await collection.findOne({ bookID: book.bookID })
-    console.log(book.bookID)
 
     if (existingBook) {
       await collection.updateOne({ bookID: book.bookID }, { $set: book })

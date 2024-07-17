@@ -1,6 +1,6 @@
 import { Schema, model, Model } from 'mongoose'
 import { UserType } from '../../types'
-import { IRole } from '../../interfaces/role.interface'
+import { IRole } from '../../interfaces'
 
 type RoleModel = Model<IRole>
 

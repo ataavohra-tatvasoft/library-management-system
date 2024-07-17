@@ -20,6 +20,7 @@
     "bcrypt": "^5.1.1",
     "celebrate": "^15.0.3",
     "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
     "ejs": "^3.1.10",
     "express": "^4.19.2",
     "glob": "^11.0.0",
@@ -34,9 +35,8 @@
     "nodemailer": "^6.9.14",
     "redis": "^4.6.15",
     "stripe": "^16.2.0",
-    "winston-daily-rotate-file": "^5.0.0",
-    "dotenv": "^16.4.5",
-    "winston": "^3.13.1"
+    "winston": "^3.13.1",
+    "winston-daily-rotate-file": "^5.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.4.0",
@@ -58,6 +58,7 @@
     "@types/redis": "^4.0.11",
     "@types/stripe": "^8.0.417",
     "@types/typescript": "^2.0.0",
+    "@types/winston": "^2.4.4",
     "@typescript-eslint/eslint-plugin": "^7.14.1",
     "@typescript-eslint/parser": "^7.14.1",
     "eslint": "^8.57.0",
