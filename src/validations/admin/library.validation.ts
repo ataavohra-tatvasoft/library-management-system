@@ -2,7 +2,6 @@ import { Joi } from 'celebrate'
 
 const registerNewBranch = {
   body: Joi.object().keys({
-    branchID: Joi.string().required(),
     name: Joi.string().min(3).max(50).required(),
     address: Joi.string().min(5).max(255).required(),
     phoneNumber: Joi.string()

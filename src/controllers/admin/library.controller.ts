@@ -1,7 +1,7 @@
 import { Request, Response } from 'express'
 import { Controller } from '../../types'
 import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '../../constant'
-import { responseHandlerUtils } from '../../utils'
+import { helperFunctionsUtils, responseHandlerUtils } from '../../utils'
 import { HttpError } from '../../libs'
 import { LibraryBranch } from '../../db/models'
 import { ICustomQuery } from '../../interfaces'
@@ -10,10 +10,9 @@ import { ICustomQuery } from '../../interfaces'
  * @description Registers a new library branch
  */
 const registerNewBranch: Controller = async (req: Request, res: Response) => {
-  const { branchID, name, address, phoneNumber } = req.body
+  const { name, address, phoneNumber } = req.body
 
   const isBranchExists = await LibraryBranch.findOne({
-    branchID,
     name,
     phoneNumber,
     deletedAt: null
@@ -23,7 +22,7 @@ const registerNewBranch: Controller = async (req: Request, res: Response) => {
   }
 
   const newBranch = await LibraryBranch.create({
-    branchID,
+    branchID: helperFunctionsUtils.generatePlaceholderID('9', 5),
     name,
     address,
     phoneNumber: BigInt(phoneNumber)

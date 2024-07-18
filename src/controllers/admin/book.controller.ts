@@ -2,7 +2,12 @@ import { Request, Response } from 'express'
 import { Author, Book, BookGallery } from '../../db/models'
 import { Controller } from '../../types'
 import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '../../constant'
-import { databaseUtils, googleSheetUtils, responseHandlerUtils } from '../../utils'
+import {
+  databaseUtils,
+  googleSheetUtils,
+  helperFunctionsUtils,
+  responseHandlerUtils
+} from '../../utils'
 import { getRatingService, getReviewService } from '../../services/book'
 import { dbConfig } from '../../config'
 import { HttpError } from '../../libs'
@@ -15,7 +20,6 @@ import { ObjectId } from 'mongodb'
 const addBook: Controller = async (req: Request, res: Response) => {
   const {
     body: {
-      bookID,
       name,
       authorEmail,
       authorFirstName,
@@ -30,7 +34,7 @@ const addBook: Controller = async (req: Request, res: Response) => {
     }
   } = req
 
-  const existingBook = await Book.findOne({ bookID, deletedAt: null })
+  const existingBook = await Book.findOne({ name, deletedAt: null })
   if (existingBook) {
     throw new HttpError(messageConstant.BOOK_ALREADY_EXISTS, httpStatusConstant.BAD_REQUEST)
   }
@@ -48,7 +52,7 @@ const addBook: Controller = async (req: Request, res: Response) => {
   }
 
   const newBook = await Book.create({
-    bookID,
+    bookID: helperFunctionsUtils.generatePlaceholderID('999', 10),
     name,
     author: author._id,
     charges: Number(charges),

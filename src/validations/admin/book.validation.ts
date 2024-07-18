@@ -2,7 +2,6 @@ import { Joi } from 'celebrate'
 
 const addBook = {
   body: Joi.object().keys({
-    bookID: Joi.string().required().length(13).trim(),
     name: Joi.string().required().min(3).max(50).trim(),
     authorEmail: Joi.string().required().trim().email(),
     authorFirstName: Joi.string().required().min(1).max(10).trim(),

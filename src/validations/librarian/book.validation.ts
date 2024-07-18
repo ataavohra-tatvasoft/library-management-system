@@ -3,7 +3,6 @@ import Joi from 'joi'
 const addBook = {
   body: Joi.object({
     branchName: Joi.string().required(),
-    bookID: Joi.string().required(),
     name: Joi.string().required(),
     authorEmail: Joi.string().email().required(),
     authorFirstName: Joi.string().required(),

@@ -4,7 +4,7 @@ import { Controller } from '../../types'
 import { httpStatusConstant, httpErrorMessageConstant, messageConstant } from '../../constant'
 import { HttpError } from '../../libs'
 import { ICustomQuery } from '../../interfaces'
-import { responseHandlerUtils } from '../../utils'
+import { helperFunctionsUtils, responseHandlerUtils } from '../../utils'
 
 /**
  * @description Adds a new book to the library (checks for duplicates).
@@ -13,7 +13,6 @@ const addBook: Controller = async (req: Request, res: Response) => {
   const {
     body: {
       branchName,
-      bookID,
       name,
       authorEmail,
       authorFirstName,
@@ -41,7 +40,7 @@ const addBook: Controller = async (req: Request, res: Response) => {
     throw new HttpError(messageConstant.INVALID_LIBRARIAN, httpStatusConstant.NOT_FOUND)
   }
 
-  const existingBook = await Book.findOne({ bookID, deletedAt: null })
+  const existingBook = await Book.findOne({ name, deletedAt: null })
   if (existingBook) {
     throw new HttpError(messageConstant.BOOK_ALREADY_EXISTS, httpStatusConstant.BAD_REQUEST)
   }
@@ -71,7 +70,7 @@ const addBook: Controller = async (req: Request, res: Response) => {
   }
 
   const newBook = await Book.create({
-    bookID,
+    bookID: helperFunctionsUtils.generatePlaceholderID('999', 10),
     name,
     author: author._id,
     charges: Number(charges),

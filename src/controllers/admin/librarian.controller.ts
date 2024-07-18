@@ -43,7 +43,7 @@ const signupLibrarian: Controller = async (req: Request, res: Response) => {
     address,
     city,
     state,
-    libraryBranchID: libraryBranch._id // Assign library branch ID to the user
+    libraryBranchID: libraryBranch._id
   })
 
   if (!user) {

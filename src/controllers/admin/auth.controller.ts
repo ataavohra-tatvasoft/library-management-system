@@ -143,7 +143,7 @@ const forgotPassword: Controller = async (req: Request, res: Response) => {
   }
 
   const data = { link: envConfig.resetPassLink }
-  const html = await ejsCompilerUtils.compileTemplate('resetPassword', data) // Assuming you have a template named 'resetPassword'
+  const html = await ejsCompilerUtils.compileTemplate('resetPassword', data)
 
   await sendMailUtils.sendEmail({ to: email, subject: 'Reset Password Link', html })
 
